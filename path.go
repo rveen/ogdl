@@ -45,38 +45,45 @@ func NewPath(s string) *Path {
 
 
 func (p *Path) Parse() {
-
-    expectSep := false
     
-    s := ""
-    
-    p.ev.Event("")
+    var s string 
+    var begin = true
     
     for {
     
-        // If expectSep is true, we expext a dot, index, group or selector
-        if expectSep {
-            if p.NextByteIs('.') {
-                expectSep = false
-                continue;
-            }
-            expectSep = false
-            
-        } else {
+    	// Expect: token | quoted | index | group | selector | dot,
+        // or else we abort.
         
-            p.NextByteIs('.')
-            
-            s = p.Scalar()
+        // A dot is requiered before a token or quoted, except at
+        // the beginning
 
-            if len(s) != 0 {               
-                p.ev.Event(s)
-                expectSep = true
-                continue
-           }
+        if !p.NextByteIs('.') && !begin {
+            // If not [, {, (, break
+            
+            c := p.Read()
+            p.Unread()
+            
+            if c!='[' && c!='(' && c!='{' {
+                break
+            }
         }
-   
-        s = p.Index()
+        
+        begin = false
+                
+        s = p.Quoted()
         if len(s) != 0 {
+            p.ev.Event(s)
+            continue
+        }
+        
+        s = p.Token()
+        if len(s) != 0 {
+            p.ev.Event(s)
+            continue
+        }
+          
+        s = p.Index()
+        if len(s) != 0 {    
             p.ev.Event("!i")
             p.ev.Inc()
             p.ev.Event(s)
@@ -98,7 +105,7 @@ func (p *Path) Parse() {
         b := p.Group()
         if b {
             continue
-        }
+        } 
         
         break
     }
