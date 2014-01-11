@@ -769,8 +769,11 @@ func TestFunction1(ts *testing.T) {
 
 // Examples
 
-func ExampleEval() {
-    g := ogdl.NewGraph("a").Add("2")
-    e := ogdl.NewExpression("a+2")
-    println(g.Eval(e))
+func ExampleGraph_Eval() {
+    g := NewGraph("a").Add("4")
+    e := NewExpression("a+3")
+    println(e.Text())
+    fmt.Printf("%v",g.Eval(e))
+    // Output:
+    // 7
 }
