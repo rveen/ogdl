@@ -21,9 +21,11 @@
 //
 // See the full spec at http://ogdl.org.
 //
+//
 // Installation
 //
 //    go get http://github.com/rveen/ogdl-go
+//
 //
 // Example 1: configuration file
 //
