@@ -766,3 +766,11 @@ func TestFunction1(ts *testing.T) {
 
 	println(string(s))
 }
+
+// Examples
+
+func ExampleEval() {
+    g := ogdl.NewGraph("a").Add("2")
+    e := ogdl.NewExpression("a+2")
+    println(g.Eval(e))
+}
