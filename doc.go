@@ -4,7 +4,7 @@
 
 // Package ogdl is used to process OGDL, the Ordered Graph Data Language.
 // 
-// OGDL is a simple textual format to write trees or graphs of text, where
+// OGDL is a textual format to write trees or graphs of text, where
 // indentation and spaces define the structure. Here is an example:
 //
 //    network
@@ -27,7 +27,7 @@
 //    go get http://github.com/rveen/ogdl
 //
 //
-// Example 1: configuration file
+// Example: A configuration file
 //
 // If we have a text file 'conf.g' like this:
 //
