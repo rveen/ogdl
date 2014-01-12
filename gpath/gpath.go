@@ -9,11 +9,6 @@ import (
 	"os"
 )
 
-// gpath <path> [file]
-//
-// Return the specified 'path' from an OGDL file,
-// or from stdin
-//
 func main() {
 
 	if len(os.Args) < 2 {
