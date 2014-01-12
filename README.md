@@ -2,7 +2,7 @@
 
 Package ogdl is used to process [OGDL](http://ogdl.org), the Ordered Graph Data Language.
 
-OGDL is a simple textual format to write trees or graphs of text, where indentation and spaces define the structure. Here is an example:
+OGDL is a textual format to write trees or graphs of text, where indentation and spaces define the structure. Here is an example:
 
     network
       ip 192.168.1.100
