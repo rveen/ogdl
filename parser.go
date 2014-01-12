@@ -13,11 +13,6 @@ import (
 	"strings"
 )
 
-// TODO:
-// - check if types can be entered accidentaly in text (!e, etc)
-// - desligar parser de textual
-// - error (not panic)
-
 const (
 	TYPE_EXPRESSION = "!e"
 	TYPE_PATH       = "!p"

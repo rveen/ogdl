@@ -7,14 +7,7 @@ package ogdl
 import "fmt"
 
 // Eval takes a parsed expression and evaluates it
-// in the context of the current graph
-//
-// Example:
-//
-//     g := ogdl.NewGraph("a").Add("2")
-//     e := ogdl.NewExpression("a+2")
-//     println(g.Eval(e))
-//
+// in the context of the current graph.
 func (g *Graph) Eval(e *Graph) interface{} {
 
 	switch (e.String()) {
