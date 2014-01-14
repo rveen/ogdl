@@ -37,7 +37,7 @@ func (g *Graph) Int64() (int64, bool) {
 	return _int64f(g.String())
 }
 
-// Return the node as an float64, if possible.
+// Return the node as a float64, if possible.
 func (g *Graph) Float64() (float64, bool) {
 	return _float64f(g.String())
 }

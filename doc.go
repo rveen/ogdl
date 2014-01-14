@@ -24,7 +24,7 @@
 //
 // Installation
 //
-//    go get http://github.com/rveen/ogdl
+//    go get github.com/rveen/ogdl
 //
 //
 // Example: A configuration file

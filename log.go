@@ -15,6 +15,7 @@ type Log struct {
 	autoSync bool
 }
 
+// OpenLog opens a log file. If the file doesn't exist, it is created.
 func OpenLog(file string) (*Log, error) {
 
 	f, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE, 0666)
@@ -27,14 +28,18 @@ func OpenLog(file string) (*Log, error) {
 	return &log, nil
 }
 
+// Close closes a log file
 func (log *Log) Close() {
 	log.f.Close()
 }
 
+// Sync commits the changes to disk (the exact behavior is OS dependent).
 func (log *Log) Sync() {
 	log.f.Sync()
 }
 
+// Add adds an OGDL object to the log. The starting position into the log
+// is returned. 
 func (log *Log) Add(g *Graph) int64 {
 
 	b := g.Binary()
@@ -53,6 +58,8 @@ func (log *Log) Add(g *Graph) int64 {
 	return i
 }
 
+// Add adds an OGDL binary object to the log. The starting position into 
+// the log is returned.
 func (log *Log) AddBinary(b []byte) int64 {
 
 	log.f.Write(b)
@@ -65,9 +72,8 @@ func (log *Log) AddBinary(b []byte) int64 {
 	return i
 }
 
-// Get returns the object at the position given,
-// an eventual error, and the position of the
-// next object.
+// Get returns the OGDL object at the position given and the position of the
+// next object, or an error.
 func (log *Log) Get(i int64) (*Graph, error, int64) {
 
 	/* Position in file */
@@ -82,6 +88,9 @@ func (log *Log) Get(i int64) (*Graph, error, int64) {
 	return g, err, i + int64(p.n)
 }
 
+// Get returns the OGDL object at the position given and the position of the
+// next object, or an error. The object returned is in binary form, exactly
+// as it is stored in the log.
 func (log *Log) GetBinary(i int64) ([]byte, error, int64) {
 
 	// Position in file

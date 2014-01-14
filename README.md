@@ -14,7 +14,7 @@ OGDL character streams are normally formed by Unicode characters, and encoded as
 
 ## Installation
 
-    go get http://github.com/rveen/ogdl
+    go get github.com/rveen/ogdl
 
 ## Example: a configuration file
 
