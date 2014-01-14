@@ -21,11 +21,11 @@
 //
 // See the full spec at http://ogdl.org.
 //
-//
 // Installation
 //
-//    go get github.com/rveen/ogdl
+// To install this package just do:
 //
+//     go get github.com/rveen/ogdl
 //
 // Example: A configuration file
 //
