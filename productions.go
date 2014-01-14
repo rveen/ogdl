@@ -24,7 +24,6 @@ import (
 
    This method returns two booleans: if there has been a sequence, and if the last element was a Group
 */
-
 func (p *Parser) Sequence() (bool, bool, error) {
 
 	i := p.ev.Level()
@@ -69,7 +68,6 @@ func (p *Parser) Sequence() (bool, bool, error) {
 
    Group ::= '(' Space? Sequence?  Space? ')'
 */
-
 func (p *Parser) Group() (bool, error) {
 
 	if !p.NextByteIs('(') {
@@ -337,8 +335,7 @@ func (p *Parser) Space() (bool, int) {
 	return true, n
 }
 
-// end returns true if it can read an end of stream from the Parser input
-// stream.
+// end returns true if the end of stream has been reached.
 //
 // end < stream > bool
 func (p *Parser) End() bool {
@@ -396,59 +393,6 @@ func (p *Parser) Token() []byte {
 
 	return buf
 }
-
-// index ::= '[' token ']'
-//
-/*
-func (p *Parser) pIndex() ([]byte, error) {
-
-	if !p.nextByteIs('[') {
-		return nil, nil
-	}
-
-	p.Space()
-	s := p.Token()
-	p.Space()
-
-	if !p.nextByteIs(']') {
-		return nil, errors.New("Missing ] in index")
-	}
-
-	if len(s) == 0 {
-		return nil, errors.New("Empty index")
-	}
-	return s, nil
-}
-*/
-
-// selector reads from the Parser input stream and returns
-// a selector token, nil or an error. An empty selector is
-// legal and is represented by one space.
-//
-// selector ::= '{' token? '}'
-//
-/*
-func (p *Parser) pSelector() ([]byte, error) {
-
-	if !p.nextByteIs('{') {
-		return nil, nil
-	}
-
-	p.pSpace()
-	s := p.pToken()
-	p.pSpace()
-
-	if !p.nextByteIs('}') {
-		return nil, errors.New("Missing } in selector")
-	}
-
-	// Return one space to indicate an empty selector
-	if len(s) == 0 {
-		return []byte(" "), nil
-	}
-	return s, nil
-}
-*/
 
 func (p *Parser) Number() []byte {
 
@@ -774,10 +718,7 @@ func (p *Parser) TokenList() {
 	}
 }
 
-// Template ::= (Text | Variable | Format)*
-//
-// Some variables + text form $for $end and $if $else $end
-// constructs.
+// Template ::= (Text | Variable)*
 //
 // - First pass produces a list of text and variables
 // - Second pass structures $for and $if

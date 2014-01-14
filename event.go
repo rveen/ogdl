@@ -78,6 +78,13 @@ func (e *EventHandler) AddAt(s string, l int) {
 	e.Add(s)
 }
 
+// AddBytesAt creates a node at the specified level, with the byte slice
+// as content.
+func (e *EventHandler) AddBytesAt(b []byte, l int) {
+	e.level = l - 1
+	e.AddBytes(b)
+}
+
 // Level returns the current level
 func (e *EventHandler) Level() int {
 	return e.level

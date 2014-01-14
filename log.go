@@ -79,7 +79,7 @@ func (log *Log) Get(i int64) (*Graph, error, int64) {
 	p := NewBinParser(log.f)
 	g := p.Parse()
 
-	return g, err, i + int64(p.N)
+	return g, err, i + int64(p.n)
 }
 
 func (log *Log) GetBinary(i int64) ([]byte, error, int64) {
@@ -106,7 +106,7 @@ func (log *Log) GetBinary(i int64) ([]byte, error, int64) {
 		}
 	}
 
-	n := p.N
+	n := p.n
 
 	// Read bytes
 	b := make([]byte, n)

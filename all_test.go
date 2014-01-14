@@ -7,6 +7,13 @@ import (
 	"testing"
 )
 
+// Path
+
+func TestPath(t *testing.T) {
+    p := NewPath("a[**].c")
+    println(p.Text())
+}
+
 // Binary parser
 
 func TestBinParser(t *testing.T) {

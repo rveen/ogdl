@@ -32,18 +32,22 @@ func (g *Graph) GetSimilar(re string) (*Graph, bool) {
 	return r, true
 }
 
+// Return the node as an int64, if possible.
 func (g *Graph) Int64() (int64, bool) {
 	return _int64f(g.String())
 }
 
+// Return the node as an float64, if possible.
 func (g *Graph) Float64() (float64, bool) {
 	return _float64f(g.String())
 }
 
+// Return the node as a boolean, if possible.
 func (g *Graph) Bool() (bool, bool) {
 	return _boolf(g.String())
 }
 
+// Return the node as a reflect.Value.
 func (g *Graph) Value() reflect.Value {
 	return reflect.ValueOf(g.This)
 }
@@ -56,6 +60,7 @@ func (g *Graph) String() string {
 	return _string(g.This)
 }
 
+// String returns a the node as []byte, or nil if not possble.
 func (g *Graph) Bytes() []byte {
 	return _bytes(g.This)
 }
@@ -103,9 +108,10 @@ func number(itf interface{}) interface{} {
 	return n
 }
 
-func (g *Graph) GetString(s string) (string, bool) {
+// GetString returns the result of applying a path to the given Graph.
+func (g *Graph) GetString(path string) (string, bool) {
 
-	i := g.Get(s)
+	i := g.Get(path)
 	return _string(i), true
 }
 

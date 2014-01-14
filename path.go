@@ -4,19 +4,7 @@
 
 package ogdl
 
-// Path is used to parse an OGDL path, given as an Unicode string, into a Graph object.
-//
-// Syntax:
-//
-// path ::= token ('.' element)*
-//
-// element ::= token | integer | quoted | group | index | selector
-//
-// (Dot optional before Group, Index, Selector)
-//
-// group := '(' Expression [[,] Expression]* ')'
-// index := '[' Expression ']'
-// selector := '{' Expression '}'
+// NewPath is used to parse an OGDL path, given as an Unicode string, into a Graph object.
 //
 // Example:
 //
@@ -27,8 +15,17 @@ func NewPath(s string) *Graph {
 	return parse.GraphTop(TYPE_PATH)
 }
 
-// A path is a variable in path format,
-// and must begin with a letter.
+// A path is a variable in path format, and must begin with a letter.
+//
+//     path ::= element ('.' element)*
+//
+//     element ::= token | integer | quoted | group | index | selector
+//
+//     (Dot optional before Group, Index, Selector)
+//
+//     group := '(' Expression [[,] Expression]* ')'
+//     index := '[' Expression ']'
+//     selector := '{' Expression '}'
 func (p *Parser) Path() bool {
 
 	c := p.Read()

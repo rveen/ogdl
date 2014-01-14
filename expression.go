@@ -65,6 +65,9 @@ func (g *Graph) _ast() {
 	}
 }
 
+// Precedence is same as in Go, except for the missing operators (| << >> & ^ &^) 
+//
+// Assignment operators are given the lowest precedence.
 func precedence(s string) int {
 
 	switch s {
@@ -79,8 +82,6 @@ func precedence(s string) int {
 		return 5
 	case "%":
 		return 5
-	case "^":
-		return 6
 
 	case "=":
 		return 0

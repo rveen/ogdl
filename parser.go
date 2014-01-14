@@ -133,7 +133,7 @@ func (p *Parser) GraphTop(s string) *Graph {
 func (p *Parser) pOgdl() error {
 
 	for {
-		more, err := p.pLine()
+		more, err := p.Line()
 		if err != nil {
 			return err
 		}
@@ -174,7 +174,7 @@ Indentation rules:
     f          -> level 1
 
 */
-func (p *Parser) pLine() (bool, error) {
+func (p *Parser) Line() (bool, error) {
 
 	sp, n := p.Space()
 
@@ -281,14 +281,7 @@ func (p *Parser) NextByteIs(c int) bool {
 	return false
 }
 
-/* ---------------------------------------------
-   Elementary byte handling
-
-   OGDL doesn't need to look ahead further than 2 chars.
-   --------------------------------------------- */
-
-// read reads the next byte out of the stream.
-//
+// Read reads the next byte out of the stream.
 func (p *Parser) Read() int {
 
 	var c int
@@ -316,7 +309,7 @@ func (p *Parser) Read() int {
 // Unread puts the last readed character back into the stream.
 // Up to two consecutive Unread()'s can be issued.
 //
-// XXX TODO: line-- if newline
+// BUG: line-- if newline
 func (p *Parser) Unread() {
 	p.lastn++
 	p.lastnl--

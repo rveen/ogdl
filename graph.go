@@ -49,7 +49,8 @@ func (g *Graph) Len() int {
 // Depth returns the depth of the graph if it is a tree, or -1 if it has
 // cycles.
 //
-// XXX Check for cycles
+// TODO: Cycles are inferred if level>100, but nodes traversed are not 
+// remembered (they should if cycles need to be detected).
 func (g *Graph) Depth() int {
 	if g.Len() == 0 {
 		return 0
@@ -355,7 +356,7 @@ func (g *Graph) Text() string {
 	return s
 }
 
-// print is the private, lower level, implementation of String.
+// _text is the private, lower level, implementation of Text().
 // It takes two parameters, the level and a buffer to which the
 // result is printed.
 func (g *Graph) _text(n int, buffer *bytes.Buffer) {
@@ -418,6 +419,8 @@ func (g *Graph) _text(n int, buffer *bytes.Buffer) {
 	}
 }
 
+// Substitute traverses the graph and subtitutes all nodes with content 
+// equal to s by v.
 func (g *Graph) Substitute(s string, v interface{}) {
 	for _, n := range g.Out {
 		if n.String() == s {

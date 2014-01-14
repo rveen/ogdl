@@ -13,18 +13,16 @@ import (
 //
 // Syntax definition:
 //
-// template ::= ( text | variable )*
+//     template ::= ( text | variable )*
 //
-// variable ::= ('$' path) | ('$' '(' expression ')')
-// path ::= as defined in path.go
-// expression ::= as defined in expression.go
+//     variable ::= ('$' path) | ('$' '(' expression ')')
+//     path ::= as defined in path.go
+//     expression ::= as defined in expression.go
 //
-// Some variables have a special meaning: 
-// $if, $else, $end, $for, $break.
+// Some variables have a special meaning: $if, $else, $end, $for, $break.
 //
-// Parsed templates are converted back to text by evaluating the variable parts agains a
-// Graph object, by means of the Process() method.
-//
+// Parsed templates are converted back to text by evaluating the variable parts
+// against a Graph object, by means of the Process() method.
 func NewTemplate(s string) *Graph {
 	p := NewStringParser(s)
 	p.Template()
@@ -37,9 +35,8 @@ func NewTemplate(s string) *Graph {
 	return t
 }
 
-// Process processes the parsed template a, returning the resulting text in a byte array.
-// The variable parts are resolved out of the Graph given. This Graph can be called the
-// context of the template.
+// Process processes the parsed template, returning the resulting text in a byte array.
+// The variable parts are resolved out of the Graph given. 
 func (t *Graph) Process(c *Graph) []byte {
 
 	buffer := &bytes.Buffer{}
