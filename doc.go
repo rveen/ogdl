@@ -27,9 +27,9 @@
 //
 //     go get github.com/rveen/ogdl
 //
-// Example: A configuration file
+// An example
 //
-// If we have a text file 'conf.g' like this:
+// If we have a text file 'config.g' like this:
 //
 //    eth0
 //      ip
@@ -53,7 +53,7 @@
 //
 //    ip: 192.168.1.1, timeout: 20
 //
-// The configuration file would normally written in a conciser way:
+// The configuration file can be written in a conciser way:
 //
 //    eth0
 //      ip      192.168.1.1
