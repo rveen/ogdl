@@ -29,7 +29,7 @@
 //
 // An example
 //
-// If we have a text file 'config.g' like this:
+// If we have a text file 'config.g' containing:
 //
 //    eth0
 //      ip
@@ -43,7 +43,7 @@
 //
 // then,
 //
-//    g := ogdl.ParseFile("conf.g")
+//    g := ogdl.ParseFile("config.g")
 //    ip,_ := g.GetString("eth0.ip")
 //    to,_ := g.GetInt("eth0.timeout")
 //
