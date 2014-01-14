@@ -45,7 +45,7 @@
 //
 //    g := ogdl.ParseFile("config.g")
 //    ip,_ := g.GetString("eth0.ip")
-//    to,_ := g.GetInt("eth0.timeout")
+//    to,_ := g.GetInt64("eth0.timeout")
 //
 //    println("ip:",ip,", timeout:",to)
 //
@@ -60,5 +60,21 @@
 //      gateway 192.168.1.10
 //      mask    255.255.255.0
 //      timeout 20
+//
+// A template example
+//
+// The package includes a template processor. It takes an arbitrary input stream
+// with some variables in it, and produces an output stream with the variables
+// resolved out of a Graph object which acts as context.
+//
+// For example:
+//
+//     g := ogdl.ParseFile("config.g")
+//     t := NewTemplate("The gateway IP is $eth0.gateway.")
+//     b := t.Process(g)
+//
+// string(b) is then:
+//
+//     The gateway IP is 192.168.1.10.
 //
 package ogdl
