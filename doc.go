@@ -70,11 +70,11 @@
 // For example (given the previous config file):
 //
 //     g := ogdl.ParseFile("config.g")
-//     t := ogdl.NewTemplate("The gateway's IP is $eth0.gateway.")
+//     t := ogdl.NewTemplate("The gateway's IP is $eth0.gateway")
 //     b := t.Process(g)
 //
 // string(b) is then:
 //
-//     The gateway's IP is 192.168.1.10.
+//     The gateway's IP is 192.168.1.10
 //
 package ogdl

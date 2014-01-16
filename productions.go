@@ -807,17 +807,25 @@ func (p *Parser) Variable() bool {
 	i := p.ev.Level()
 
 	c = p.Read()
-	if c == '(' || c == '{' {
+	if c == '(' {
 		p.ev.Add(TYPE_EXPRESSION)
 		p.ev.Inc()
 		p.Expression()
 		p.Space()
-		c = p.Read() // Should be ')' or '}'
+		c = p.Read() // Should be ')'
 	} else {
 		p.ev.Add(TYPE_PATH)
 		p.ev.Inc()
-		p.Unread()
+		if c!='{' {
+		    p.Unread()
+		} else {
+		    p.Space()
+		}
 		p.Path()
+		if c=='{' {
+		    p.Space()
+		    p.Read() // Should be '}'
+		} 
 	}
 
 	// Reset the level
