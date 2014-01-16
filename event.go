@@ -55,7 +55,6 @@ func (e *EventHandler) Add(s string) bool {
 	// Protection against holes can also be
 	// done at other places in this package.
 	if e.gl[e.level] == nil {
-		// println("event.go: e.gl[level-1] empty!")
 		return false
 	}
 

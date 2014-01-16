@@ -39,7 +39,7 @@ func (log *Log) Sync() {
 }
 
 // Add adds an OGDL object to the log. The starting position into the log
-// is returned. 
+// is returned.
 func (log *Log) Add(g *Graph) int64 {
 
 	b := g.Binary()
@@ -58,7 +58,7 @@ func (log *Log) Add(g *Graph) int64 {
 	return i
 }
 
-// Add adds an OGDL binary object to the log. The starting position into 
+// Add adds an OGDL binary object to the log. The starting position into
 // the log is returned.
 func (log *Log) AddBinary(b []byte) int64 {
 

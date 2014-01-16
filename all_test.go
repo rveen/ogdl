@@ -10,34 +10,34 @@ import (
 // Path
 
 func TestPath(t *testing.T) {
-    p := NewPath("a[**].c")
-    println(p.Text())
+	p := NewPath("a[**].c")
+	println(p.Text())
 }
 
 // Binary parser
 
 func TestBinParser(t *testing.T) {
-    
-    b := newVarInt(0x3fff)
-    p := NewBytesBinParser(b)
-    i := p.varInt()
-    if i != 0x3fff && len(b)!=2 {
-        t.Error()
-    }
-    
-    b = newVarInt(0x4000)
-    p = NewBytesBinParser(b)
-    i = p.varInt()
-    if i != 0x4000 && len(b)!=3 {
-        t.Error()
-    }
-    
-    b = newVarInt(127)
-    p = NewBytesBinParser(b)
-    i = p.varInt()
-    if i != 127 && len(b)!=1 {
-        t.Error()
-    }
+
+	b := newVarInt(0x3fff)
+	p := NewBytesBinParser(b)
+	i := p.varInt()
+	if i != 0x3fff && len(b) != 2 {
+		t.Error()
+	}
+
+	b = newVarInt(0x4000)
+	p = NewBytesBinParser(b)
+	i = p.varInt()
+	if i != 0x4000 && len(b) != 3 {
+		t.Error()
+	}
+
+	b = newVarInt(127)
+	p = NewBytesBinParser(b)
+	i = p.varInt()
+	if i != 127 && len(b) != 1 {
+		t.Error()
+	}
 }
 
 // Parser
@@ -72,7 +72,7 @@ func TestParser(t *testing.T) {
 
 	for i := 0; i < len(text); i++ {
 		p := NewStringParser(text[i])
-		p.pOgdl()
+		p.Ogdl()
 		//g := p.Graph()
 		//print(g.String())
 	}
@@ -118,78 +118,78 @@ func TestUnread(t *testing.T) {
 
 // Character classes. Samples.
 
-func TestChars (t *testing.T) {
-    if ! IsSpaceChar(' ') {
-        t.Error("Error in character class");
-    }
+func TestChars(t *testing.T) {
+	if !IsSpaceChar(' ') {
+		t.Error("Error in character class")
+	}
 
-    if ! IsSpaceChar('\t') {
-        t.Error("Error in character class");
-    }
-    
-    if IsSpaceChar('a') {
-        t.Error("Error in character class");
-    }
-    
-    if IsTextChar('(') {
-        t.Error("Error in character class");
-    }
-    
-    if IsTextChar('\t') {
-        t.Error("Error in character class");
-    }
-    
-    if ! IsTextChar('_') {
-        t.Error("Error in character class");
-    }
-    
-    if ! IsDigit('1') {
-        t.Error("Error in character class");
-    }
-    
-    if IsDigit('x') {
-        t.Error("Error in character class");
-    }
-    
-    if IsDigit(-1) {
-        t.Error("Error in character class");
-    }
-    
-    if IsLetter('1') {
-        t.Error("Error in character class");
-    }
-    
-    if IsLetter(-1) {
-        t.Error("Error in character class");
-    }
-    
-    if ! IsEndChar(0) {
-        t.Error("Error in character class");
-    }
-    
-    if IsEndChar('\t') {
-        t.Error("Error in character class");
-    }
-    
-    if IsOperatorChar(-1) {
-        t.Error("Error in character class");
-    }
-    
-    if ! IsOperatorChar('>') {
-        t.Error("Error in character class");
-    }
-    
-    if IsTemplateTextChar('$') {
-        t.Error("Error in character class");
-    }
-    
-    if ! IsTemplateTextChar(' ') {
-        t.Error("Error in character class");
-    }
-    
-    if IsTokenChar('$') {
-        t.Error("Error in character class");
-    }
+	if !IsSpaceChar('\t') {
+		t.Error("Error in character class")
+	}
+
+	if IsSpaceChar('a') {
+		t.Error("Error in character class")
+	}
+
+	if IsTextChar('(') {
+		t.Error("Error in character class")
+	}
+
+	if IsTextChar('\t') {
+		t.Error("Error in character class")
+	}
+
+	if !IsTextChar('_') {
+		t.Error("Error in character class")
+	}
+
+	if !IsDigit('1') {
+		t.Error("Error in character class")
+	}
+
+	if IsDigit('x') {
+		t.Error("Error in character class")
+	}
+
+	if IsDigit(-1) {
+		t.Error("Error in character class")
+	}
+
+	if IsLetter('1') {
+		t.Error("Error in character class")
+	}
+
+	if IsLetter(-1) {
+		t.Error("Error in character class")
+	}
+
+	if !IsEndChar(0) {
+		t.Error("Error in character class")
+	}
+
+	if IsEndChar('\t') {
+		t.Error("Error in character class")
+	}
+
+	if IsOperatorChar(-1) {
+		t.Error("Error in character class")
+	}
+
+	if !IsOperatorChar('>') {
+		t.Error("Error in character class")
+	}
+
+	if IsTemplateTextChar('$') {
+		t.Error("Error in character class")
+	}
+
+	if !IsTemplateTextChar(' ') {
+		t.Error("Error in character class")
+	}
+
+	if IsTokenChar('$') {
+		t.Error("Error in character class")
+	}
 }
 
 // Get returns Graph !
@@ -382,7 +382,8 @@ func TestExpression_op(t *testing.T) {
 
 	p := NewStringParser("+=a")
 
-	println("op: ", p.Operator())
+	s, _ := p.Operator()
+	println("op: ", s)
 
 	e := NewExpression("a=1-2+3")
 
@@ -664,15 +665,15 @@ func TestGraphNumber(t *testing.T) {
 }
 
 func TestIsInteger(t *testing.T) {
-    ss := [...]string{ "-1", "2", "9.1", " 14",  " - 1", " -1 ", "a", "3a", "" }
-    rr := [...]bool  { true, true,false, true,   false,  true,  false,false, false }
-    
-    for i,s := range ss {
-        b := IsInteger(s)
-        if b!=rr[i] {
-            t.Error("IsInteger() failed")
-        }
-    }
+	ss := [...]string{"-1", "2", "9.1", " 14", " - 1", " -1 ", "a", "3a", ""}
+	rr := [...]bool{true, true, false, true, false, true, false, false, false}
+
+	for i, s := range ss {
+		b := IsInteger(s)
+		if b != rr[i] {
+			t.Error("IsInteger() failed")
+		}
+	}
 }
 
 // interface conversion to native types
@@ -774,13 +775,34 @@ func TestFunction1(ts *testing.T) {
 	println(string(s))
 }
 
-// Examples
+// -----------------------------
+// EXAMPLES
+// -----------------------------
+
+// Schema
+
+func ExampleGraph_Check() {
+
+	sch := ParseString("a !int, b !string, c !float, d !bool")
+	g := ParseString("a 1, b s, c 1.0, d true")
+
+	b, mess := sch.Check(g)
+	fmt.Println(b, mess)
+	// Output:
+	// true
+}
+
+// Eval, expressions, templates
 
 func ExampleGraph_Eval() {
-    g := NewGraph("a").Add("4")
-    e := NewExpression("a+3")
-    println(e.Text())
-    fmt.Printf("%v",g.Eval(e))
-    // Output:
-    // 7
+	g := NilGraph()
+	g.Add("a").Add(4)
+	g.Add("b").Add("4")
+	e := NewExpression("a+3")
+	e2 := NewExpression("b+3")
+	fmt.Println(g.Eval(e))
+	fmt.Println(g.Eval(e2))
+	// Output:
+	// 7
+	// 43
 }

@@ -6,6 +6,7 @@ package ogdl
 
 import (
 	"bytes"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -37,8 +38,7 @@ func (g *Graph) IsNil() bool {
 	return false
 }
 
-// Len returns the number of subnodes (outgoing edges) of this node.
-// = out degree
+// Len returns the number of subnodes (outgoing edges, out degree) of this node.
 func (g *Graph) Len() int {
 	if g == nil {
 		return -1
@@ -46,10 +46,15 @@ func (g *Graph) Len() int {
 	return len(g.Out)
 }
 
+// Type returns the name of the native type contained in the current node.
+func (g *Graph) Type() string {
+	return reflect.TypeOf(g.This).String()
+}
+
 // Depth returns the depth of the graph if it is a tree, or -1 if it has
 // cycles.
 //
-// TODO: Cycles are inferred if level>100, but nodes traversed are not 
+// TODO: Cycles are inferred if level>100, but nodes traversed are not
 // remembered (they should if cycles need to be detected).
 func (g *Graph) Depth() int {
 	if g.Len() == 0 {
@@ -72,7 +77,7 @@ func (g *Graph) Depth() int {
 
 // Add adds a subnode to the current node.
 //
-// An eventual nil root will not be added (it will be bypassed).
+// An eventual nil root will not be bypassed.
 func (g *Graph) Add(n interface{}) *Graph {
 	if node, ok := n.(*Graph); ok {
 		if node.IsNil() {
@@ -104,12 +109,12 @@ func (g *Graph) Copy(c *Graph) {
 	}
 }
 
-// Node returns the first subnode with the specified name.
-// Attention: converts values to string first
-func (g *Graph) Node(n interface{}) *Graph {
+// Node returns the first subnode whose string value is equal to the given string.
+// It returns nil if not found.
+func (g *Graph) Node(s string) *Graph {
 
 	for _, node := range g.Out {
-		if _string(n) == node.String() {
+		if s == node.String() {
 			return node
 		}
 	}
@@ -117,7 +122,7 @@ func (g *Graph) Node(n interface{}) *Graph {
 	return nil
 }
 
-// GetAt returns a subnode by index.
+// GetAt returns a subnode by index, or nil if the index is out of range.
 func (g *Graph) GetAt(i int) *Graph {
 	if i >= len(g.Out) || i < 0 {
 		return nil
@@ -214,9 +219,9 @@ func (g *Graph) get(path *Graph) *Graph {
 				}
 
 			case 'x':
-				var ok bool
-				node, ok = node.GetSimilar(elem.String())
-				if !ok {
+				var err error
+				node, err = node.GetSimilar(elem.String())
+				if err != nil {
 					return nil
 				}
 			default:
@@ -269,7 +274,6 @@ func (g *Graph) DeleteAt(i int) {
 // Set sets the first occurrence of the given path to the value given.
 //
 // TODO: Support indexes
-//
 func (g *Graph) Set(s string, val interface{}) *Graph {
 	if g == nil {
 		return nil
@@ -319,7 +323,7 @@ func (g *Graph) set(path *Graph, val interface{}) *Graph {
 
 // Text is the OGDL text emitter. It converts a Graph into OGDL text.
 //
-// Strings need to be quoted if they contain spaces, newlines or special
+// Strings are quoted if they contain spaces, newlines or special
 // characters. Null elements are not printed, and act as transparent nodes.
 //
 // BUG():Handle comments correctly.
@@ -419,7 +423,7 @@ func (g *Graph) _text(n int, buffer *bytes.Buffer) {
 	}
 }
 
-// Substitute traverses the graph and subtitutes all nodes with content 
+// Substitute traverses the graph substituting all nodes with content
 // equal to s by v.
 func (g *Graph) Substitute(s string, v interface{}) {
 	for _, n := range g.Out {

@@ -6,7 +6,7 @@ package ogdl
 
 // NewExpression parses an expression in text format (given in the string) to a Graph,
 // in the form of a suitable syntax tree.
-// 
+//
 //     expression := expr1 (op2 expr1)*
 //     expr1 := path | constant | op1 path | op1 constant | '(' expr ')' | op1 '(' expr ')'
 //     constant ::= quoted | number
@@ -65,7 +65,7 @@ func (g *Graph) _ast() {
 	}
 }
 
-// Precedence is same as in Go, except for the missing operators (| << >> & ^ &^) 
+// Precedence is same as in Go, except for the missing operators (| << >> & ^ &^)
 //
 // Assignment operators are given the lowest precedence.
 func precedence(s string) int {

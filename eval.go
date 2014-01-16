@@ -4,15 +4,15 @@
 
 package ogdl
 
-import "fmt"
-
 // Eval takes a parsed expression and evaluates it
 // in the context of the current graph.
 func (g *Graph) Eval(e *Graph) interface{} {
 
-	switch (e.String()) {
-	    case TYPE_PATH: return g.EvalPath(e)
-	    case TYPE_EXPRESSION: return g.EvalExpression(e)
+	switch e.String() {
+	case TYPE_PATH:
+		return g.EvalPath(e)
+	case TYPE_EXPRESSION:
+		return g.EvalExpression(e)
 	}
 
 	if e.Len() != 0 {
@@ -121,7 +121,6 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 
 	return node
 }
-
 
 //
 // g can have native types (other things than strings), but
@@ -244,7 +243,7 @@ func (g *Graph) evalBinary(p *Graph) interface{} {
 // int* | float* | string
 // first element determines type
 func compare(v1, v2 interface{}, op int) bool {
-	fmt.Printf("compare [%v] [%v]\n", v1, v2)
+	//	fmt.Printf("compare [%v] [%v]\n", v1, v2)
 	i1, ok := _int64(v1)
 
 	if ok {
@@ -355,18 +354,18 @@ func (g *Graph) assign(p *Graph, v interface{}, op int) interface{} {
 
 // calc: int64 | float64 | string
 func calc(v1, v2 interface{}, op int) interface{} {
-
-	i1, ok := v1.(int64)
-	i2, ok2 := v2.(int64)
+	//fmt.Printf("calc: %v %v %s %s\n",v1,v2, reflect.TypeOf(v1).String(),reflect.TypeOf(v2).String() )
+	i1, ok := _int64(v1)
+	i2, ok2 := _int64(v2)
 
 	var ok3, ok4 bool
 	var i3, i4 float64
 
 	if !ok {
-		i3, ok3 = v1.(float64)
+		i3, ok3 = _float64(v1)
 	}
 	if !ok2 {
-		i4, ok4 = v2.(float64)
+		i4, ok4 = _float64(v2)
 	}
 
 	if ok && ok2 {

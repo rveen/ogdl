@@ -54,6 +54,16 @@ func FunctionAdd(s string, f func(*Graph, *Graph, int) []byte) {
 	functions[s] = f
 }
 
+// Function enables calling Go functions from templates. Complex paths in templates
+// are translated into Go functions if !type definitions are present.
+//
+// Since Go is a compiled language, dynamic loading of functions is not possible.
+// A table has to be build that maps names to types. Those types must then
+// implement the functions of interest. This table is the `factory` array in
+// functions.go, that maps strings to 'constructors'. When a function is called,
+// the corresponding type is first created and initialized, and only then the
+// function is called. The type instance is reused in subsquent calls to
+// functions pertaning to that type.
 func (g *Graph) Function(p *Graph, ix int, context *Graph) (interface{}, error) {
 
 	n := g.Node("!type")

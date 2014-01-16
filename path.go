@@ -4,107 +4,12 @@
 
 package ogdl
 
-// NewPath is used to parse an OGDL path, given as an Unicode string, into a Graph object.
+// NewPath takes an Unicode string representing and OGDL path, into a Graph object.
 //
-// Example:
-//
-//   a.b(c, d+1).e[1+r].b{5}
+// It also parses extended paths, as those used in templates, which may have
+// argument lists.
 func NewPath(s string) *Graph {
 	parse := NewStringParser(s)
 	parse.Path()
 	return parse.GraphTop(TYPE_PATH)
-}
-
-// A path is a variable in path format, and must begin with a letter.
-//
-//     path ::= element ('.' element)*
-//
-//     element ::= token | integer | quoted | group | index | selector
-//
-//     (Dot optional before Group, Index, Selector)
-//
-//     group := '(' Expression [[,] Expression]* ')'
-//     index := '[' Expression ']'
-//     selector := '{' Expression '}'
-func (p *Parser) Path() bool {
-
-	c := p.Read()
-	p.Unread()
-
-	if !IsLetter(c) {
-		return false
-	}
-
-	var b []byte
-	var begin = true
-	var anything = false
-	var ok bool
-	var err error
-
-	for {
-
-		// Expect: token | quoted | index | group | selector | dot,
-		// or else we abort.
-
-		// A dot is requiered before a token or quoted, except at
-		// the beginning
-
-		if !p.NextByteIs('.') && !begin {
-			// If not [, {, (, break
-
-			c = p.Read()
-			p.Unread()
-
-			if c != '[' && c != '(' && c != '{' {
-				break
-			}
-		}
-
-		begin = false
-
-		b = p.Quoted()
-		if b != nil {
-			p.ev.AddBytes(b)
-			anything = true
-			continue
-		}
-
-		b = p.Number()
-		if b != nil {
-			p.ev.AddBytes(b)
-			anything = true
-			continue
-		}
-
-		b = p.Token()
-		if b != nil {
-			p.ev.AddBytes(b)
-			anything = true
-			continue
-		}
-
-		if p.Index() {
-			anything = true
-			continue
-		}
-
-		if p.Selector() {
-			anything = true
-			continue
-		}
-
-		ok, err = p.Args()
-		if ok {
-			anything = true
-			continue
-		} else {
-			if err != nil {
-				return false // XXX
-			}
-		}
-
-		break
-	}
-
-	return anything
 }

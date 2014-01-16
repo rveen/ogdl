@@ -9,6 +9,253 @@ import (
 	"errors"
 )
 
+// Ogdl is the main function for parsing OGDL text.
+//
+// An OGDL stream is a sequence of lines (a block
+// of text or a quoted string can span multiple lines
+// but is still parsed by Line())
+//
+//     Graph ::= Line* End
+func (p *Parser) Ogdl() error {
+
+	for {
+		more, err := p.Line()
+		if err != nil {
+			return err
+		}
+		if !more {
+			break
+		}
+	}
+	p.End()
+
+	return nil
+}
+
+/* Line processes an OGDL line or a multiline scalar.
+
+ - A Line is composed of scalars and groups.
+ - A Scalar is a Quoted or a String.
+ - A Group is a sequence of Scalars enclosed in parenthesis
+ - Scalars can be separated by commas or by space
+ - The last element of a line can be a Comment, or a Block
+
+The indentation of the line and the Scalar sequences and Groups on it define
+the tree structure characteristic of OGDL level 1.
+
+    Line ::= Space(n) Sequence? ((Comment? Break)|Block)?
+
+Anything other than one Scalar before a Block should be an syntax error.
+Anything after a closing ')' that is not a comment is a syntax error, thus
+only one Group per line is allowed. That is because it would be difficult to
+define the origin of the edges pointing to what comes after a Group.
+
+Indentation rules:
+
+   a           -> level 0
+     b         -> level 1
+     c         -> level 1
+       d       -> level 2
+      e        -> level 2
+    f          -> level 1
+
+*/
+func (p *Parser) Line() (bool, error) {
+
+	sp, n := p.Space()
+
+	// if a line begins with non-uniform space, throw a syntax error.
+	if sp && n == 0 {
+		errors.New("Non-uniform space")
+	}
+
+	if p.End() {
+		return false, nil
+	}
+
+	// We should not have a Comma here, but lets ignore it.
+	if p.NextByteIs(',') {
+		p.Space() // Eat eventual space characters
+	}
+
+	/* indentation TO level
+
+	   The number of spaces (indentation) for each level is stored in
+	   p.ind[level]
+	*/
+
+	l := 0
+
+	if n != 0 {
+		l = 1
+		for {
+			if p.ind[l] == 0 {
+				break
+			}
+			if p.ind[l] >= n {
+				break
+			}
+			l++
+		}
+	}
+
+	p.ind[l] = n
+	p.ev.SetLevel(l)
+
+	// Now we can expect a sequence of scalars, groups, and finally
+	// a block or comment.
+
+	for {
+
+		gr, err := p.Group()
+
+		if gr {
+
+		} else if err != nil {
+			return false, err
+		} else if p.Comment() {
+			p.Space()
+			p.Break()
+			break
+		} else {
+			s, ok := p.Block()
+
+			if ok {
+				p.ev.Add(s)
+				p.Break()
+				break
+			} else {
+				b, ok := p.Scalar()
+				if ok {
+					p.ev.Add(b)
+				} else {
+					p.Break()
+					break
+				}
+			}
+		}
+
+		p.Space()
+
+		co := p.NextByteIs(',')
+
+		if co {
+			p.Space()
+			p.ev.SetLevel(l)
+		} else {
+			p.ev.Inc()
+		}
+
+	}
+
+	// Restore the level to that at the beginning of the line.
+	p.ev.SetLevel(l)
+
+	return true, nil
+}
+
+// Paths parses an OGDL path, or an extended path as used in templates.
+//
+//     path ::= element ('.' element)*
+//
+//     element ::= token | integer | quoted | group | index | selector
+//
+//     (Dot optional before Group, Index, Selector)
+//
+//     group := '(' Expression [[,] Expression]* ')'
+//     index := '[' Expression ']'
+//     selector := '{' Expression '}'
+//
+// The OGDL parser doesn't need to know about Unicode. The character
+// classification relies on values < 127, thus in the ASCII range,
+// which is also part of Unicode.
+//
+// Note: On the other hand it would be stupid not to recognize for example
+// Unicode quotation marks if we know that we have UTF-8. But when do we
+// know for sure?
+func (p *Parser) Path() bool {
+
+	c := p.Read()
+	p.Unread()
+
+	if !IsLetter(c) {
+		return false
+	}
+
+	var b string
+	var begin = true
+	var anything = false
+	var ok bool
+	var err error
+
+	for {
+
+		// Expect: token | quoted | index | group | selector | dot,
+		// or else we abort.
+
+		// A dot is requiered before a token or quoted, except at
+		// the beginning
+
+		if !p.NextByteIs('.') && !begin {
+			// If not [, {, (, break
+
+			c = p.Read()
+			p.Unread()
+
+			if c != '[' && c != '(' && c != '{' {
+				break
+			}
+		}
+
+		begin = false
+
+		b, ok = p.Quoted()
+		if ok {
+			p.ev.Add(b)
+			anything = true
+			continue
+		}
+
+		b, ok = p.Number()
+		if ok {
+			p.ev.Add(b)
+			anything = true
+			continue
+		}
+
+		b, ok = p.Token()
+		if ok {
+			p.ev.Add(b)
+			anything = true
+			continue
+		}
+
+		if p.Index() {
+			anything = true
+			continue
+		}
+
+		if p.Selector() {
+			anything = true
+			continue
+		}
+
+		ok, err = p.Args()
+		if ok {
+			anything = true
+			continue
+		} else {
+			if err != nil {
+				return false // XXX
+			}
+		}
+
+		break
+	}
+
+	return anything
+}
+
 /* sequence ::= (Scalar|Group) (Space? (Comma? Space?) (Scalar|Group))*
 
    [!] with the requirement that after a group a comma is required if there are more elements.
@@ -38,13 +285,12 @@ func (p *Parser) Sequence() (bool, bool, error) {
 		} else if err != nil {
 			return false, false, err
 		} else {
-			b := p.Scalar()
-
-			if b == nil {
+			b, ok := p.Scalar()
+			if !ok {
 				return n > 0, wasGroup, nil
 			}
 			wasGroup = false
-			p.ev.AddBytes(b)
+			p.ev.Add(b)
 		}
 
 		n++
@@ -64,10 +310,7 @@ func (p *Parser) Sequence() (bool, bool, error) {
 	}
 }
 
-/* Group
-
-   Group ::= '(' Space? Sequence?  Space? ')'
-*/
+//   Group ::= '(' Space? Sequence?  Space? ')'
 func (p *Parser) Group() (bool, error) {
 
 	if !p.NextByteIs('(') {
@@ -92,11 +335,10 @@ func (p *Parser) Group() (bool, error) {
 }
 
 // scalar ::= quoted | string
-//
-func (p *Parser) Scalar() []byte {
-	b := p.Quoted()
-	if b != nil {
-		return b
+func (p *Parser) Scalar() (string, bool) {
+	b, ok := p.Quoted()
+	if ok {
+		return b, true
 	}
 	return p.String()
 }
@@ -135,13 +377,17 @@ func (p *Parser) Comment() bool {
 // NOTE: '#' is allowed inside a string. For '#' to start
 // a comment it must be preceeded by break or space, or come
 // after a closing ')'.
-func (p *Parser) String() []byte {
+//
+// TOTHINK: Many productions return a string and not []byte, which could be
+// more efficient, but has no type information: []byte can be a raw binary or
+// a string.
+func (p *Parser) String() (string, bool) {
 
 	c := p.Read()
 
 	if !IsTextChar(c) || c == '#' {
 		p.Unread()
-		return nil
+		return "", false
 	}
 
 	buf := make([]byte, 1, 16)
@@ -156,22 +402,16 @@ func (p *Parser) String() []byte {
 		buf = append(buf, byte(c))
 	}
 
-	return buf
+	return string(buf), true
 }
 
-// Quoted string.
-//
-// a "quoted string"
-//   "text with
-//   some
-// newlines"
-//
-func (p *Parser) Quoted() []byte {
+// Quoted string. Can have newlines in it.
+func (p *Parser) Quoted() (string, bool) {
 
 	cs := p.Read()
 	if cs != '"' && cs != '\'' {
 		p.Unread()
-		return nil
+		return "", false
 	}
 
 	buf := make([]byte, 0, 16)
@@ -204,26 +444,25 @@ func (p *Parser) Quoted() []byte {
 	}
 
 	// May have zero length
-	return buf
+	return string(buf), true
 }
 
 // Block ::= '\\' NL LINES_OF_TEXT
-//
-func (p *Parser) Block() string {
+func (p *Parser) Block() (string, bool) {
 
 	var c int
 
 	c = p.Read()
 	if c != '\\' {
 		p.Unread()
-		return ""
+		return "", false
 	}
 
 	c = p.Read()
 	if c != 10 && c != 13 {
 		p.Unread()
 		p.Unread()
-		return ""
+		return "", false
 	}
 
 	// read lines until indentation is >= to upper level.
@@ -275,11 +514,10 @@ func (p *Parser) Block() string {
 		}
 	}
 
-	return buffer.String()
+	return buffer.String(), true
 }
 
 // Break is NL, CR or CR+NL
-//
 func (p *Parser) Break() bool {
 	c := p.Read()
 	if c == 13 {
@@ -299,7 +537,6 @@ func (p *Parser) Break() bool {
 // Space is (0x20|0x09)+. It returns a boolean indicating
 // if space has been found, and an integer indicating
 // how many spaces, iff uniform (either all 0x20 or 0x09)
-//
 func (p *Parser) Space() (bool, int) {
 
 	// The Block() production eats to many spaces trying to
@@ -317,7 +554,8 @@ func (p *Parser) Space() (bool, int) {
 	}
 
 	n := 1
-	/* We keep 'c' to tell us what spaces will count as uniform. */
+
+	// We keep 'c' to tell us what spaces will count as uniform.
 
 	for {
 		cs := p.Read()
@@ -370,13 +608,13 @@ func (p *Parser) Newline() bool {
 //  1
 //  143lasd034
 //
-func (p *Parser) Token() []byte {
+func (p *Parser) Token() (string, bool) {
 
 	c := p.Read()
 
 	if !IsTokenChar(c) {
 		p.Unread()
-		return nil
+		return "", false
 	}
 
 	buf := make([]byte, 1, 16)
@@ -391,23 +629,23 @@ func (p *Parser) Token() []byte {
 		buf = append(buf, byte(c))
 	}
 
-	return buf
+	return string(buf), true
 }
 
-func (p *Parser) Number() []byte {
+func (p *Parser) Number() (string, bool) {
 
 	c := p.Read()
 
 	if !IsDigit(c) {
 		if c != '-' {
 			p.Unread()
-			return nil
+			return "", false
 		}
 		d := p.Read()
 		if !IsDigit(d) {
 			p.Unread()
 			p.Unread()
-			return nil
+			return "", false
 		}
 		p.Unread()
 	}
@@ -424,16 +662,16 @@ func (p *Parser) Number() []byte {
 		buf = append(buf, byte(c))
 	}
 
-	return buf
+	return string(buf), true
 }
 
-func (p *Parser) Operator() []byte {
+func (p *Parser) Operator() (string, bool) {
 
 	c := p.Read()
 
 	if !IsOperatorChar(c) {
 		p.Unread()
-		return nil
+		return "", false
 	}
 
 	buf := make([]byte, 1, 16)
@@ -448,7 +686,7 @@ func (p *Parser) Operator() []byte {
 		buf = append(buf, byte(c))
 	}
 
-	return buf
+	return string(buf), true
 }
 
 // expression := expr1 (op2 expr1)*
@@ -460,9 +698,9 @@ func (p *Parser) Expression() bool {
 
 	for {
 		p.Space()
-		b := p.Operator()
-		if b != nil {
-			p.ev.AddBytes(b)
+		b, ok := p.Operator()
+		if ok {
+			p.ev.Add(b)
 		} else {
 			return true
 		}
@@ -489,21 +727,21 @@ func (p *Parser) UnaryExpression() bool {
 		return true
 	}
 
-	b := p.Number()
-	if b != nil {
-		p.ev.AddBytes(b)
+	b, ok := p.Number()
+	if ok {
+		p.ev.Add(b)
 		return true
 	}
 
-	b = p.Quoted()
-	if b != nil {
-		p.ev.AddBytes(b)
+	b, ok = p.Quoted()
+	if ok {
+		p.ev.Add(b)
 		return true
 	}
 
-	b = p.Operator()
-	if b != nil {
-		p.ev.AddBytes(b)
+	b, ok = p.Operator()
+	if ok {
+		p.ev.Add(b)
 	}
 
 	if p.NextByteIs('(') {
@@ -521,6 +759,7 @@ func (p *Parser) UnaryExpression() bool {
 	return p.Path()
 }
 
+// Text parses text in a template.
 func (p *Parser) Text() bool {
 
 	c := p.Read()
@@ -547,6 +786,7 @@ func (p *Parser) Text() bool {
 	return true
 }
 
+// Variable parses variables in a template. They begin with $.
 func (p *Parser) Variable() bool {
 
 	c := p.Read()
@@ -588,7 +828,6 @@ func (p *Parser) Variable() bool {
 }
 
 // index ::= '[' expression ']'
-//
 func (p *Parser) Index() bool {
 
 	if !p.NextByteIs('[') {
@@ -614,7 +853,6 @@ func (p *Parser) Index() bool {
 }
 
 // selector ::= '{' expression? '}'
-//
 func (p *Parser) Selector() bool {
 
 	if !p.NextByteIs('{') {
@@ -640,7 +878,6 @@ func (p *Parser) Selector() bool {
 }
 
 // args ::= '(' space? sequence? space? ')'
-//
 func (p *Parser) Args() (bool, error) {
 
 	if !p.NextByteIs('(') {
@@ -708,20 +945,17 @@ func (p *Parser) TokenList() {
 			p.Space()
 		}
 
-		s := p.Token()
-		if len(s) == 0 {
+		s, ok := p.Token()
+		if !ok {
 			return
 		}
 
-		p.ev.AddBytes(s)
+		p.ev.Add(s)
 		comma = true
 	}
 }
 
 // Template ::= (Text | Variable)*
-//
-// - First pass produces a list of text and variables
-// - Second pass structures $for and $if
 func (p *Parser) Template() {
 	for {
 		if !p.Text() && !p.Variable() {

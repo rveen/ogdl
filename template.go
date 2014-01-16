@@ -9,7 +9,7 @@ import (
 )
 
 // NewTemplate parses a text template given as a string and converts it to a Graph.
-// Templates have fixed and variable parts. Variables all begin with '$'. 
+// Templates have fixed and variable parts. Variables all begin with '$'.
 //
 // Syntax definition:
 //
@@ -36,7 +36,7 @@ func NewTemplate(s string) *Graph {
 }
 
 // Process processes the parsed template, returning the resulting text in a byte array.
-// The variable parts are resolved out of the Graph given. 
+// The variable parts are resolved out of the Graph given.
 func (t *Graph) Process(c *Graph) []byte {
 
 	buffer := &bytes.Buffer{}

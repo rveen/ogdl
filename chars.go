@@ -18,7 +18,7 @@ func IsTextChar(c int) bool {
 	return false
 }
 
-// IsEndChar returns true for all integers < 32 that are not newline, 
+// IsEndChar returns true for all integers < 32 that are not newline,
 // carriage return or tab.
 func IsEndChar(c int) bool {
 	if c < 32 && c != '\t' && c != '\n' && c != '\r' {
@@ -29,7 +29,7 @@ func IsEndChar(c int) bool {
 
 // IsSpaceChar returns true for space and tab
 func IsSpaceChar(c int) bool {
-	if c == 32 || c==9 {
+	if c == 32 || c == 9 {
 		return true
 	}
 	return false
@@ -43,7 +43,7 @@ func IsTemplateTextChar(c int) bool {
 	return false
 }
 
-// IsOperatorChar returns true for all operator characters used in OGDL 
+// IsOperatorChar returns true for all operator characters used in OGDL
 // expressions (those parsed by NewExpression).
 func IsOperatorChar(c int) bool {
 	if c < 0 {

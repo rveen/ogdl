@@ -5,20 +5,22 @@
 package ogdl
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
 	"strconv"
 )
 
-// GetSimilar returns a Graph with all subnodes
-// found that match the regular expression given.
-//
-func (g *Graph) GetSimilar(re string) (*Graph, bool) {
-	exp, error := regexp.Compile(re)
+// GetSimilar returns a Graph with all subnodes found that match the regular
+// expression given. It only walks through the subnodes of the current Graph.
+// If the regex doesn't compile, an error will be returned. If the result set
+// is empty, both return values are nil (no error is signaled).
+func (g *Graph) GetSimilar(re string) (*Graph, error) {
+	exp, err := regexp.Compile(re)
 
-	if error != nil {
-		return nil, false
+	if err != nil {
+		return nil, err
 	}
 
 	r := NilGraph()
@@ -29,7 +31,7 @@ func (g *Graph) GetSimilar(re string) (*Graph, bool) {
 		}
 	}
 
-	return r, true
+	return r, nil
 }
 
 // Return the node as an int64, if possible.
@@ -52,10 +54,7 @@ func (g *Graph) Value() reflect.Value {
 	return reflect.ValueOf(g.This)
 }
 
-// String returns a string representation of this node.
-//
-// This function is specially used when comparing path elements (which are
-// strings) in Get.
+// String returns a string representation of this node, or an empty string.
 func (g *Graph) String() string {
 	return _string(g.This)
 }
@@ -66,12 +65,12 @@ func (g *Graph) Bytes() []byte {
 }
 
 // Number returns either a float64, int64 or nil
-// In strings and byte arrays, valid digits are ASCII only
-//
 func (g *Graph) Number() interface{} {
 	return number(g.This)
 }
 
+// number tries hard to convert the parameter to an int64 or float64. If it
+// cannot, then it returns nil.
 func number(itf interface{}) interface{} {
 
 	if itf == nil {
@@ -109,30 +108,75 @@ func number(itf interface{}) interface{} {
 }
 
 // GetString returns the result of applying a path to the given Graph.
-func (g *Graph) GetString(path string) (string, bool) {
-
+// The result is returned as a string.
+func (g *Graph) GetString(path string) (string, error) {
 	i := g.Get(path)
-	return _string(i), true
+	if i == nil {
+		return "", errors.New("Not found")
+	}
+	return _string(i), nil
 }
 
-func (g *Graph) GetBytes(s string) ([]byte, bool) {
-
-	i := g.Get(s)
-	return _bytes(i), true
+// GetBytes returns the result of applying a path to the given Graph.
+// The result is returned as a byte slice.
+func (g *Graph) GetBytes(path string) ([]byte, error) {
+	i := g.Get(path)
+	if i == nil {
+		return nil, errors.New("Not found")
+	}
+	return _bytes(i), nil
 }
 
-func (g *Graph) GetInt64(s string) (int64, bool) {
-	return _int64f(g.Get(s))
+// GetInt64 returns the result of applying a path to the given Graph.
+// The result is returned as an int64. If the path result cannot be converted
+// to an integer, then an error is returned.
+func (g *Graph) GetInt64(path string) (int64, error) {
+	i := g.Get(path)
+	if i == nil {
+		return 0, errors.New("Not found")
+	}
+
+	j, ok := _int64f(i)
+	if !ok {
+		return 0, errors.New("Not an integer")
+	}
+	return j, nil
 }
 
-func (g *Graph) GetFloat64(s string) (float64, bool) {
-	return _float64f(g.Get(s))
+// GetFloat64 returns the result of applying a path to the given Graph.
+// The result is returned as a float64. If the path result cannot be converted
+// to a float, then an error is returned.
+func (g *Graph) GetFloat64(path string) (float64, error) {
+	i := g.Get(path)
+	if i == nil {
+		return 0, errors.New("Not found")
+	}
+
+	j, ok := _float64f(i)
+	if !ok {
+		return 0, errors.New("Not a number")
+	}
+	return j, nil
 }
 
-func (g *Graph) GetBool(s string) (bool, bool) {
-	return _boolf(g.Get(s))
+// GetBool returns the result of applying a path to the given Graph.
+// The result is returned as a bool. If the path result cannot be converted
+// to a boolean, then an error is returned.
+func (g *Graph) GetBool(path string) (bool, error) {
+	i := g.Get(path)
+	if i == nil {
+		return false, errors.New("Not found")
+	}
+
+	j, ok := _boolf(i)
+	if !ok {
+		return false, errors.New("Not a boolean")
+	}
+	return j, nil
 }
 
+// _float64 converts an interface{} to a float64 iff its native type is
+// a float, integer or a string representing a number.
 func _float64f(v interface{}) (float64, bool) {
 
 	f, ok := _float64(v)
@@ -228,6 +272,7 @@ func _int64(i interface{}) (int64, bool) {
 	return 0, false
 }
 
+// _boolf converts an interface{} to a boolean if possible.
 func _boolf(i interface{}) (bool, bool) {
 
 	if i2, ok := i.(*Graph); ok {
@@ -261,7 +306,19 @@ func _boolf(i interface{}) (bool, bool) {
 }
 
 func _string(i interface{}) string {
-	return string(_bytes(i))
+	if i == nil {
+		return ""
+	}
+	if v, ok := i.([]byte); ok {
+		return string(v)
+	}
+	if v, ok := i.(string); ok {
+		return v
+	}
+	if v, ok := i.(*Graph); ok {
+		return v.String()
+	}
+	return fmt.Sprint(i)
 }
 
 func _bytes(i interface{}) []byte {
@@ -280,37 +337,39 @@ func _bytes(i interface{}) []byte {
 	return []byte(fmt.Sprint(i))
 }
 
-// Scalar reduces the number of types following these rules:
+// Scalar returns the current node content, reducing the number of types
+// following these rules:
 //
-// uint* -> int64
-// int*  -> int64
-// float* -> float64
-// byte -> int64
-// rune -> int64
-// bool -> bool
-// string, []byte: if it represents an int or float or bool,
-//     convert to int64, float64 or bool
+//     uint* -> int64
+//     int*  -> int64
+//     float* -> float64
+//     byte -> int64
+//     rune -> int64
+//     bool -> bool
+//     string, []byte: if it represents an int or float or bool,
+//       convert to int64, float64 or bool
+//
 // Any other type is returned as is.
 //
-// TODO: Evaluate if type reduction is really necessary. For now it simplifies
-// the eval functions.
 func (g *Graph) Scalar() interface{} {
-	return scalar(g.This)
-}
 
-func scalar(itf interface{}) interface{} {
-	n := number(itf)
+	// If it ca be parsed as a number, return it.
+	n := number(g.This)
 	if n != nil {
 		return n
 	}
-	b, ok := _boolf(itf)
+
+	// If it can be parsed as a bool, return it.
+	b, ok := _boolf(g.This)
 	if ok {
 		return b
 	}
-	return itf
+
+	// Else return as is.
+	return g.This
 }
 
-// XXX used in eval.go
+// isNumber is only used in eval.go
 func isNumber(s string) bool {
 	if len(s) == 0 {
 		return false
@@ -321,10 +380,10 @@ func isNumber(s string) bool {
 		}
 	}
 	return true
-} 
+}
 
 // IsInteger returns true for strings containing exclusively digits, with an
-// optional minus sign at the beginning. Starting and trailing spaces are 
+// optional minus sign at the beginning. Starting and trailing spaces are
 // allowed.
 func IsInteger(s string) bool {
 
@@ -335,33 +394,33 @@ func IsInteger(s string) bool {
 	}
 
 	i := 0
-	
+
 	for ; i < l; i++ {
-	    if !IsSpaceChar(int(s[i])) {
-	        break;
-	    }
+		if !IsSpaceChar(int(s[i])) {
+			break
+		}
 	}
 
 	if s[i] == '-' {
 		i++
 	}
 
-    n := 0
+	n := 0
 	for ; i < l; i++ {
 		if !IsDigit(int(s[i])) {
 			break
 		}
 		n++
 	}
-	
-	if n==0 {
-	    return false
+
+	if n == 0 {
+		return false
 	}
-	
+
 	for ; i < l; i++ {
-	    if !IsSpaceChar(int(s[i])) {
-	        return false
-	    }
+		if !IsSpaceChar(int(s[i])) {
+			return false
+		}
 	}
 
 	return true

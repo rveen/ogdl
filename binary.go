@@ -13,7 +13,7 @@ import (
 
 // BinParser and its methods implement a parser for binary OGDL, as defined in the
 // OGDL Binary specification, v1.0, available at ogdl.org, reproduced below.
-// 
+//
 //     ogdl-binary ::= header ( level node )* 0x00
 //
 //     header ::= 0x01 'G' 0x00
@@ -32,13 +32,13 @@ type BinParser struct {
 	n int
 }
 
-// NewBytesBinParser creates a parser that can convert a binary OGDL byte stream into an 
+// NewBytesBinParser creates a parser that can convert a binary OGDL byte stream into an
 // ogdl.Graph object. To actually parse the stream, the method Parse() has to be invoked.
 func NewBytesBinParser(b []byte) *BinParser {
 	return &BinParser{bufio.NewReader(bytes.NewReader(b)), 0, 0}
 }
 
-// NewFileBinParser creates a parser that can convert a binary OGDL file into an 
+// NewFileBinParser creates a parser that can convert a binary OGDL file into an
 // ogdl.Graph object. To actually parse the stream, the method Parse() has to be invoked.
 func NewFileBinParser(file string) *BinParser {
 
@@ -51,7 +51,7 @@ func NewFileBinParser(file string) *BinParser {
 	return NewBytesBinParser(b)
 }
 
-//NewBinParser creates a parser that can convert a binary OGDL stream into an 
+//NewBinParser creates a parser that can convert a binary OGDL stream into an
 // ogdl.Graph object. To actually parse the stream, the method Parse() has to be invoked.
 func NewBinParser(r io.Reader) *BinParser {
 	return &BinParser{bufio.NewReader(r), 0, 0}
@@ -117,9 +117,9 @@ func (p *BinParser) Parse() *Graph {
 		}
 		// Store the content in the same format as it was sent (string or []byte)
 		if bin {
-		    ev.AddBytesAt(b, lev)
+			ev.AddBytesAt(b, lev)
 		} else {
-		    ev.AddAt(string(b), lev)
+			ev.AddAt(string(b), lev)
 		}
 	}
 	return ev.Graph()
@@ -129,31 +129,31 @@ func (p *BinParser) Parse() *Graph {
 // Only positive integers are accepted.
 func newVarInt(i int) []byte {
 
-    if i < 0 {
-        return nil
-    }
-    
+	if i < 0 {
+		return nil
+	}
+
 	if i < 0x80 {
 		b := make([]byte, 1)
 		b[0] = byte(i)
 		return b
 	}
-	
+
 	if i < 0x4000 {
-	    b := make([]byte, 2)
+		b := make([]byte, 2)
 		b[0] = byte(i>>8 | 0x80)
-		b[1] = byte(i&0xff)
+		b[1] = byte(i & 0xff)
 		return b
-	} 
-	
+	}
+
 	if i < 0x200000 {
-	    b := make([]byte, 3)
+		b := make([]byte, 3)
 		b[0] = byte(i>>16 | 0xc0)
-		b[1] = byte(i>>8 & 0xff)
+		b[1] = byte(i >> 8 & 0xff)
 		b[2] = byte(i & 0xff)
 		return b
 	}
-	
+
 	return nil
 }
 
@@ -174,16 +174,14 @@ func (p *BinParser) header() bool {
 	return true
 }
 
-
-
 // varInt is the parser production that reads a variable length integer from the stream.
 //
-// varInt ::=  
+// varInt ::=
 //   0x00 - 0x7F:      0xxxxxxx
 //   0x00 - 0x3FFF:    10xxxxxx xxxxxxxx
 //   0x00 - 0x1FFFFF:  110xxxxx xxxxxxxx xxxxxxxx
 //   0x00 - 0xFFFFFFF: 1110xxxx xxxxxxxx xxxxxxxx xxxxxxxx
-//    ...      
+//    ...
 func (p *BinParser) varInt() int {
 
 	b0 := p.read()
@@ -194,7 +192,7 @@ func (p *BinParser) varInt() int {
 
 	if b0 < 0xc0 {
 		b1 := p.read()
-		return (b0 & 0x3f)<<8 | b1
+		return (b0&0x3f)<<8 | b1
 	}
 
 	if b0 < 0xe0 {
@@ -227,7 +225,7 @@ func (p *BinParser) varInt() int {
 // This function accepts one boolean parameter that can be set to false if the
 // actual byte content is not needed and we just want to walk through the
 // stream. This functionality is used in log.go.
-func (p *BinParser) line (write bool) (int, bool, []byte) {
+func (p *BinParser) line(write bool) (int, bool, []byte) {
 
 	// Read an integer (the level)
 	level := p.varInt()
@@ -235,37 +233,37 @@ func (p *BinParser) line (write bool) (int, bool, []byte) {
 		return 0, false, nil
 	}
 
-    // create a byte buffer to accumulate the bytes read.
-    buf := bytes.Buffer{}
-    
-    // read first byte of the node content. 
+	// create a byte buffer to accumulate the bytes read.
+	buf := bytes.Buffer{}
+
+	// read first byte of the node content.
 	n := p.read()
-	
+
 	// Binary node if n==1
 	if n == 1 {
 		// Read length, then bytes
 		for {
-		    n = p.varInt();
-		    if n<0 {
-		        break;
-		    }
-		    for ;n!=0; n-- {
-		        c := p.read()
-		        if c<0 {
-		            return level, true, buf.Bytes()
-		        }
-		        if write {
-		            buf.WriteByte(byte(c))
-		        }
-		    }
+			n = p.varInt()
+			if n < 0 {
+				break
+			}
+			for ; n != 0; n-- {
+				c := p.read()
+				if c < 0 {
+					return level, true, buf.Bytes()
+				}
+				if write {
+					buf.WriteByte(byte(c))
+				}
+			}
 		}
 		return level, true, buf.Bytes()
 	}
 
 	// Text node. Read bytes until 0
-	
+
 	if write {
-	    buf.WriteByte(byte(n))
+		buf.WriteByte(byte(n))
 	}
 
 	for {
