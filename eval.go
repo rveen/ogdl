@@ -4,6 +4,8 @@
 
 package ogdl
 
+import "strconv"
+
 // Eval takes a parsed expression and evaluates it
 // in the context of the current graph.
 func (g *Graph) Eval(e *Graph) interface{} {
@@ -34,7 +36,8 @@ func (g *Graph) EvalBool(e *Graph) bool {
 // EvalPath traverses g following a path p. The path needs to be previously converted
 // to a Graph with NewPath().
 //
-// This function is similar to ogdl.Get, but for complex paths.
+// This function is similar to ogdl.Get, but for complexer paths. Code could
+// be shared.
 func (g *Graph) EvalPath(p *Graph) interface{} {
 
 	if p.Len() == 0 {
@@ -44,7 +47,7 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 	// Normalize the context graph, so that the root is
 	// always transparent.
 
-	var node *Graph
+	var node, nodePrev *Graph
 
 	if !g.IsNil() {
 		node = NilGraph()
@@ -58,7 +61,7 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 	for i := 0; i < len(p.Out); i++ {
 		n := p.Out[i]
 
-		// For each path element, look at its type
+		// For each path element, look at its type:
 		// token, index, selector, arglist
 		s := n.String()
 
@@ -76,10 +79,57 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 			if !ok || ix < 0 || int(ix) >= node.Len() {
 				return "[] does not evaluate to a valid integer"
 			}
+			nodePrev = node
 			node = node.GetAt(int(ix))
 
 		case TYPE_SELECTOR:
-			return "{} not supported yet"
+			if nodePrev == nil || nodePrev.Len() == 0 || i < 1 {
+				return nil
+			}
+
+			elemPrev := p.Out[i-1].String()
+			if len(elemPrev) == 0 {
+				return nil
+			}
+
+			r := NilGraph()
+
+			if n.Len() == 0 {
+				// This case is {}, meaning that we must return
+				// all ocurrences of the token just before (elemPrev).
+				// And that means creating a new Graph object.
+
+				r.addEqualNodes(nodePrev, elemPrev, false)
+
+				if r.Len() == 0 {
+					return nil
+				}
+				node = r
+			} else {
+				i, err := strconv.Atoi(n.Out[0].String())
+				if err != nil || i < 0 {
+					return nil
+				}
+
+				// {0} has no effect. We already found it
+				if i > 0 {
+					i++
+					// of all the nodes with name elemPrev, select the ith.
+					for _, nn := range nodePrev.Out {
+						if nn.String() == elemPrev {
+							i--
+							if i == 0 {
+								r.AddNodes(nn)
+								node = r
+								break
+							}
+						}
+					}
+					if i > 0 {
+						return nil
+					}
+				}
+			}
 
 		case "_len":
 			return node.Len()
@@ -90,7 +140,7 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 			itf := g.EvalExpression(n.Out[0])
 			str := _string(itf)
 			if len(str) == 0 {
-				return nil //"(expr) does not evaluate to a string in path: "+p.Text()
+				return nil // expr does not evaluate to a string
 			}
 			s = str
 			fallthrough
@@ -105,6 +155,7 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 
 			iknow = true
 
+			nodePrev = node
 			node = nn
 		}
 	}

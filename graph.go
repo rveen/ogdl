@@ -95,6 +95,35 @@ func (g *Graph) Add(n interface{}) *Graph {
 	return &gg
 }
 
+// AddNodes adds subnodes of the given Graph to the current node.
+func (g *Graph) AddNodes(g2 *Graph) *Graph {
+
+	if g2 != nil {
+		for _, n := range g2.Out {
+			g.Out = append(g.Out, n)
+		}
+	}
+	return g
+}
+
+// addEqualNodes adds subnodes of the given Graph to the current node,
+// if their content equals the given key. Optionally recurse into subnodes
+// of the receiver graph.
+func (g *Graph) addEqualNodes(g2 *Graph, key string, recurse bool) *Graph {
+
+	if g2 != nil {
+		for _, n := range g2.Out {
+			if key == n.String() {
+				g.AddNodes(n)
+			}
+			if recurse {
+				g.addEqualNodes(n, key, true)
+			}
+		}
+	}
+	return g
+}
+
 // Copy adds a copy of the graph given to the current graph.
 //
 // Warning (from the Go faq): Copying an interface value makes a copy of the
@@ -171,6 +200,11 @@ func (g *Graph) get(path *Graph) *Graph {
 
 	node := g
 
+	// nodePrev = Upper level of current node, used in {}
+	var nodePrev *Graph
+	// elemPrev = previous path element, used in {}
+	var elemPrev string
+
 	// normalize the context graph that it allways has a nil root
 	if !node.IsNil() {
 		g = NilGraph()
@@ -185,52 +219,74 @@ func (g *Graph) get(path *Graph) *Graph {
 		if c == '!' {
 			strip = false
 			c = elem.String()[1]
+
 			switch c {
 
 			case 'i':
 				if elem.Len() == 0 {
 					return nil
 				}
+
 				i, err := strconv.Atoi(elem.Out[0].String())
 				if err != nil {
 					return nil
 				}
+				nodePrev = node
 				node = node.GetAt(i)
+				elemPrev = node.String()
+
 			case 's':
+				if nodePrev == nil || nodePrev.Len() == 0 || len(elemPrev) == 0 {
+					return nil
+				}
+
+				r := NilGraph()
+
 				if elem.Len() == 0 {
 					// This case is {}, meaning that we must return
-					// all ocurrences of the token just before.
+					// all ocurrences of the token just before (elemPrev).
 					// And that means creating a new Graph object.
-					// BUG(): TO-DO
-					return nil
-				}
-				i, err := strconv.Atoi(elem.Out[0].String())
-				if err != nil {
-					return nil
-				}
-				i++
-				for _, subnode := range node.Out {
-					if elem.String() == subnode.String() {
-						i--
+
+					r.addEqualNodes(nodePrev, elemPrev, false)
+
+					if r.Len() == 0 {
+						return nil
 					}
-					if i == 0 {
-						node = subnode
+					node = r
+				} else {
+					i, err := strconv.Atoi(elem.Out[0].String())
+					if err != nil || i < 0 {
+						return nil
+					}
+
+					// {0} has no effect. We already found it
+					if i > 0 {
+						i++
+						// of all the nodes with name elemPrev, select the ith.
+						for _, nn := range nodePrev.Out {
+							if nn.String() == elemPrev {
+								i--
+								if i == 0 {
+									r.AddNodes(nn)
+									node = r
+									break
+								}
+							}
+						}
+						if i > 0 {
+							return nil
+						}
 					}
 				}
 
-			case 'x':
-				var err error
-				node, err = node.GetSimilar(elem.String())
-				if err != nil {
-					return nil
-				}
 			default:
 				return nil
-
 			}
 		} else {
 			strip = true
-			node = node.Node(elem.String())
+			nodePrev = node
+			elemPrev = elem.String()
+			node = node.Node(elemPrev)
 		}
 
 		if node == nil {

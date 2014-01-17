@@ -816,16 +816,16 @@ func (p *Parser) Variable() bool {
 	} else {
 		p.ev.Add(TYPE_PATH)
 		p.ev.Inc()
-		if c!='{' {
-		    p.Unread()
+		if c != '{' {
+			p.Unread()
 		} else {
-		    p.Space()
+			p.Space()
 		}
 		p.Path()
-		if c=='{' {
-		    p.Space()
-		    p.Read() // Should be '}'
-		} 
+		if c == '{' {
+			p.Space()
+			p.Read() // Should be '}'
+		}
 	}
 
 	// Reset the level

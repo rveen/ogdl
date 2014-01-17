@@ -9,9 +9,36 @@ import (
 
 // Path
 
-func TestPath(t *testing.T) {
-	p := NewPath("a[**].c")
-	println(p.Text())
+func TestPath1(t *testing.T) {
+
+	p := NewPath("a")
+
+	if p.Len() != 1 {
+		t.Error("size != 1")
+	}
+}
+
+func TestPath2(t *testing.T) {
+	p := NewPath("a.b")
+
+	if p.Len() != 2 {
+		t.Error("size != 2")
+	}
+}
+
+func TestPath3(t *testing.T) {
+	g := ParseString("a (b 1, c 2, b 3)")
+	println(g.Get("b{}").Text())
+}
+
+func TestPath4(t *testing.T) {
+	g := ParseString("a (b 1, c 2, b 3)")
+	println(g.Get("a.b{}").Text())
+}
+
+func TestPath5(t *testing.T) {
+	g := ParseString("a (b 1, c 2, b 3)")
+	println(g.Get("a.b{0}").Text())
 }
 
 // Binary parser
@@ -368,26 +395,25 @@ func TestGraph_DeleteAt(t *testing.T) {
 	}
 }
 
-func TestBasic(t *testing.T) {
+func ExampleGraph_Process() {
 	p := NewTemplate("Hello, $user")
 
 	g := NilGraph()
 	g.Add("user").Add("Jenny")
 
-	println(p.String())
-	println(p.Process(g))
+	fmt.Println(string(p.Process(g)))
+	// Output:
+	// Hello, Jenny
 }
 
-func TestExpression_op(t *testing.T) {
-
-	p := NewStringParser("+=a")
-
-	s, _ := p.Operator()
-	println("op: ", s)
-
-	e := NewExpression("a=1-2+3")
-
-	print(e.Text())
+func ExampleNewExpression() {
+	e := NewExpression("1-2+3")
+	g := NilGraph()
+    i := g.Eval(e)
+   
+	fmt.Println(i)
+	// Output:
+	// 2
 }
 
 func TestBasic2(t *testing.T) {
@@ -398,23 +424,6 @@ func TestBasic2(t *testing.T) {
 
 	println(p.String())
 	println(p.Process(g))
-}
-
-func TestPath1(t *testing.T) {
-
-	p := NewPath("a")
-
-	if p.Len() != 1 {
-		t.Error("size != 1")
-	}
-}
-
-func TestPath2(t *testing.T) {
-	p := NewPath("a.b")
-
-	if p.Len() != 2 {
-		t.Error("size != 2")
-	}
 }
 
 // Eval
@@ -717,7 +726,6 @@ func TestTemplateIf(ts *testing.T) {
 	g := NilGraph()
 
 	t := NewTemplate("$if('false') a $else b $end")
-	t.This = "!t"
 	println(t.Text())
 
 	s := t.Process(g)

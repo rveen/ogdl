@@ -11,18 +11,30 @@ import (
 // NewTemplate parses a text template given as a string and converts it to a Graph.
 // Templates have fixed and variable parts. Variables all begin with '$'.
 //
-// Syntax definition:
+// A template is a text file in any format: plain text, HTML, XML, OGDL or
+// whatever. The dolar sign acts as an escape character that switches from the
+// text to the variable plane. Parsed templates are converted back to text
+// by evaluating the variable parts against a Graph object, by means of the
+// Process() method.
+//
+// Template grammar
 //
 //     template ::= ( text | variable )*
 //
-//     variable ::= ('$' path) | ('$' '(' expression ')')
+//     variable ::= ('$' path) | ('$' '(' expression ')') | ('$' '{' expression '}')
 //     path ::= as defined in path.go
 //     expression ::= as defined in expression.go
 //
-// Some variables have a special meaning: $if, $else, $end, $for, $break.
+// Some variables act as directives: $if, $else, $end, $for, $break.
 //
-// Parsed templates are converted back to text by evaluating the variable parts
-// against a Graph object, by means of the Process() method.
+//    $if(expression)
+//    $else
+//    $end
+//
+//    $for(destPath,sourcepath)
+//      $break
+//    $end
+//
 func NewTemplate(s string) *Graph {
 	p := NewStringParser(s)
 	p.Template()
@@ -42,7 +54,7 @@ func (t *Graph) Process(c *Graph) []byte {
 	buffer := &bytes.Buffer{}
 
 	t.process(c, buffer)
-
+println("----",string(buffer.Bytes()))
 	return buffer.Bytes()
 }
 
