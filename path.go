@@ -4,7 +4,8 @@
 
 package ogdl
 
-// NewPath takes an Unicode string representing and OGDL path, into a Graph object.
+// NewPath takes an Unicode string representing an OGDL path, parses it and returns it
+// as a Graph object.
 //
 // It also parses extended paths, as those used in templates, which may have
 // argument lists.
