@@ -5,9 +5,10 @@ import (
 	"math"
 	"reflect"
 	"testing"
+	"bytes"
 )
 
-// Path
+// path.go
 
 func TestPath1(t *testing.T) {
 
@@ -26,48 +27,132 @@ func TestPath2(t *testing.T) {
 	}
 }
 
-func TestPath3(t *testing.T) {
-	g := ParseString("a (b 1, c 2, b 3)")
-	println(g.Get("b{}").Text())
-}
+// binary.go
 
-func TestPath4(t *testing.T) {
-	g := ParseString("a (b 1, c 2, b 3)")
-	println(g.Get("a.b{}").Text())
-}
+func TestBinParser1(t *testing.T) {
 
-func TestPath5(t *testing.T) {
-	g := ParseString("a (b 1, c 2, b 3)")
-	println(g.Get("a.b{0}").Text())
-}
-
-// Binary parser
-
-func TestBinParser(t *testing.T) {
-
+    // newVarInt
 	b := newVarInt(0x3fff)
 	p := NewBytesBinParser(b)
 	i := p.varInt()
 	if i != 0x3fff && len(b) != 2 {
-		t.Error()
+		t.Error("varInt 0x3fff")
 	}
 
 	b = newVarInt(0x4000)
 	p = NewBytesBinParser(b)
 	i = p.varInt()
 	if i != 0x4000 && len(b) != 3 {
-		t.Error()
+		t.Error("varInt 0x4000")
+	}
+	
+	b = newVarInt(0x1fffff)
+	p = NewBytesBinParser(b)
+	i = p.varInt()
+	if i != 0x1fffff && len(b) != 4 {
+		t.Error("varInt 0x1fffff",i)
+	}
+	
+	b = newVarInt(0xfffffff)
+	p = NewBytesBinParser(b)
+	i = p.varInt()
+	if i != 0xfffffff && len(b) != 4 {
+		t.Error("varInt 0xfffffff",i)
 	}
 
 	b = newVarInt(127)
 	p = NewBytesBinParser(b)
 	i = p.varInt()
 	if i != 127 && len(b) != 1 {
-		t.Error()
+		t.Error("varInt 127")
+	}
+	
+	b = newVarInt(-1)
+	if b!=nil {
+	    t.Error("newVarInt -1")
+	}
+	b = newVarInt(0x10000000)
+	if b!=nil {
+	    t.Error("newVarInt to high")
+	}
+	
+	// force incorrect header
+	h := []byte{ 1, 'G', 0 }
+	h2 := []byte{ 0, 'G', 0 }
+	h3 := []byte{ 1, 'H', 0 }
+	h4 := []byte{ 1, 'G', 1 }
+	
+	p = NewBytesBinParser(h)
+	if !p.header() {
+	    t.Error("header")
+	}
+	p = NewBytesBinParser(h2)
+	if p.header() {
+	    t.Error("header")
+	}
+	p = NewBytesBinParser(h3)
+	if p.header() {
+	    t.Error("header")
+	}
+	p = NewBytesBinParser(h4)
+	if p.header() {
+	    t.Error("header")
 	}
 }
 
-// Parser
+func TestBinParser2 (t *testing.T) {
+
+    s := "a"
+    
+    p := NewBinParser(bytes.NewReader([]byte(s)))
+
+    c := p.read()
+    if c != 'a' {
+        t.Error("read error")
+    }
+    
+    p.unread()
+    
+    c = p.read()
+    if c != 'a' {
+        t.Error("unread error")
+    }
+    
+    c = p.read()
+    if c != -1 {
+        t.Error("EOS read error")
+    } 
+}
+
+func TestBinParser3 (t *testing.T) {
+    
+    r := []byte{ 1, 'G', 0, 1, 'a', 0, 2, 'b', 0, 0 } 
+    
+    g := NewGraph("a")
+    g.Add("b")
+    b := g.Binary()
+    
+    if string(r)!=string(b) {
+        t.Error("Binary() failed")
+    }
+    
+    var nul *Graph
+    b = nul.Binary()
+    if b != nil {
+        t.Error("Binary nil failed")
+    }
+    
+    g = BinParse(r)
+    
+    if g.Len() != 1 {
+        t.Error("BinParse() failed")
+    }
+    if g.String() != "a" {
+        t.Error("BinParse() failed")
+    }
+}
+
+// parser.go
 
 // This array should hold all known cases
 // that the parser may encounter.
@@ -143,6 +228,7 @@ func TestUnread(t *testing.T) {
 	}
 }
 
+// chars.go 
 // Character classes. Samples.
 
 func TestChars(t *testing.T) {
@@ -219,7 +305,7 @@ func TestChars(t *testing.T) {
 	}
 }
 
-// Get returns Graph !
+// graph.go
 
 func TestGet(t *testing.T) {
 
@@ -253,28 +339,6 @@ func TestEvalGraph(t *testing.T) {
 	i := g.Eval(NewPath("a"))
 	s := reflect.TypeOf(i).String()
 	fmt.Printf("%s / %v\n", s, i)
-}
-
-func TestSet(t *testing.T) {
-
-	g := NewGraph("a")
-
-	g.Set("b", "c")
-
-	fmt.Println(g.Text())
-}
-
-func TestSet2(t *testing.T) {
-
-	g := NilGraph()
-
-	g.Add("R").Add("b")
-
-	r := g.Node("R")
-
-	r.Set("id", "1")
-
-	fmt.Println(g.Text())
 }
 
 // A null or new graph should return size = 0
@@ -395,38 +459,8 @@ func TestGraph_DeleteAt(t *testing.T) {
 	}
 }
 
-func ExampleGraph_Process() {
-	p := NewTemplate("Hello, $user")
 
-	g := NilGraph()
-	g.Add("user").Add("Jenny")
-
-	fmt.Println(string(p.Process(g)))
-	// Output:
-	// Hello, Jenny
-}
-
-func ExampleNewExpression() {
-	e := NewExpression("1-2+3")
-	g := NilGraph()
-    i := g.Eval(e)
-   
-	fmt.Println(i)
-	// Output:
-	// 2
-}
-
-func TestBasic2(t *testing.T) {
-	p := NewTemplate("Hello, $user")
-
-	g := NilGraph()
-	g.Add("user").Add("Jenny")
-
-	println(p.String())
-	println(p.Process(g))
-}
-
-// Eval
+// eval.go, expression.go
 
 func TestEvalCalc(t *testing.T) {
 
@@ -617,35 +651,7 @@ func TestEvalBool2(t *testing.T) {
 	fmt.Printf("%v\n", r)
 }
 
-// Functions
 
-type Math struct {
-}
-
-func newMath() interface{} {
-	println("NewMath() called")
-	return &Math{}
-}
-
-func (*Math) Sin(x float64) float64 {
-	return math.Sin(x)
-}
-
-func TestFunction(t *testing.T) {
-
-	FunctionAddToFactory("math", newMath)
-
-	g := NilGraph()
-	f := g.Add("math")
-	f.Add("!type").Add("math")
-
-	path := NewPath("math.Sin(1.0)")
-	println(path.Text())
-
-	i := g.Eval(path)
-	s := reflect.TypeOf(i).String()
-	fmt.Printf("%s / %v\n", s, i)
-}
 
 // Get types
 
@@ -686,6 +692,7 @@ func TestIsInteger(t *testing.T) {
 }
 
 // interface conversion to native types
+
 func TestI2string(t *testing.T) {
 
 	var i interface{}
@@ -750,22 +757,7 @@ func TestTemplateFor(ts *testing.T) {
 	println(string(s))
 }
 
-func TestRFunction(ts *testing.T) {
-	// Context
-	g := NilGraph()
-	c := g.Add("store")
-	ty := c.Add("!type")
-	ty.Add("rfunction")
-	i := c.Add("!init")
-	i.Add("host").Add("localhost")
-	i.Add("port").Add("1111")
-
-	t := NewTemplate("$store.get(1207)")
-	println(t.Text())
-	s := t.Process(g)
-
-	println(string(s))
-}
+// function.go
 
 func TestFunction1(ts *testing.T) {
 	// Context
@@ -783,24 +775,112 @@ func TestFunction1(ts *testing.T) {
 	println(string(s))
 }
 
-// -----------------------------
-// EXAMPLES
-// -----------------------------
+type Math struct {
+}
 
-// Schema
+func newMath() interface{} {
+	return &Math{}
+}
+
+func (*Math) Sin(x float64) float64 {
+	return math.Sin(x)
+}
+
+func TestFunction(t *testing.T) {
+
+	FunctionAddToFactory("math", newMath)
+
+	g := NilGraph()
+	f := g.Add("math")
+	f.Add("!type").Add("math")
+
+	path := NewPath("math.Sin(1.0)")
+	println(path.Text())
+
+	i := g.Eval(path)
+	s := reflect.TypeOf(i).String()
+	fmt.Printf("%s / %v\n", s, i)
+}
+
+// -------------------------------------------------------------------------
+// EXAMPLES
+// -------------------------------------------------------------------------
+
+func ExampleGraph_Set() {
+
+	g := ParseString("a b c")
+	g.Set("b", "d")
+
+	fmt.Println(g.Text())
+	
+	// Output:
+	// a
+	//   b
+	//     d
+}
+
+func ExampleGraph_Set_a() {
+
+	g := NilGraph()
+
+	g.Add("R").Add("b")
+	r := g.Node("R")
+	r.Set("id", "1")
+
+	fmt.Println(g.Text())
+	// Output:
+	// R
+	//   b
+	//   id
+	//     1
+}
+
+
+func ExampleGraph_Get() {
+	g := ParseString("a (b 1, c 2, b 3)")
+	fmt.Println(g.Get("a.b{0}").Text())
+	fmt.Println(g.Get("a.b{1}").Text())
+	fmt.Println("---")
+	fmt.Println(g.Get("a.b{}").Text())
+	// Output:
+	// 1
+	// 3
+	// ---
+	// 1
+	// 3
+}
+
+func ExampleNewTemplate() {
+	p := NewTemplate("Hello, $user")
+
+	g := NilGraph()
+	g.Add("user").Add("Jenny")
+
+	fmt.Println(string(p.Process(g)))
+	// Output:
+	// Hello, Jenny
+}
+
+func ExampleNewExpression() {
+	e := NewExpression("1-2+3")
+	g := NilGraph()
+	i := g.Eval(e)
+
+	fmt.Println(i)
+	// Output:
+	// 2
+}
 
 func ExampleGraph_Check() {
 
-	sch := ParseString("a !int, b !string, c !float, d !bool")
+	schema := ParseString("a !int, b !string, c !float, d !bool")
 	g := ParseString("a 1, b s, c 1.0, d true")
 
-	b, mess := sch.Check(g)
-	fmt.Println(b, mess)
+	b, message := schema.Check(g)
+	fmt.Println(b, message)
 	// Output:
 	// true
 }
-
-// Eval, expressions, templates
 
 func ExampleGraph_Eval() {
 	g := NilGraph()

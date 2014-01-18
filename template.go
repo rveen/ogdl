@@ -54,7 +54,7 @@ func (t *Graph) Process(c *Graph) []byte {
 	buffer := &bytes.Buffer{}
 
 	t.process(c, buffer)
-println("----",string(buffer.Bytes()))
+
 	return buffer.Bytes()
 }
 

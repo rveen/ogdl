@@ -111,23 +111,21 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 					return nil
 				}
 
-				// {0} has no effect. We already found it
-				if i > 0 {
-					i++
-					// of all the nodes with name elemPrev, select the ith.
-					for _, nn := range nodePrev.Out {
-						if nn.String() == elemPrev {
-							i--
-							if i == 0 {
-								r.AddNodes(nn)
-								node = r
-								break
-							}
+				// {0} must still be handled: add it to r
+				i++
+				// of all the nodes with name elemPrev, select the ith.
+				for _, nn := range nodePrev.Out {
+					if nn.String() == elemPrev {
+						i--
+						if i == 0 {
+							r.AddNodes(nn)
+							node = r
+							break
 						}
 					}
-					if i > 0 {
-						return nil
-					}
+				}
+				if i > 0 {
+					return nil
 				}
 			}
 
