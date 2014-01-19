@@ -118,12 +118,14 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 					if nn.String() == elemPrev {
 						i--
 						if i == 0 {
+				
 							r.AddNodes(nn)
 							node = r
 							break
 						}
 					}
 				}
+				
 				if i > 0 {
 					return nil
 				}
@@ -157,7 +159,7 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 			node = nn
 		}
 	}
-
+	
 	if iknow && node != nil {
 		if node.Len() == 1 && node.Out[0].Len() == 0 {
 			return node.Out[0].This
@@ -166,6 +168,12 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 		node2 := NilGraph()
 		node2.Out = node.Out
 		return node2
+	}
+	
+	// A nil node with one subnode makes no sense. Nil root nodes
+    // are used as list containers.
+	if node != nil && node.IsNil() && node.Len()==1 {
+	    return node.Out[0]
 	}
 
 	return node
@@ -381,7 +389,7 @@ func (g *Graph) assign(p *Graph, v interface{}, op int) interface{} {
 
 	// if p doesn't exist, just set it to the value given
 	left := g.get(p)
-	if left == nil {
+	if left != nil {
 		return g.set(p, calc(left.This, v, op))
 	}
 

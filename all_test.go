@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 	"bytes"
+	"os"
 )
 
 // path.go
@@ -152,6 +153,19 @@ func TestBinParser3 (t *testing.T) {
     }
 }
 
+func TestBinParser4 (t *testing.T) {
+    
+    r := []byte{ 1, 'G', 0, /*lev*/ 1, /*bin*/ 1, /* len */ 1, 0x55, /*end bin */ 0, 0 } 
+    
+    g := BinParse(r)
+    
+    if g.Len() != 0 {
+        t.Error("BinParse() failed")
+    }
+    if g.String() != "U" {
+        t.Error("BinParse() failed")
+    }
+}
 // parser.go
 
 // This array should hold all known cases
@@ -180,14 +194,16 @@ var text = [...]string{
 
 }
 
-func TestParser(t *testing.T) {
+func TestParser1(t *testing.T) {
 
+/*
 	for i := 0; i < len(text); i++ {
-		p := NewStringParser(text[i])
-		p.Ogdl()
-		//g := p.Graph()
-		//print(g.String())
-	}
+		g := ParseString(text[i])
+		println(g.Text())
+	}*/
+	
+	n := ParseString(" a")
+	println(n.Text())
 }
 
 func TestUnread(t *testing.T) {
@@ -307,6 +323,23 @@ func TestChars(t *testing.T) {
 
 // graph.go
 
+func TestCopyAndSubstitute ( t *testing.T ) {
+    g := ParseString("a b, c d, aa a")
+    
+    g2 := NilGraph()
+    g2.Copy(g)
+    
+    if !g.Equal(g2) {
+        t.Error("copy or equal failed")
+    }
+    
+    g3 := ParseString("x b, c d, aa x")
+    g.Substitute("a","x")
+    if !g.Equal(g3) {
+        t.Error("copy or equal failed")
+    }
+}
+
 func TestGet(t *testing.T) {
 
 	g := NewGraph("a")
@@ -328,16 +361,6 @@ func TestGet(t *testing.T) {
 	fmt.Printf("%s / %v\n", s, i)
 	i = g.Get("a.d").Scalar()
 	s = reflect.TypeOf(i).String()
-	fmt.Printf("%s / %v\n", s, i)
-}
-
-func TestEvalGraph(t *testing.T) {
-	g := NewGraph("a")
-	g.Add("b").Add("c").Add("1")
-	fmt.Println(g.Text())
-
-	i := g.Eval(NewPath("a"))
-	s := reflect.TypeOf(i).String()
 	fmt.Printf("%s / %v\n", s, i)
 }
 
@@ -420,7 +443,7 @@ func TestGraph_String(t *testing.T) {
 	}
 }
 
-func TestGraph_DeleteAt(t *testing.T) {
+func TestGraph_Delete(t *testing.T) {
 
 	g := NilGraph()
 
@@ -428,59 +451,62 @@ func TestGraph_DeleteAt(t *testing.T) {
 	g.Add(2)
 	g.Add(3)
 	g.Add(4)
+	g.Add(5)
+
+	if g.Len() != 5 {
+		t.Fatal("g.Len()!=5")
+	}
+
+	g.DeleteAt(2)
 
 	if g.Len() != 4 {
 		t.Fatal("g.Len()!=4")
 	}
 
-	g.DeleteAt(2)
-
-	if g.Len() != 3 {
-		t.Fatal("g.Len()!=3")
-	}
-
 	g.DeleteAt(5)
-	if g.Len() != 3 {
-		t.Fatal("g.Len()!=3")
+	if g.Len() != 4 {
+		t.Fatal("g.Len()!=4")
 	}
 
 	g.DeleteAt(0)
+	if g.Len() != 3 {
+		t.Fatal("g.Len()!=3")
+	}
+ 
+    // Delete element == 5 !
+	g.Delete(5)
 	if g.Len() != 2 {
 		t.Fatal("g.Len()!=2")
 	}
-
-	g.DeleteAt(1)
-	if g.Len() != 1 {
-		t.Fatal("g.Len()!=1")
-	}
-
-	if g.GetAt(0).This != 2 {
-		t.Fatal("!=2")
-	}
+	
+	if g.Node("5") != nil {
+	    t.Error("5 not deleted")
+	} 
 }
 
 
-// eval.go, expression.go
+// eval.go
 
-func TestEvalCalc(t *testing.T) {
+func TestEvalCalcMod(t *testing.T) {
 
 	i := calc(11.0, 2.0, '%')
 
 	s := reflect.TypeOf(i).String()
 
-	fmt.Printf("%s\n%v\n", s, i == 1)
-
+    // % operates on ints!
+    if s!="int" || i!=1 {
+        t.Error("Calc %")
+    }
 }
 
-func TestEvalCalcAddString(t *testing.T) {
+func TestEvalCalcStr(t *testing.T) {
 
 	i := calc("11.0-", 2.0, '+')
 
 	s := reflect.TypeOf(i).String()
 
-	fmt.Printf("%s\n%v\n", s, i)
 	if s != "string" || i != "11.0-2" {
-		t.Error()
+		t.Error("string with numbers")
 	}
 }
 
@@ -488,23 +514,98 @@ func TestCompare(t *testing.T) {
 
 	b := compare(1, 1, '=')
 	if !b {
-		t.Error()
+		t.Error("compare =")
 	}
 	b = compare(1, 1.0, '=')
 	if !b {
-		t.Error()
+		t.Error("compare =")
 	}
+	b = compare(1.0, 1.0, '=')
+	if !b {
+		t.Error("compare =")
+	}
+	
 	b = compare(1, 2, '<')
 	if !b {
-		t.Error()
+		t.Error("compare 3")
 	}
 	b = compare(1.0, 2, '<')
 	if !b {
-		t.Error()
+		t.Error("compare 4")
 	}
+	
 	b = compare("a", "a", '=')
 	if !b {
-		t.Error()
+		t.Error("compare =")
+	}
+	b = compare("a", "a", '!')
+	if b {
+		t.Error("compare =")
+	}
+	
+	b = compare(2,1,'>')
+	if !b {
+		t.Error("compare >")
+	}
+	b = compare(2.0,1.0,'>')
+	if !b {
+		t.Error("compare >")
+	}
+	
+	// <=
+	b = compare(1,2,'-')
+	if !b {
+		t.Error("compare <=")
+	}
+	b = compare(2,2,'-')
+	if !b {
+		t.Error("compare <=")
+	}
+	b = compare(2.0,2.0,'-')
+	if !b {
+		t.Error("compare <=")
+	}
+	
+	// >=
+	b = compare(2,1,'+')
+	if !b {
+		t.Error("compare >=")
+	}
+	b = compare(2,2,'+')
+	if !b {
+		t.Error("compare >=")
+	}
+	b = compare(2.0,2.0,'+')
+	if !b {
+		t.Error("compare >=")
+	}
+	
+	// Cannot compare non numbers
+	b = compare("a",1,'=')
+	if b {
+		t.Error("compare a string")
+	}
+	b = compare(1,"a",'=')
+	if b {
+		t.Error("compare a string")
+	}
+	
+	// !
+	b = compare(1,2,'!')
+	if !b {
+	    t.Error("compare !=")
+	}
+	b = compare(1,1,'!')
+	if b {
+	    t.Error("compare !=")
+	}
+	b = compare(1.0,2.0,'!')
+	if !b {
+	    t.Error("compare !=")
+	}
+	b = compare(1.0,1.0,'!')
+	if b {
+	    t.Error("compare !=")
 	}
 }
 
@@ -515,17 +616,48 @@ func TestEvalPath(t *testing.T) {
 
 	p := NewPath("a")
 
-	println(p.Text())
-
 	i := g.Eval(p)
 	s := reflect.TypeOf(i).String()
-	fmt.Printf("%s / %v\n", s, i)
+	if i!=1 || s!="int" {
+	    t.Error("EvalPath 1")
+	}
 
+    // Creating a nil root or not should not make a difference
 	g = NewGraph("a")
 	g.Add(1)
 	i = g.Eval(p)
 	s = reflect.TypeOf(i).String()
-	fmt.Printf("%s / %v\n", s, i)
+	if i!=1 || s!="int" {
+	    t.Error("EvalPath 2")
+	}
+}
+
+func TestEvalPath_Index(t *testing.T) {
+    g := ParseString("a (b 1, b 2)")
+
+    p := NewPath("a.b[0]")
+    
+    i := g.EvalPath(p)
+    
+    if _string(i) != "1" {
+        t.Error("EvalPath_Index")
+    } 
+    
+    p = NewPath("a.b{1}")
+    
+    i = g.EvalPath(p)
+    
+    if _string(i) != "2" {
+        t.Error("EvalPath_Selector")
+    } 
+    
+    p = NewPath("a.b{}")
+    
+    i = g.EvalPath(p)
+
+    if _text(i) != "1\n2" {
+        t.Error("EvalPath_Selector",_text(i))
+    } 
 }
 
 func TestEvalScalar(t *testing.T) {
@@ -616,17 +748,191 @@ func TestEvalArgOfGraph(t *testing.T) {
 	fmt.Printf("a(b): %v\n", r)
 }
 
-func TestEvalStringConstant(t *testing.T) {
+func TestEvalExpression(t *testing.T) {
 
 	// The context
 	g := NewGraph("a")
 	g.Add("b")
 
-	// 'a' is a string constant -----------------
+	// 'a' is a string constant 
 	p := NewExpression("a=='b'")
-	println(p.Text())
 	r := g.Eval(p)
-	fmt.Printf("%v\n", r)
+	
+	if _typeOf(r) != "bool" || r!=true {
+	     t.Error("a=='b'")
+	}
+	
+	p = NewExpression("'a'!='b'")
+	r = g.Eval(p)
+	if _typeOf(r) != "bool" || r!=true {
+	     t.Error("'a'!='b'")
+	}
+	
+	p = NewExpression("2>1")
+	r = g.Eval(p)
+	if _typeOf(r) != "bool" || r!=true {
+	     t.Error("'a'!='b'")
+	}
+	p = NewExpression("2>=2")
+	r = g.Eval(p)
+	if _typeOf(r) != "bool" || r!=true {
+	     t.Error("'a'!='b'")
+	}
+	p = NewExpression("1<2")
+	r = g.Eval(p)
+	if _typeOf(r) != "bool" || r!=true {
+	     t.Error("'a'!='b'")
+	}
+	p = NewExpression("1<=2")
+	r = g.Eval(p)
+	if _typeOf(r) != "bool" || r!=true {
+	     t.Error("'a'!='b'")
+	}
+	p = NewExpression("1<0")
+	r = g.Eval(p)
+	if _typeOf(r) != "bool" || r!=false {
+	     t.Error("'a'!='b'")
+	}
+	
+	// logic
+	e := "'false' || 'true'"
+	p = NewExpression(e)
+	r = g.Eval(p)
+	if _typeOf(r) != "bool" || r!=true {
+	     t.Error(e)
+	}
+	e = "'true' && 'true'"
+	p = NewExpression(e)
+	r = g.Eval(p)
+	if _typeOf(r) != "bool" || r!=true {
+	     t.Error(e)
+	}
+	
+	// Assing
+	g = NilGraph()
+	e = "a=1"
+	p = NewExpression(e)
+	g.Eval(p)
+	
+	if i,_ := g.GetInt64("a"); i != 1 {
+	    t.Error(e,_typeOf(g),_text(g))
+	}
+	
+	e = "a+=12"
+	p = NewExpression(e)
+	g.Eval(p)
+	
+	if i,_ := g.GetInt64("a"); i != 13 {
+	    t.Error(e,_typeOf(g),_text(g))
+	}
+	
+	e = "a-=1"
+	p = NewExpression(e)
+	g.Eval(p)
+	
+	if i,_ := g.GetInt64("a"); i != 12 {
+	    t.Error(e,_typeOf(g),_text(g))
+	}
+	
+	e = "a*=2"
+	p = NewExpression(e)
+	g.Eval(p)
+	
+	if i,_ := g.GetInt64("a"); i != 24 {
+	    t.Error(e,_typeOf(g),_text(g))
+	}
+	
+	e = "a/=4"
+	p = NewExpression(e)
+	g.Eval(p)
+	
+	if i,_ := g.GetInt64("a"); i != 6 {
+	    t.Error(e,_typeOf(g),_text(g))
+	}
+	
+	e = "a%=4"
+	p = NewExpression(e)
+	g.Eval(p)
+	
+	if i,_ := g.GetInt64("a"); i != 2 {
+	    t.Error(e,_typeOf(g),_text(g))
+	}
+	
+	// b non existent
+	e = "b+=1"
+	p = NewExpression(e)
+	g.Eval(p)
+	
+	if i,_ := g.GetInt64("b"); i != 1 {
+	    t.Error(e,_typeOf(g),_text(g))
+	}
+	
+	// c non existent
+	e = "c-=1"
+	p = NewExpression(e)
+	g.Eval(p)
+	
+	if i,_ := g.GetInt64("c"); i != -1 {
+	    t.Error(e,_typeOf(g),_text(g))
+	}
+	
+	// d non existent
+	e = "d*=1"
+	p = NewExpression(e)
+	g.Eval(p)
+	
+	if i,_ := g.GetInt64("d"); i != 0 {
+	    t.Error(e,_typeOf(g),_text(g))
+	}
+	
+	// e non existent
+	e = "e/=1"
+	p = NewExpression(e)
+	g.Eval(p)
+	
+	if _,err := g.GetInt64("e"); err==nil {
+	    t.Error(e,_typeOf(g),_text(g))
+	}
+	
+	e = "1+2"
+	p = NewExpression(e)
+	r = g.Eval(p)
+	
+	if r != int64(3) {
+	    t.Error(e,_typeOf(r),_text(r))
+	}
+	
+	e = "2-4"
+	p = NewExpression(e)
+	r = g.Eval(p)
+	
+	if r != int64(-2) {
+	    t.Error(e,_typeOf(r),_text(r))
+	}
+	
+	e = "10*3"
+	p = NewExpression(e)
+	r = g.Eval(p)
+	
+	if r != int64(30) {
+	    t.Error(e,_typeOf(r),_text(r))
+	}
+	
+	e = "10/3"
+	p = NewExpression(e)
+	r = g.Eval(p)
+	
+	if r != int64(3) {
+	    t.Error(e,_typeOf(r),_text(r))
+	}
+	
+	e = "10%3"
+	p = NewExpression(e)
+	r = g.Eval(p)
+	
+	if r != int64(1) {
+	    t.Error(e,_typeOf(r),_text(r))
+	}
 }
 
 func TestEvalBool2(t *testing.T) {
@@ -654,6 +960,56 @@ func TestEvalBool2(t *testing.T) {
 
 
 // Get types
+
+func TestGetTypes (t *testing.T) {
+    
+    g := ParseString("aa, ab, bb, axx, aj, vv")
+    r,_ := g.GetSimilar("a[a-b]")
+    
+    if r.Len()!=2 || r.Text()!="aa\nab" {
+        t.Error("similar")
+    }
+    
+    g = NewGraph("111")
+    if i,_ := g.Int64(); i != 111 {
+        t.Error("Int64")
+    }
+    
+    g = NewGraph("111.1")
+    if i,_ := g.Float64(); i != 111.1 {
+        t.Error("Float64")
+    }
+    
+    g = NewGraph(float32(111.2))
+    if i,_ := g.Float64(); i != 111.2 {
+        t.Error("Float64")
+    }
+    
+    g = NewGraph("true")
+    if i,_ := g.Bool(); i != true {
+        t.Error("Bool")
+    }
+
+    g = ParseString("a 1")
+    if i,_ := g.GetInt64("a"); i != 1 {
+        t.Error("GetInt64")
+    }
+    
+    g = ParseString("a 1.1")
+    if i,_ := g.GetFloat64("a"); i != 1.1 {
+        t.Error("GetFloat64")
+    }
+    
+    g = ParseString("a 'false'")
+    if i,err := g.GetBool("a"); err!=nil || i != false {
+        t.Error("GetBool")
+    }
+    
+    g = ParseString("a 'text'")
+    if i,err := g.GetBytes("a"); err!=nil || len(i) != 4 {
+        t.Error("GetBytes",len(i))
+    }
+}
 
 func TestGraphValue(t *testing.T) {
 
@@ -800,6 +1156,50 @@ func TestFunction(t *testing.T) {
 	i := g.Eval(path)
 	s := reflect.TypeOf(i).String()
 	fmt.Printf("%s / %v\n", s, i)
+}
+
+// log.go
+
+func TestLog (t *testing.T) {
+
+    file := "/tmp/log.gb"
+
+    log, _ := OpenLog(file)
+
+    g := ParseString("a b, c, d")
+    b := g.Binary()
+    
+    n := log.Add(g)
+    m := log.Add(g)
+    o := log.AddBinary(b)
+    
+    if n!=0 || m!=16 || o!=32 {
+        t.Error("log.Add",o)
+    }
+    
+    g2,_,n2 := log.Get(0)
+    g3,_,n3 := log.Get(n2)
+    b2,_,_  := log.GetBinary(n3)
+    
+    g4 := BinParse(b2)
+    
+    if ! g.Equal(g2) {
+        t.Error("n!=n2")
+    }
+    
+    if ! g.Equal(g3) {
+        t.Error("n!=n3")
+    }
+    
+    if ! g.Equal(g4) {
+        t.Error("n!=n3")
+    }
+    
+    log.Sync()
+    
+    log.Close()
+    
+    os.Remove(file)
 }
 
 // -------------------------------------------------------------------------

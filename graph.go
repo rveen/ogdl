@@ -75,6 +75,24 @@ func (g *Graph) Depth() int {
 	return i + 1
 }
 
+// Equal returns true if the given graph and the receiver graph are equal.
+func (g *Graph) Equal(c *Graph) bool {
+
+    if c.This != g.This {
+        return false
+    }
+    if g.Len() != c.Len() {
+        return false
+    }
+    
+	for i:=0; i<g.Len(); i++ {
+		if g.Out[i].Equal(c.Out[i]) == false {
+		    return false
+		}
+	}
+	return true
+}
+
 // Add adds a subnode to the current node.
 //
 // An eventual nil root will not be bypassed.
@@ -302,6 +320,12 @@ func (g *Graph) get(path *Graph) *Graph {
 		return node2
 	}
 
+    // A nil node with one subnode makes no sense. Nil root nodes
+    // are used as list containers.
+	if node != nil && node.IsNil() && node.Len()==1 {
+	    return node.Out[0]
+	}
+	
 	return node
 }
 

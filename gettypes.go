@@ -321,6 +321,22 @@ func _string(i interface{}) string {
 	return fmt.Sprint(i)
 }
 
+func _text(i interface{}) string {
+	if i == nil {
+		return ""
+	}
+	if v, ok := i.([]byte); ok {
+		return string(v)
+	}
+	if v, ok := i.(string); ok {
+		return v
+	}
+	if v, ok := i.(*Graph); ok {
+		return v.Text()
+	}
+	return fmt.Sprint(i)
+}
+
 func _bytes(i interface{}) []byte {
 	if i == nil {
 		return nil
@@ -335,6 +351,10 @@ func _bytes(i interface{}) []byte {
 		return []byte(v.String())
 	}
 	return []byte(fmt.Sprint(i))
+}
+
+func _typeOf(i interface{}) string {
+    return reflect.TypeOf(i).String()
 }
 
 // Scalar returns the current node content, reducing the number of types
