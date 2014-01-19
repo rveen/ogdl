@@ -5,45 +5,15 @@
 package ogdl
 
 import (
-	"log"
 	"reflect"
+	"errors"
 )
 
-// Types for OGDL templates.
-//
-// instantiate -> init -> remote init -> exec
-//
-// $store.get(1), a remote function. Needs to open a database. Needs to be
-// closed.
-//
-// Configuration:
-//
-//   store
-//     !type
-//       ogdl.RFunction
-//     !init
-//        host localhost
-//        port 1122
-//        remote
-//          database db1
-//          user $user
-//
-// $math.sin(1.0), a local function with one numeric argument
-//
-// $math.max(1,0)
-//
-// Input
-//
-//   math
-//     max
-//       !g
-//          1
-//          0
-
-// factory is a map that associates names with functions
-// that instantiate objects (types).
+// factory[] is a map that stores type constructors.
 var factory map[string]func() interface{}
 
+// functions[] is a map for storing functions with a suitable signature so that
+// they can be called from within templates.
 var functions map[string]func(g *Graph, p *Graph, i int) []byte // interface{}
 
 func FunctionAddToFactory(s string, f func() interface{}) {
@@ -54,16 +24,17 @@ func FunctionAdd(s string, f func(*Graph, *Graph, int) []byte) {
 	functions[s] = f
 }
 
-// Function enables calling Go functions from templates. Complex paths in templates
+// Function enables calling Go functions from templates. Path in templates
 // are translated into Go functions if !type definitions are present.
 //
-// Since Go is a compiled language, dynamic loading of functions is not possible.
-// A table has to be build that maps names to types. Those types must then
-// implement the functions of interest. This table is the `factory` array in
-// functions.go, that maps strings to 'constructors'. When a function is called,
-// the corresponding type is first created and initialized, and only then the
-// function is called. The type instance is reused in subsquent calls to
-// functions pertaning to that type.
+// Functions and type methods are handled here, based on the two maps, factory[]
+// and functions[].
+//
+// Also remote functions are called from here. A remote function is a call to 
+// a TCP/IP server, in which both the request and the response are binary encoded
+// OGDL objects.  
+//
+// (This code can be much improved)
 func (g *Graph) Function(p *Graph, ix int, context *Graph) (interface{}, error) {
 
 	n := g.Node("!type")
@@ -74,8 +45,6 @@ func (g *Graph) Function(p *Graph, ix int, context *Graph) (interface{}, error) 
 
 	name := n.GetAt(0).String()
 
-	log.Println("Function(): !type ", name)
-
 	// Case 1: simple function
 	//
 	// If type == "function", then call a function directly from the
@@ -85,11 +54,9 @@ func (g *Graph) Function(p *Graph, ix int, context *Graph) (interface{}, error) 
 
 		funame := p.GetAt(ix - 1).String()
 
-		log.Println("Function(): ", funame)
-
 		fu := functions[funame]
 		if fu == nil {
-			return nil, nil
+			return nil, errors.New("function not in table "+funame)
 		}
 
 		arg := NilGraph()
@@ -100,7 +67,6 @@ func (g *Graph) Function(p *Graph, ix int, context *Graph) (interface{}, error) 
 
 			arg.Add(_string(v))
 		}
-		// log.Printf("Function().Call:\n%s\n", arg.Text())
 
 		return fu(context, arg, 0), nil
 	}
@@ -110,9 +76,13 @@ func (g *Graph) Function(p *Graph, ix int, context *Graph) (interface{}, error) 
 	if "rfunction" == name {
 
 		var rf *RFunction
+		var err error
 
 		if n.Len() == 1 {
-			rf = NewRFunction(g.Node("!init"))
+			rf, err = NewRFunction(g.Node("!init"))
+			if err!=nil {
+			    return nil, err
+			}
 			n.Add(rf)
 		} else {
 			rf = n.GetAt(1).This.(*RFunction)
@@ -130,7 +100,6 @@ func (g *Graph) Function(p *Graph, ix int, context *Graph) (interface{}, error) 
 				arg.Add(v)
 			}
 		}
-		log.Printf("RFunction().Call:\n%s\n", arg.Text())
 		return rf.Call(arg)
 	}
 
@@ -147,25 +116,17 @@ func (g *Graph) Function(p *Graph, ix int, context *Graph) (interface{}, error) 
 
 		ff := factory[name]
 		if ff == nil {
-			return nil, nil
+			return nil, errors.New("function not in table "+name)
 		}
 
-		//f := reflect.ValueOf(ff)
-
-		//v = f.Call(nil)[0]
 		itf := ff()
 		v = reflect.ValueOf(itf)
 
-		//v = v.Elem() // works because we have defined interface{} as return
 
-		// Add the object as second node of !type. Next time w'll pick this
-		// object.
-
+		// Add the object as second node of !type. Next time w'll pick this object.
 		n.Add(v)
 
-		// If !init is defined, the init(Graph) function is called on the
-		// instantiated type.
-
+		// If !init is defined, the init(Graph) function is called on the instantiated type.
 		nn := g.Node("!init")
 
 		if nn != nil {
@@ -177,7 +138,7 @@ func (g *Graph) Function(p *Graph, ix int, context *Graph) (interface{}, error) 
 
 	// exec: as per path
 	//
-	// p[i] is function or field name
+	// p[i] is a function or field name
 	// rest are arguments.
 
 	// obj = p.GetAt(i)
@@ -186,26 +147,24 @@ func (g *Graph) Function(p *Graph, ix int, context *Graph) (interface{}, error) 
 	ag := p.GetAt(ix + 1)
 
 	if "!g" != ag.String() {
-		return nil, nil // XXX
+		return nil, errors.New("missing !g")
 	}
 
-	log.Println("function name", fn)
-
 	if fn == nil {
-		return "No method " + fn.Text(), nil //XXX
+	    s := "No method " + fn.Text()
+		return s, errors.New(s)
 	}
 
 	fname := fn.String()
 
-	// Predefined functions: destroy
-
-	// Check if it is a field
+	// TODO: Check if it is a field
 
 	// Check if it is a method
 	me := v.MethodByName(fname)
 
 	if !me.IsValid() {
-		return "(2) No method " + fname, nil // XXX
+	    s := "No method " + fname
+		return s, errors.New(s)
 	}
 
 	// Build arguments in the form []reflect.Value
@@ -214,7 +173,6 @@ func (g *Graph) Function(p *Graph, ix int, context *Graph) (interface{}, error) 
 
 	for _, arg := range ag.Out {
 		a := g.Eval(arg)
-		log.Println("- arg", reflect.TypeOf(a).String())
 		args = append(args, reflect.ValueOf(a))
 	}
 
