@@ -118,14 +118,14 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 					if nn.String() == elemPrev {
 						i--
 						if i == 0 {
-				
+
 							r.AddNodes(nn)
 							node = r
 							break
 						}
 					}
 				}
-				
+
 				if i > 0 {
 					return nil
 				}
@@ -159,21 +159,33 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 			node = nn
 		}
 	}
-	
-	if iknow && node != nil {
-		if node.Len() == 1 && node.Out[0].Len() == 0 {
-			return node.Out[0].This
-		}
 
-		node2 := NilGraph()
-		node2.Out = node.Out
-		return node2
+	if node == nil {
+		return nil
 	}
-	
+
+	// iknow is true if the path includes the token that is now at the root of node.
+	// We don't want to return what we already know.
+
+	if iknow {
+		if node.Len() == 1 {
+			node = node.Out[0]
+		} else {
+			node2 := NilGraph()
+			node2.Out = node.Out
+			return node2
+		}
+	}
+
 	// A nil node with one subnode makes no sense. Nil root nodes
-    // are used as list containers.
-	if node != nil && node.IsNil() && node.Len()==1 {
-	    return node.Out[0]
+	// are used as list containers.
+	if node.IsNil() && node.Len() == 1 {
+		return node.Out[0]
+	}
+
+	// simplify: do not return Graph if it has no subnodes
+	if node.Len() == 0 {
+		return node.This
 	}
 
 	return node
@@ -411,7 +423,7 @@ func (g *Graph) assign(p *Graph, v interface{}, op int) interface{} {
 
 // calc: int64 | float64 | string
 func calc(v1, v2 interface{}, op int) interface{} {
-	//fmt.Printf("calc: %v %v %s %s\n",v1,v2, reflect.TypeOf(v1).String(),reflect.TypeOf(v2).String() )
+	//fmt.Printf("calc: %v %v %s %s\n",v1,v2, _typeOf(v1),_typeOf(v2) )
 	i1, ok := _int64(v1)
 	i2, ok2 := _int64(v2)
 

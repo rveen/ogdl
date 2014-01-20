@@ -78,16 +78,16 @@ func (g *Graph) Depth() int {
 // Equal returns true if the given graph and the receiver graph are equal.
 func (g *Graph) Equal(c *Graph) bool {
 
-    if c.This != g.This {
-        return false
-    }
-    if g.Len() != c.Len() {
-        return false
-    }
-    
-	for i:=0; i<g.Len(); i++ {
+	if c.This != g.This {
+		return false
+	}
+	if g.Len() != c.Len() {
+		return false
+	}
+
+	for i := 0; i < g.Len(); i++ {
 		if g.Out[i].Equal(c.Out[i]) == false {
-		    return false
+			return false
 		}
 	}
 	return true
@@ -214,7 +214,7 @@ func (g *Graph) get(path *Graph) *Graph {
 		return nil
 	}
 
-	strip := true
+	iknow := true
 
 	node := g
 
@@ -235,7 +235,7 @@ func (g *Graph) get(path *Graph) *Graph {
 		c := elem.String()[0]
 
 		if c == '!' {
-			strip = false
+			iknow = false
 			c = elem.String()[1]
 
 			switch c {
@@ -251,6 +251,9 @@ func (g *Graph) get(path *Graph) *Graph {
 				}
 				nodePrev = node
 				node = node.GetAt(i)
+				if node == nil {
+				    return nil
+				}
 				elemPrev = node.String()
 
 			case 's':
@@ -300,7 +303,7 @@ func (g *Graph) get(path *Graph) *Graph {
 				return nil
 			}
 		} else {
-			strip = true
+			iknow = true
 			nodePrev = node
 			elemPrev = elem.String()
 			node = node.Node(elemPrev)
@@ -311,21 +314,29 @@ func (g *Graph) get(path *Graph) *Graph {
 		}
 	}
 
-	if strip && (node != nil) {
-		if node.Len() == 1 && node.Out[0].Len() == 0 {
-			return node.Out[0]
-		}
-		node2 := NilGraph()
-		node2.Out = node.Out
-		return node2
+	if node == nil {
+		return nil
 	}
 
-    // A nil node with one subnode makes no sense. Nil root nodes
-    // are used as list containers.
-	if node != nil && node.IsNil() && node.Len()==1 {
-	    return node.Out[0]
+	// iknow true if the path includes the token that is now at the root of node.
+	// We don't want to return what we already know.
+
+	if iknow {
+		if node.Len() == 1 {
+			node = node.Out[0]
+		} else {
+			node2 := NilGraph()
+			node2.Out = node.Out
+			return node2
+		}
 	}
-	
+
+	// A nil node with one subnode makes no sense. Nil root nodes
+	// are used as list containers.
+	if node.IsNil() && node.Len() == 1 {
+		return node.Out[0]
+	}
+
 	return node
 }
 
@@ -465,27 +476,36 @@ func (g *Graph) _text(n int, buffer *bytes.Buffer) {
 	if strings.IndexAny(g.String(), "\n\r \t'\",()") != -1 {
 
 		/* print quoted */
-		buffer.WriteString(sp)
-		buffer.WriteByte('"')
+		if n > 0 {
+			buffer.WriteString(sp[:len(sp)-1])
+			buffer.WriteByte('"')
+		}
+		
+		var c, cp byte
 
-		var c byte
+		cp = 0
 
 		for i := 0; i < len(g.String()); i++ {
 			c = g.String()[i] // byte, not rune
 			if c == 13 {
-				continue // just ignore CR
+				continue // ignore CR's
 			} else if c == 10 {
 				buffer.WriteByte('\n')
 				buffer.WriteString(sp)
-				//buffer.WriteByte(' ')
 			} else if c == '"' {
-				buffer.WriteString("\\\"") // BUG(): check if \ was already there
+				if cp != '\\' {
+					buffer.WriteString("\\\"")
+				}
 			} else {
 				buffer.WriteByte(c)
 			}
+			cp = c
 		}
 
-		buffer.WriteString("\"\n")
+        if n>0 {
+            buffer.WriteString("\"")
+        }
+		buffer.WriteString("\n")
 	} else {
 		if len(g.String()) == 0 {
 			n--

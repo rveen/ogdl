@@ -153,7 +153,7 @@ func newVarInt(i int) []byte {
 		b[2] = byte(i & 0xff)
 		return b
 	}
-	
+
 	if i < 0x10000000 {
 		b := make([]byte, 4)
 		b[0] = byte(i>>24 | 0xe0)

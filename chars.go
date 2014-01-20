@@ -27,6 +27,14 @@ func IsEndChar(c int) bool {
 	return false
 }
 
+// IsBreakChar returns true for 10 and 13 (newline and carriage return)
+func IsBreakChar(c int) bool {
+	if c == 10 || c == 13 {
+		return true
+	}
+	return false
+}
+
 // IsSpaceChar returns true for space and tab
 func IsSpaceChar(c int) bool {
 	if c == 32 || c == 9 {

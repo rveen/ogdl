@@ -77,14 +77,14 @@ func number(itf interface{}) interface{} {
 		return nil
 	}
 
-	i, ok := _int64(itf)
-	if ok {
-		return i
-	}
-
 	f, ok := _float64(itf)
 	if ok {
 		return f
+	}
+
+	i, ok := _int64(itf)
+	if ok {
+		return i
 	}
 
 	s := _string(itf)
@@ -354,7 +354,7 @@ func _bytes(i interface{}) []byte {
 }
 
 func _typeOf(i interface{}) string {
-    return reflect.TypeOf(i).String()
+	return reflect.TypeOf(i).String()
 }
 
 // Scalar returns the current node content, reducing the number of types

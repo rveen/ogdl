@@ -5,8 +5,8 @@
 package ogdl
 
 import (
-	"reflect"
 	"errors"
+	"reflect"
 )
 
 // factory[] is a map that stores type constructors.
@@ -16,7 +16,7 @@ var factory map[string]func() interface{}
 // they can be called from within templates.
 var functions map[string]func(g *Graph, p *Graph, i int) []byte // interface{}
 
-func FunctionAddToFactory(s string, f func() interface{}) {
+func FunctionAddConstructor(s string, f func() interface{}) {
 	factory[s] = f
 }
 
@@ -30,9 +30,9 @@ func FunctionAdd(s string, f func(*Graph, *Graph, int) []byte) {
 // Functions and type methods are handled here, based on the two maps, factory[]
 // and functions[].
 //
-// Also remote functions are called from here. A remote function is a call to 
+// Also remote functions are called from here. A remote function is a call to
 // a TCP/IP server, in which both the request and the response are binary encoded
-// OGDL objects.  
+// OGDL objects.
 //
 // (This code can be much improved)
 func (g *Graph) Function(p *Graph, ix int, context *Graph) (interface{}, error) {
@@ -56,7 +56,7 @@ func (g *Graph) Function(p *Graph, ix int, context *Graph) (interface{}, error) 
 
 		fu := functions[funame]
 		if fu == nil {
-			return nil, errors.New("function not in table "+funame)
+			return nil, errors.New("function not in table " + funame)
 		}
 
 		arg := NilGraph()
@@ -80,8 +80,8 @@ func (g *Graph) Function(p *Graph, ix int, context *Graph) (interface{}, error) 
 
 		if n.Len() == 1 {
 			rf, err = NewRFunction(g.Node("!init"))
-			if err!=nil {
-			    return nil, err
+			if err != nil {
+				return nil, err
 			}
 			n.Add(rf)
 		} else {
@@ -116,12 +116,11 @@ func (g *Graph) Function(p *Graph, ix int, context *Graph) (interface{}, error) 
 
 		ff := factory[name]
 		if ff == nil {
-			return nil, errors.New("function not in table "+name)
+			return nil, errors.New("function not in table " + name)
 		}
 
 		itf := ff()
 		v = reflect.ValueOf(itf)
-
 
 		// Add the object as second node of !type. Next time w'll pick this object.
 		n.Add(v)
@@ -151,7 +150,7 @@ func (g *Graph) Function(p *Graph, ix int, context *Graph) (interface{}, error) 
 	}
 
 	if fn == nil {
-	    s := "No method " + fn.Text()
+		s := "No method " + fn.Text()
 		return s, errors.New(s)
 	}
 
@@ -163,7 +162,7 @@ func (g *Graph) Function(p *Graph, ix int, context *Graph) (interface{}, error) 
 	me := v.MethodByName(fname)
 
 	if !me.IsValid() {
-	    s := "No method " + fname
+		s := "No method " + fname
 		return s, errors.New(s)
 	}
 

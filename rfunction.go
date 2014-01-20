@@ -5,8 +5,8 @@
 package ogdl
 
 import (
-	"net"
 	"errors"
+	"net"
 )
 
 type RFunction struct {
@@ -34,8 +34,8 @@ func (rf *RFunction) _init() error {
 	rf.host, _ = rf.cfg.GetString("host")
 	rf.port, _ = rf.cfg.GetString("port")
 
-    addr := rf.host+":"+rf.port
-	tcpAddr, err := net.ResolveTCPAddr("tcp", addr )
+	addr := rf.host + ":" + rf.port
+	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		return err
 	}
@@ -65,7 +65,7 @@ func (rf *RFunction) Close() {
 	}
 }
 
-// Send opens a connection to a remote server and makes a remote call. It sends 
+// Send opens a connection to a remote server and makes a remote call. It sends
 // the given Graph in binary format to the server and returns the response Graph.
 // The connection is closed before leaving this method.
 func (g *Graph) Send(cfg *Graph) (*Graph, error) {

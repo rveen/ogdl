@@ -351,18 +351,18 @@ func (p *Parser) Scalar() (string, bool) {
 */
 func (p *Parser) Comment() bool {
 	c := p.Read()
+
 	if c == '#' {
 		for {
 			c = p.Read()
+			if IsEndChar(c) || IsBreakChar(c) {
+				break
+			}
 			if c == 13 {
-				c = p.Read()
+				c := p.Read()
 				if c != 10 {
 					p.Unread()
 				}
-				break
-			}
-			if c == 10 {
-				break
 			}
 		}
 		return true
@@ -465,8 +465,11 @@ func (p *Parser) Block() (string, bool) {
 		return "", false
 	}
 
-	// read lines until indentation is >= to upper level.
-	i := p.ind[p.ev.Level()-1]
+	// read lines until indentation is >= indentation of upper level.
+	i := 0
+	if p.ev.Level() > 0 {
+		i = p.ind[p.ev.Level()-1]
+	}
 
 	u, ns := p.Space()
 
@@ -936,30 +939,6 @@ func (p *Parser) ArgList() bool {
 
 		p.Space()
 		p.NextByteIs(',')
-	}
-}
-
-// TokenList ::= token [, token]*
-func (p *Parser) TokenList() {
-
-	comma := false
-
-	for {
-		p.Space()
-
-		if comma && !p.NextByteIs(',') {
-			return
-		} else {
-			p.Space()
-		}
-
-		s, ok := p.Token()
-		if !ok {
-			return
-		}
-
-		p.ev.Add(s)
-		comma = true
 	}
 }
 

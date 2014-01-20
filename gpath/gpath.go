@@ -39,7 +39,7 @@ func main() {
 		return
 	}
 
-	err = p.Parse()
+	err = p.Ogdl()
 
 	if err != nil {
 		println("Error", err.Error())
@@ -51,8 +51,18 @@ func main() {
 	r := g
 
 	if path != "." {
-		r = g.Get(path).(*ogdl.Graph)
+		r = g.Get(path)
 	}
 
-	print(r.String())
+    // add a final newline if not there
+    s := r.Text()
+    if len(s)==0 {
+       return
+    }
+    c := s[len(s)-1]
+    if c!=10 && c!=13 {
+        s+="\n"
+    }
+     
+	print(s)
 }

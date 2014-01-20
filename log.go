@@ -47,7 +47,7 @@ func (log *Log) Add(g *Graph) int64 {
 	if b == nil {
 		return 0
 	}
-	
+
 	i, _ := log.f.Seek(0, 2)
 
 	log.f.Write(b)
@@ -63,7 +63,7 @@ func (log *Log) Add(g *Graph) int64 {
 // the log is returned.
 func (log *Log) AddBinary(b []byte) int64 {
 
-    i, _ := log.f.Seek(0, 2)
+	i, _ := log.f.Seek(0, 2)
 	log.f.Write(b)
 
 	if log.autoSync {
