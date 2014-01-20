@@ -20,6 +20,10 @@ The [documentation](http://godoc.org/github.com/rveen/ogdl) of the package is ki
 
     go get github.com/rveen/ogdl
 
+## Discussion
+
+Use the [ogdl-go](https://groups.google.com/forum/?fromgroups&hl=en#!forum/ogdl-go) list, if necessary. 
+
 ## Example: a configuration file
 
 If we have a text file 'conf.g' like this:
