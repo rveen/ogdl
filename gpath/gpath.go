@@ -54,15 +54,15 @@ func main() {
 		r = g.Get(path)
 	}
 
-    // add a final newline if not there
-    s := r.Text()
-    if len(s)==0 {
-       return
-    }
-    c := s[len(s)-1]
-    if c!=10 && c!=13 {
-        s+="\n"
-    }
-     
+	// add a final newline if not already there
+	s := r.Text()
+	if len(s) == 0 {
+		return
+	}
+	c := s[len(s)-1]
+	if c != 10 && c != 13 {
+		s += "\n"
+	}
+
 	print(s)
 }

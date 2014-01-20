@@ -252,7 +252,7 @@ func (g *Graph) get(path *Graph) *Graph {
 				nodePrev = node
 				node = node.GetAt(i)
 				if node == nil {
-				    return nil
+					return nil
 				}
 				elemPrev = node.String()
 
@@ -480,7 +480,7 @@ func (g *Graph) _text(n int, buffer *bytes.Buffer) {
 			buffer.WriteString(sp[:len(sp)-1])
 			buffer.WriteByte('"')
 		}
-		
+
 		var c, cp byte
 
 		cp = 0
@@ -502,9 +502,9 @@ func (g *Graph) _text(n int, buffer *bytes.Buffer) {
 			cp = c
 		}
 
-        if n>0 {
-            buffer.WriteString("\"")
-        }
+		if n > 0 {
+			buffer.WriteString("\"")
+		}
 		buffer.WriteString("\n")
 	} else {
 		if len(g.String()) == 0 {

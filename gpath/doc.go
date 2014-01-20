@@ -18,11 +18,9 @@
 // then the command
 //
 //     # gpath eth0.ip conf.g
-// 
+//
 // will print
-// 
+//
 //     128.0.0.1
 //
 package main
-
-
