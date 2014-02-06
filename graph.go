@@ -475,7 +475,8 @@ func (g *Graph) _text(n int, buffer *bytes.Buffer) {
 
 	if strings.IndexAny(g.String(), "\n\r \t'\",()") != -1 {
 
-		/* print quoted */
+		// print quoted, but not at level 0
+		// Do not convert " to \" below if level==0 !
 		if n > 0 {
 			buffer.WriteString(sp[:len(sp)-1])
 			buffer.WriteByte('"')
@@ -492,7 +493,7 @@ func (g *Graph) _text(n int, buffer *bytes.Buffer) {
 			} else if c == 10 {
 				buffer.WriteByte('\n')
 				buffer.WriteString(sp)
-			} else if c == '"' {
+			} else if c == '"' && n>0 {
 				if cp != '\\' {
 					buffer.WriteString("\\\"")
 				}
