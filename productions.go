@@ -78,28 +78,8 @@ func (p *Parser) Line() (bool, error) {
 		p.Space() // Eat eventual space characters
 	}
 
-	/* indentation TO level
-
-	   The number of spaces (indentation) for each level is stored in
-	   p.ind[level]
-	*/
-
-	l := 0
-
-	if n != 0 {
-		l = 1
-		for {
-			if p.ind[l] == 0 {
-				break
-			}
-			if p.ind[l] >= n {
-				break
-			}
-			l++
-		}
-	}
-
-	p.ind[l] = n
+	// indentation to level
+	l := p.getLevel(n)
 	p.ev.SetLevel(l)
 
 	// Now we can expect a sequence of scalars, groups, and finally
@@ -148,8 +128,9 @@ func (p *Parser) Line() (bool, error) {
 
 	}
 
-	// Restore the level to that at the beginning of the line.
-	p.ev.SetLevel(l)
+    // Set the indentation to level rules for subsequent lines
+	p.setLevel(l,n)
+	p.setLevel(p.ev.Level(),n+1)
 
 	return true, nil
 }

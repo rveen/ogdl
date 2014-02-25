@@ -158,3 +158,48 @@ func (p *Parser) Unread() {
 	p.lastn++
 	p.lastnl--
 }
+
+// setLevel sets the nesting level for a given indentation (number of spaces)
+// This function is used by the line() production for parsing OGDL text.
+//
+// setLevel sets ind[lev] = n, all ind[>lev] = 0 and assures that 
+// ind[0..lev-1] has increasing n, adjusting n if necessary.
+func (p *Parser) setLevel(lev, n int) {
+
+	// Set ind[level] to the number of spaces + 1 (zero is nil)
+	p.ind[lev] = n + 1
+
+	// Fill holes
+    for i:=1; i<lev; i++ {
+        if p.ind[i] < p.ind[i-1] {
+            p.ind[i] = p.ind[i-1]
+        }
+    }
+    
+    for i:=lev+1; i<len(p.ind); i++ {
+        p.ind[i]=0
+    }
+}
+
+// getLevel returns the nesting level corresponding to the given indentation.
+// This function is used by the line() production for parsing OGDL text.
+// 
+// getLevel returns the level for which ind[level] is equal or higher than n.
+func (p *Parser) getLevel(n int) int {
+
+    l := 0
+    
+	for i := 0; i < len(p.ind); i++ {
+		if p.ind[i] >= n {
+			return i
+		}
+		if i!=0 && p.ind[i] == 0 {
+			l = i - 1
+			break
+		}
+	}
+	if l<0 {
+	    return 0
+	}
+	return l
+}
