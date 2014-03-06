@@ -233,8 +233,14 @@ func (g *Graph) EvalExpression(p *Graph) interface{} {
 
 	c := int(s[0])
 
+    // [!] Operator should be identified. Operators written as strings are
+    // missinterpreted.
 	if IsOperatorChar(c) {
-		return g.evalBinary(p)
+	    if len(s)<=2 {
+	        if len(s)==1 || IsOperatorChar(int(s[1])) {
+		        return g.evalBinary(p)
+		    }
+		}
 	}
 
 	if c == '"' || c == '\'' {

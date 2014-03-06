@@ -278,12 +278,12 @@ func (p *Parser) Sequence() (bool, bool, error) {
 
 		// We first eat spaces
 
-		p.Space()
+		p.WhiteSpace()
 
 		co := p.NextByteIs(',')
 
 		if co {
-			p.Space()
+			p.WhiteSpace()
 			p.ev.SetLevel(i)
 		} else {
 			p.ev.Inc()
@@ -300,11 +300,11 @@ func (p *Parser) Group() (bool, error) {
 
 	i := p.ev.Level()
 
-	p.Space()
+    p.WhiteSpace()
 
 	p.Sequence()
 
-	p.Space()
+	p.WhiteSpace()
 
 	if !p.NextByteIs(')') {
 		return false, errors.New("Missing )")
@@ -516,6 +516,23 @@ func (p *Parser) Break() bool {
 	}
 	p.Unread()
 	return false
+}
+
+// WhiteSpace is equivalent to Space | Break. It consumes all white space,
+// whether spaces, tabs or newlines
+func (p *Parser) WhiteSpace() bool {
+
+    any := false;
+    for {
+	    c := p.Read()
+	    if c != 13 && c != 10 && c != 9 && c != 32 {
+	        break
+	    }
+	    any = true
+	}
+	
+	p.Unread()
+	return any
 }
 
 // Space is (0x20|0x09)+. It returns a boolean indicating

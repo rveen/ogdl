@@ -17,4 +17,9 @@ a
   b
     "text with
     newlines"
+    
+group ( !int b c, 1 
+d ( a, b b
+w ) 
+)
   
