@@ -145,6 +145,7 @@ func TestBinParser3(t *testing.T) {
 	}
 
 	g = BinParse(r)
+	g = g.Out[0]
 
 	if g.Len() != 1 {
 		t.Error("BinParse() failed")
@@ -159,6 +160,7 @@ func TestBinParser4(t *testing.T) {
 	r := []byte{1, 'G', 0 /*lev*/, 1 /*bin*/, 1 /* len */, 1, 0x55 /*end bin */, 0, 0}
 
 	g := BinParse(r)
+	g = g.Out[0]
 
 	if g.Len() != 0 {
 		t.Error("BinParse() failed")
@@ -456,13 +458,13 @@ func TestGet1(t *testing.T) {
 	g.Add("n").Add(1)
 	g.Add("d").Add(1.0)
 
-	i := g.Get("a.n").Scalar()
+	i := g.Get("n").Scalar()
 	s = _typeOf(i)
 	if s != "int64" || i != int64(1) {
 		t.Error("Scalar()")
 	}
 
-	f := g.Get("a.d").Scalar()
+	f := g.Get("d").Scalar()
 	s = _typeOf(f)
 	if s != "float64" || f != 1.0 {
 		t.Error("Scalar()", f, s)
@@ -1315,7 +1317,7 @@ func TestLog(t *testing.T) {
 func ExampleGraph_Set() {
 
 	g := ParseString("a b c")
-	g.Set("b", "d")
+	g.Set("a.b", "d")
 
 	fmt.Println(g.Text())
 

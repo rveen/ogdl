@@ -119,14 +119,7 @@ func (e *EventHandler) Graph() *Graph {
 	}
 
 	// Check if e.gl[0] is transparent and has only one subnode.
-	g := e.gl[0]
-	if g == nil {
-		return nil
-	}
-	if g.Len() == 1 && g.IsNil() {
-		return g.Out[0]
-	}
-	return g
+	return e.gl[0]
 }
 
 // GraphTop returns the Graph object built from

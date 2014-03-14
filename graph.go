@@ -223,13 +223,6 @@ func (g *Graph) get(path *Graph) *Graph {
 	// elemPrev = previous path element, used in {}
 	var elemPrev string
 
-	// normalize the context graph that it allways has a nil root
-	if !node.IsNil() {
-		g = NilGraph()
-		g.Add(node)
-		node = g
-	}
-
 	for _, elem := range path.Out {
 
 		c := elem.String()[0]
@@ -306,7 +299,7 @@ func (g *Graph) get(path *Graph) *Graph {
 			iknow = true
 			nodePrev = node
 			elemPrev = elem.String()
-			node = node.Node(elemPrev)
+			node = node.Node(elemPrev)			
 		}
 
 		if node == nil {
