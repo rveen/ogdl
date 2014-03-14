@@ -100,6 +100,9 @@ func ParseString(s string) *Graph {
 
 func ParseFile(s string) *Graph {
 	p := NewFileParser(s)
+	if p==nil {
+	    return nil
+	}
 	p.Ogdl()
 	return p.Graph()
 }

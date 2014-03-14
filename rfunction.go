@@ -138,3 +138,43 @@ func (rf *RFunction) Call(g *Graph) (*Graph, error) {
 	}
 	return p.Parse(), nil
 }
+
+// CallBinary makes a remote call. It sends the given Graph in binary format 
+// to the server and returns the response Graph.
+//
+// TODO: Return []byte
+func (rf *RFunction) CallBinary(b []byte) (*Graph, error) {
+
+	if b == nil {
+		return nil, nil
+	}
+
+	// XXX also check if server side is alive
+
+	if rf.conn == nil {
+		rf._init()
+		if rf.conn == nil {
+			return nil, errors.New("No connection")
+		}
+	}
+
+	_, err := rf.conn.Write(b)
+
+	if err != nil {
+		rf._init()
+		if rf.conn == nil {
+			return nil, errors.New("No connection")
+		}
+		_, err = rf.conn.Write(b)
+		if err != nil {
+			return nil, errors.New("Cannot write to connection")
+		}
+	}
+
+	p := NewBinParser(rf.conn)
+
+	if p.read() != 0 {
+		p.unread()
+	}
+	return p.Parse(), nil
+}
