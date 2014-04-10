@@ -150,6 +150,10 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 			if nn == nil {
 				// It may have a !type
 				itf, _ := node.Function(p, i, g)
+				
+				if itf == nil { 				
+				    itf, _ = node.Function2(p,i,g)
+				}
 				return itf
 			}
 

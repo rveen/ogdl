@@ -40,7 +40,7 @@ func NewTemplate(s string) *Graph {
 	p.Template()
 
 	t := p.GraphTop(TYPE_TEMPLATE)
-	t.ast()
+	t.Ast()
 	t.simplify()
 	t.flow()
 

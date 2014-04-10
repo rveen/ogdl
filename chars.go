@@ -12,43 +12,28 @@ import (
 // IsTextChar returns true for all integers > 32 and
 // are not OGDL separators (parenthesis and comma)
 func IsTextChar(c int) bool {
-	if c > 32 && c != '(' && c != ')' && c != ',' {
-		return true
-	}
-	return false
+	return c > 32 && c != '(' && c != ')' && c != ','
 }
 
 // IsEndChar returns true for all integers < 32 that are not newline,
 // carriage return or tab.
 func IsEndChar(c int) bool {
-	if c < 32 && c != '\t' && c != '\n' && c != '\r' {
-		return true
-	}
-	return false
+	return c < 32 && c != '\t' && c != '\n' && c != '\r' 
 }
 
 // IsBreakChar returns true for 10 and 13 (newline and carriage return)
 func IsBreakChar(c int) bool {
-	if c == 10 || c == 13 {
-		return true
-	}
-	return false
+	return c == 10 || c == 13
 }
 
 // IsSpaceChar returns true for space and tab
 func IsSpaceChar(c int) bool {
-	if c == 32 || c == 9 {
-		return true
-	}
-	return false
+	return c == 32 || c == 9 
 }
 
 // IsTemplateTextChar returns true for all not END chars and not $
 func IsTemplateTextChar(c int) bool {
-	if !IsEndChar(c) && c != '$' {
-		return true
-	}
-	return false
+	return !IsEndChar(c) && c != '$'
 }
 
 // IsOperatorChar returns true for all operator characters used in OGDL
@@ -57,10 +42,7 @@ func IsOperatorChar(c int) bool {
 	if c < 0 {
 		return false
 	}
-	if bytes.IndexByte([]byte("+-*/%&|!<>=~^"), byte(c)) != -1 {
-		return true
-	}
-	return false
+	return bytes.IndexByte([]byte("+-*/%&|!<>=~^"), byte(c)) != -1 
 }
 
 // ---- Following functions are the only ones that depend on Unicode --------

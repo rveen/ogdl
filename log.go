@@ -86,6 +86,10 @@ func (log *Log) Get(i int64) (*Graph, error, int64) {
 	p := NewBinParser(log.f)
 	g := p.Parse()
 
+    if p.n == 0 {
+        return g, nil, -1
+    }
+    
 	return g, err, i + int64(p.n)
 }
 

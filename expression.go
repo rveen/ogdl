@@ -20,7 +20,7 @@ func NewExpression(s string) *Graph {
 }
 
 // ast reorganizes the expression graph in the form of an abstract syntax tree.
-func (g *Graph) ast() {
+func (g *Graph) Ast() {
 
 	if g == nil {
 		return
@@ -30,7 +30,7 @@ func (g *Graph) ast() {
 		if node.String() == TYPE_EXPRESSION {
 			node._ast()
 		} else {
-			node.ast()
+			node.Ast()
 		}
 	}
 }
@@ -42,7 +42,7 @@ func (g *Graph) _ast() {
 	}
 
 	for _, node := range g.Out {
-		node.ast()
+		node.Ast()
 	}
 
 	var e1, e2 *Graph

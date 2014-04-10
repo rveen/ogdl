@@ -206,3 +206,28 @@ func (p *Parser) getLevel(n int) int {
 	}
 	return l
 }
+
+/* 
+  The following functions are public in order for the Parser to be used
+  outside of the current package
+*/
+
+// Emit sends a string to the event handler
+func (p *Parser) Emit(s string) {
+    p.ev.Add(s)
+}
+
+// EmitBytes sends a byte array to the event handler
+func (p *Parser) EmitBytes(b []byte) {
+    p.ev.AddBytes(b)
+}
+
+// Inc event handler level
+func (p *Parser) Inc() {
+    p.ev.Inc()
+}
+
+// Doc event handler level
+func (p *Parser) Dec() {
+    p.ev.Dec()
+}

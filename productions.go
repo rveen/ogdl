@@ -948,3 +948,27 @@ func (p *Parser) Template() {
 		}
 	}
 }
+
+// TokenList ::= token [, token]*
+func (p *Parser) TokenList() {
+
+	comma := false
+
+	for {
+		p.Space()
+
+		if comma && !p.NextByteIs(',') {
+			return
+		} else {
+			p.Space()
+		}
+
+		s, ok := p.Token()
+		if !ok {
+			return
+		}
+
+		p.Emit(s)
+		comma = true
+	}
+}

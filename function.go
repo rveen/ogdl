@@ -171,7 +171,59 @@ func (g *Graph) Function(p *Graph, ix int, context *Graph) (interface{}, error) 
 	var args []reflect.Value
 
 	for _, arg := range ag.Out {
-		a := g.Eval(arg)
+		a := context.Eval(arg)
+		args = append(args, reflect.ValueOf(a))
+	}
+
+	return me.Call(args)[0].Interface(), nil
+}
+
+// Function enables calling Go functions from templates. 
+//
+func (g *Graph) Function2 (p *Graph, ix int, context *Graph) (interface{}, error) {
+
+	// g.This must be an object with associated fields or methods
+
+    // XXX reject as early as possible any non-struct here.
+    if g.Len()!=1 {
+        return nil,nil
+    }
+
+println("type:",reflect.TypeOf(g.GetAt(0).This).String(),"->",g.String(),g.GetAt(0).String())
+
+    v := reflect.ValueOf(g.GetAt(0).This)
+	fn := p.GetAt(ix)
+	ag := p.GetAt(ix + 1)
+
+	if fn == nil {
+		s := "No method " + fn.Text()
+		return s, errors.New(s)
+	}
+
+	fname := fn.String()
+
+	// Check if it is a method
+	me := v.MethodByName(fname)
+
+	if !me.IsValid() {
+	    // Try field
+	    if v.Kind()==reflect.Struct {
+	        v = v.FieldByName(fname)
+	        if v.IsValid() {
+	            return v.Interface(), nil
+	        }
+	    }
+	    
+		s := "No method or field " + fname
+		return s, errors.New(s)
+	}
+
+	// Build arguments in the form []reflect.Value
+
+	var args []reflect.Value
+
+	for _, arg := range ag.Out {
+		a := context.Eval(arg)		
 		args = append(args, reflect.ValueOf(a))
 	}
 
