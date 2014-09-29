@@ -40,6 +40,10 @@ func (rf *RFunction) _init() error {
 		return err
 	}
 
+    if rf.conn!=nil {
+        rf.conn.Close()
+    }
+    
 	rf.conn, err = net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
 		return err
@@ -109,34 +113,29 @@ func (rf *RFunction) Call(g *Graph) (*Graph, error) {
 		return nil, nil
 	}
 
-	// XXX also check if server side is alive
+	n, err := rf.conn.Write(b)
 
-	if rf.conn == nil {
-		rf._init()
-		if rf.conn == nil {
-			return nil, errors.New("No connection")
-		}
-	}
-
-	_, err := rf.conn.Write(b)
-
-	if err != nil {
-		rf._init()
-		if rf.conn == nil {
-			return nil, errors.New("No connection")
-		}
-		_, err = rf.conn.Write(b)
-		if err != nil {
-			return nil, errors.New("Cannot write to connection")
-		}
+	if err != nil || n!=len(b) {
+        rf._init()
+		return rf.call(b)
 	}
 
 	p := NewBinParser(rf.conn)
-
-	if p.read() != 0 {
-		p.unread()
+	
+    c := p.read()
+    if c==-1 {
+        rf._init()
+        return rf.call(b)
+    } else {
+        p.unread()
+    }
+	
+	r := p.Parse()
+	
+	if r==nil || r.Len()==0 {
+	    return nil, errors.New("Nil response")
 	}
-	return p.Parse(), nil
+	return r,nil
 }
 
 // CallBinary makes a remote call. It sends the given Graph in binary format 
@@ -149,32 +148,54 @@ func (rf *RFunction) CallBinary(b []byte) (*Graph, error) {
 		return nil, nil
 	}
 
-	// XXX also check if server side is alive
+	n, err := rf.conn.Write(b)
 
-	if rf.conn == nil {
-		rf._init()
-		if rf.conn == nil {
-			return nil, errors.New("No connection")
-		}
-	}
-
-	_, err := rf.conn.Write(b)
-
-	if err != nil {
-		rf._init()
-		if rf.conn == nil {
-			return nil, errors.New("No connection")
-		}
-		_, err = rf.conn.Write(b)
-		if err != nil {
-			return nil, errors.New("Cannot write to connection")
-		}
+	if err != nil || n!=len(b) {
+        rf._init()
+		return rf.call(b)
 	}
 
 	p := NewBinParser(rf.conn)
-
-	if p.read() != 0 {
-		p.unread()
+	
+    c := p.read()
+    if c==-1 {
+        rf._init()
+        return rf.call(b)
+    } else {
+        p.unread()
+    }
+	
+	r := p.Parse()
+	
+	if r==nil || r.Len()==0 {
+	    return nil, errors.New("Nil response")
 	}
-	return p.Parse(), nil
+	return r,nil
+}
+
+func (rf *RFunction) call(b []byte) (*Graph, error) {
+
+	n, err := rf.conn.Write(b)
+	if err!=nil {
+	    return nil, err
+	}
+	if n<len(b) {
+	    return nil, errors.New("Could not write all bytes")
+	}
+
+	p := NewBinParser(rf.conn)
+	
+    c := p.read()
+    if c==-1 {
+        return nil, errors.New("unexpected EOS")
+    } 
+    
+    p.unread()
+	
+	r := p.Parse()
+	
+	if r==nil || r.Len()==0 {
+	    return nil, errors.New("Nil response")
+	}
+	return r,nil
 }

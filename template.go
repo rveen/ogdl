@@ -103,14 +103,16 @@ func (t *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
 
 			// Check that i is iterable
 
-			if _, ok := i.(*Graph); !ok {
+            gi, ok := i.(*Graph);
+			if !ok || gi==nil {
 				return true
 			}
+						
 			// The third is the subtemplate to travel
 			// println ("for type: ",reflect.TypeOf(i).String(), "ok",ok)
 			// Assing expression value to path
 			// XXX if not Graph
-			for _, ee := range i.(*Graph).Out {
+			for _, ee := range gi.Out {
 				c.assign(n.GetAt(0).GetAt(0).GetAt(0), ee, '=')
 				brk := n.GetAt(1).process(c, buffer)
 				if brk {

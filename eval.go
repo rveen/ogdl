@@ -76,9 +76,10 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 			}
 			itf := g.EvalExpression(n.Out[0])
 			ix, ok := _int64(itf)
-			if !ok || ix < 0 || int(ix) >= node.Len() {
+			if !ok || ix < 0 {
 				return "[] does not evaluate to a valid integer"
 			}
+
 			nodePrev = node
 			node = node.GetAt(int(ix))
 

@@ -97,7 +97,7 @@ func (g *Graph) Equal(c *Graph) bool {
 //
 // An eventual nil root will not be bypassed.
 func (g *Graph) Add(n interface{}) *Graph {
-	if node, ok := n.(*Graph); ok {
+	if node, ok := n.(*Graph); ok && node!=nil {
 		if node.IsNil() {
 			for _, node2 := range node.Out {
 				g.Out = append(g.Out, node2)

@@ -94,8 +94,10 @@ func (g *Graph) Function(p *Graph, ix int, context *Graph) (interface{}, error) 
 		for _, a := range args.Out {
 			v := context.Eval(a)
 
-			if _, ok := v.(*Graph); ok {
-				arg.Add("_").Add(v)
+			g, ok := v.(*Graph);
+			
+			if ok && g.Len()>0 {
+				arg.Add("_").Add(g)
 			} else {
 				arg.Add(v)
 			}
