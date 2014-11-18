@@ -34,22 +34,22 @@ func (g *Graph) GetSimilar(re string) (*Graph, error) {
 	return r, nil
 }
 
-// Return the node as an int64, if possible.
+// Int64 returns the node as an int64, if possible.
 func (g *Graph) Int64() (int64, bool) {
 	return _int64f(g.String())
 }
 
-// Return the node as a float64, if possible.
+// Float64 returns the node as a float64, if possible.
 func (g *Graph) Float64() (float64, bool) {
 	return _float64f(g.String())
 }
 
-// Return the node as a boolean, if possible.
+// Bool returns the node as a boolean, if possible.
 func (g *Graph) Bool() (bool, bool) {
 	return _boolf(g.String())
 }
 
-// Return the node as a reflect.Value.
+// Value returns the node as a reflect.Value.
 func (g *Graph) Value() reflect.Value {
 	return reflect.ValueOf(g.This)
 }
@@ -59,7 +59,7 @@ func (g *Graph) String() string {
 	return _string(g.This)
 }
 
-// String returns a the node as []byte, or nil if not possble.
+// Bytes returns a the node as []byte, or nil if not possble.
 func (g *Graph) Bytes() []byte {
 	return _bytes(g.This)
 }
@@ -112,7 +112,7 @@ func number(itf interface{}) interface{} {
 func (g *Graph) GetString(path string) (string, error) {
 	i := g.Get(path)
 	if i == nil {
-		return "", errors.New("Not found")
+		return "", errors.New("not found")
 	}
 	return _string(i), nil
 }
@@ -122,7 +122,7 @@ func (g *Graph) GetString(path string) (string, error) {
 func (g *Graph) GetBytes(path string) ([]byte, error) {
 	i := g.Get(path)
 	if i == nil {
-		return nil, errors.New("Not found")
+		return nil, errors.New("not found")
 	}
 	return _bytes(i), nil
 }
@@ -133,12 +133,12 @@ func (g *Graph) GetBytes(path string) ([]byte, error) {
 func (g *Graph) GetInt64(path string) (int64, error) {
 	i := g.Get(path)
 	if i == nil {
-		return 0, errors.New("Not found")
+		return 0, errors.New("not found")
 	}
 
 	j, ok := _int64f(i)
 	if !ok {
-		return 0, errors.New("Not an integer")
+		return 0, errors.New("not an integer")
 	}
 	return j, nil
 }
@@ -149,12 +149,12 @@ func (g *Graph) GetInt64(path string) (int64, error) {
 func (g *Graph) GetFloat64(path string) (float64, error) {
 	i := g.Get(path)
 	if i == nil {
-		return 0, errors.New("Not found")
+		return 0, errors.New("not found")
 	}
 
 	j, ok := _float64f(i)
 	if !ok {
-		return 0, errors.New("Not a number")
+		return 0, errors.New("not a number")
 	}
 	return j, nil
 }
@@ -165,12 +165,12 @@ func (g *Graph) GetFloat64(path string) (float64, error) {
 func (g *Graph) GetBool(path string) (bool, error) {
 	i := g.Get(path)
 	if i == nil {
-		return false, errors.New("Not found")
+		return false, errors.New("not found")
 	}
 
 	j, ok := _boolf(i)
 	if !ok {
-		return false, errors.New("Not a boolean")
+		return false, errors.New("not a boolean")
 	}
 	return j, nil
 }

@@ -101,7 +101,7 @@ func (g *Graph) bin(level int, buf []byte) []byte {
 	return buf
 }
 
-// Graph parses a binary OGDL stream and returns a Graph.
+// Parse parses a binary OGDL stream and returns a Graph.
 func (p *BinParser) Parse() *Graph {
 
 	if !p.header() {

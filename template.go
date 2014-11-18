@@ -39,7 +39,7 @@ func NewTemplate(s string) *Graph {
 	p := NewStringParser(s)
 	p.Template()
 
-	t := p.GraphTop(TYPE_TEMPLATE)
+	t := p.GraphTop(TypeTemplate)
 	t.Ast()
 	t.simplify()
 	t.flow()
@@ -66,7 +66,7 @@ func (t *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
 		s := n.String()
 
 		switch s {
-		case TYPE_PATH:
+		case TypePath:
 			i := c.Eval(n)
 
 			// If i is a graph, we want the full graph converted to string,
@@ -77,10 +77,10 @@ func (t *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
 			} else {
 				buffer.WriteString(_string(c.Eval(n)))
 			}
-		case TYPE_EXPRESSION:
+		case TypeExpression:
 			// Silent evaluation
 			c.Eval(n)
-		case TYPE_IF:
+		case TypeIf:
 			// evaluate the expression
 			b := c.EvalBool(n.GetAt(0).GetAt(0))
 
@@ -90,13 +90,13 @@ func (t *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
 			} else {
 				falseIf = true
 			}
-		case TYPE_ELSE:
+		case TypeElse:
 			// if there was a previous if evaluating to false:
 			if falseIf {
 				n.process(c, buffer)
 				falseIf = false
 			}
-		case TYPE_FOR:
+		case TypeFor:
 			// The first subnode (of !g) is a path
 			// The second is an expression evaluating to a list of elements
 			i := c.Eval(n.GetAt(0).GetAt(1))
@@ -119,7 +119,7 @@ func (t *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
 					break
 				}
 			}
-		case TYPE_BREAK:
+		case TypeBreak:
 			return true
 
 		default:
@@ -130,26 +130,26 @@ func (t *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
 }
 
 // simplify converts !p TYPE in !TYPE for keywords if, end, else for and break.
-func (g *Graph) simplify() {
-	for _, node := range g.Out {
-		if TYPE_PATH == node.String() {
+func (t *Graph) simplify() {
+	for _, node := range t.Out {
+		if TypePath == node.String() {
 			s := node.GetAt(0).String()
 
 			switch s {
 			case "if":
-				node.This = TYPE_IF
+				node.This = TypeIf
 				node.DeleteAt(0)
 			case "end":
-				node.This = TYPE_END
+				node.This = TypeEnd
 				node.DeleteAt(0)
 			case "else":
-				node.This = TYPE_ELSE
+				node.This = TypeElse
 				node.DeleteAt(0)
 			case "for":
-				node.This = TYPE_FOR
+				node.This = TypeFor
 				node.DeleteAt(0)
 			case "break":
-				node.This = TYPE_BREAK
+				node.This = TypeBreak
 				node.DeleteAt(0)
 			}
 		}
@@ -158,24 +158,24 @@ func (g *Graph) simplify() {
 }
 
 // flow nests 'if' and 'for' loops.
-func (g *Graph) flow() {
+func (t *Graph) flow() {
 	n := 0
 	var nod *Graph
 
-	for i := 0; i < g.Len(); i++ {
+	for i := 0; i < t.Len(); i++ {
 
-		node := g.Out[i]
+		node := t.Out[i]
 		s := node.String()
 
-		if s == TYPE_IF || s == TYPE_FOR {
+		if s == TypeIf || s == TypeFor {
 			n++
 			if n == 1 {
-				nod = node.Add(TYPE_TEMPLATE)
+				nod = node.Add(TypeTemplate)
 				continue
 			}
 		}
 
-		if s == TYPE_ELSE {
+		if s == TypeElse {
 			if n == 1 {
 				nod.flow()
 				nod = node
@@ -183,11 +183,11 @@ func (g *Graph) flow() {
 			}
 		}
 
-		if s == TYPE_END {
+		if s == TypeEnd {
 			n--
 			if n == 0 {
 				nod.flow()
-				g.DeleteAt(i)
+				t.DeleteAt(i)
 				i--
 				continue
 			}
@@ -195,7 +195,7 @@ func (g *Graph) flow() {
 
 		if n > 0 {
 			nod.Add(node)
-			g.DeleteAt(i)
+			t.DeleteAt(i)
 			i--
 		}
 	}

@@ -11,9 +11,9 @@ import "strconv"
 func (g *Graph) Eval(e *Graph) interface{} {
 
 	switch e.String() {
-	case TYPE_PATH:
+	case TypePath:
 		return g.EvalPath(e)
-	case TYPE_EXPRESSION:
+	case TypeExpression:
 		return g.EvalExpression(e)
 	}
 
@@ -26,8 +26,8 @@ func (g *Graph) Eval(e *Graph) interface{} {
 	return e.Scalar()
 }
 
-// Eval takes a parsed expression and evaluates it
-// in the context of the current graph, and converting the result to a boolean.
+// EvalBool takes a parsed expression and evaluates it in the context of the 
+// current graph, and converts the result to a boolean.
 func (g *Graph) EvalBool(e *Graph) bool {
 	b, _ := _boolf(g.Eval(e))
 	return b
@@ -69,7 +69,7 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 
 		switch s {
 
-		case TYPE_INDEX:
+		case TypeIndex:
 			// must evaluate to an integer
 			if n.Len() == 0 {
 				return "empty []"
@@ -83,7 +83,7 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 			nodePrev = node
 			node = node.GetAt(int(ix))
 
-		case TYPE_SELECTOR:
+		case TypeSelector:
 			if nodePrev == nil || nodePrev.Len() == 0 || i < 1 {
 				return nil
 			}
@@ -135,7 +135,7 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 		case "_len":
 			return node.Len()
 
-		case TYPE_GROUP:
+		case TypeGroup:
 			// The following format is supported: ( expression )
 			// The expression is evaluated and used as path element
 			itf := g.EvalExpression(n.Out[0])
@@ -196,7 +196,7 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 	return node
 }
 
-//
+// EvalExpression evaluates expressions (!e)
 // g can have native types (other things than strings), but
 // p only []byte or string
 //
@@ -223,13 +223,13 @@ func (g *Graph) EvalExpression(p *Graph) interface{} {
 	case "!":
 		// Unary expression !expr
 		return !g.EvalBool(p.Out[0])
-	case TYPE_EXPRESSION:
+	case TypeExpression:
 		return g.EvalExpression(p.GetAt(0))
-	case TYPE_PATH:
+	case TypePath:
 		return g.EvalPath(p)
-	case TYPE_GROUP:
+	case TypeGroup:
 		// expression list
-		r := NewGraph(TYPE_GROUP)
+		r := NewGraph(TypeGroup)
 		for _, expr := range p.Out {
 			r.Add(g.EvalExpression(expr))
 		}

@@ -32,34 +32,33 @@ func (p *Parser) Ogdl() error {
 	return nil
 }
 
-/* Line processes an OGDL line or a multiline scalar.
-
- - A Line is composed of scalars and groups.
- - A Scalar is a Quoted or a String.
- - A Group is a sequence of Scalars enclosed in parenthesis
- - Scalars can be separated by commas or by space
- - The last element of a line can be a Comment, or a Block
-
-The indentation of the line and the Scalar sequences and Groups on it define
-the tree structure characteristic of OGDL level 1.
-
-    Line ::= Space(n) Sequence? ((Comment? Break)|Block)?
-
-Anything other than one Scalar before a Block should be an syntax error.
-Anything after a closing ')' that is not a comment is a syntax error, thus
-only one Group per line is allowed. That is because it would be difficult to
-define the origin of the edges pointing to what comes after a Group.
-
-Indentation rules:
-
-   a           -> level 0
-     b         -> level 1
-     c         -> level 1
-       d       -> level 2
-      e        -> level 2
-    f          -> level 1
-
-*/
+// Line processes an OGDL line or a multiline scalar.
+//
+// - A Line is composed of scalars and groups.
+// - A Scalar is a Quoted or a String.
+// - A Group is a sequence of Scalars enclosed in parenthesis
+// - Scalars can be separated by commas or by space
+// - The last element of a line can be a Comment, or a Block
+//
+// The indentation of the line and the Scalar sequences and Groups on it define
+// the tree structure characteristic of OGDL level 1.
+//
+//    Line ::= Space(n) Sequence? ((Comment? Break)|Block)?
+//
+// Anything other than one Scalar before a Block should be an syntax error.
+// Anything after a closing ')' that is not a comment is a syntax error, thus
+// only one Group per line is allowed. That is because it would be difficult to
+// define the origin of the edges pointing to what comes after a Group.
+//
+// Indentation rules:
+//
+//   a           -> level 0
+//     b         -> level 1
+//     c         -> level 1
+//       d       -> level 2
+//      e        -> level 2
+//    f          -> level 1
+//
 func (p *Parser) Line() (bool, error) {
 
 	sp, n := p.Space()
@@ -135,7 +134,7 @@ func (p *Parser) Line() (bool, error) {
 	return true, nil
 }
 
-// Paths parses an OGDL path, or an extended path as used in templates.
+// Path parses an OGDL path, or an extended path as used in templates.
 //
 //     path ::= element ('.' element)*
 //
@@ -237,21 +236,21 @@ func (p *Parser) Path() bool {
 	return anything
 }
 
-/* sequence ::= (Scalar|Group) (Space? (Comma? Space?) (Scalar|Group))*
-
-   [!] with the requirement that after a group a comma is required if there are more elements.
-
-   Examples:
-     a b c
-     a b,c
-     a(b,c)
-     (a b,c)
-     (b,c),(d,e) <-- This can be handled
-     a (b c) d   <-- This is an error
-
-
-   This method returns two booleans: if there has been a sequence, and if the last element was a Group
-*/
+// Sequence ::= (Scalar|Group) (Space? (Comma? Space?) (Scalar|Group))*
+//
+//   [!] with the requirement that after a group a comma is required if there are more elements.
+//
+//   Examples:
+//     a b c
+//     a b,c
+//     a(b,c)
+//     (a b,c)
+//     (b,c),(d,e) <-- This can be handled
+//     a (b c) d   <-- This is an error
+//
+//
+//   This method returns two booleans: if there has been a sequence, and if the last element was a Group
+//
 func (p *Parser) Sequence() (bool, bool, error) {
 
 	i := p.ev.Level()
@@ -291,7 +290,7 @@ func (p *Parser) Sequence() (bool, bool, error) {
 	}
 }
 
-//   Group ::= '(' Space? Sequence?  Space? ')'
+// Group ::= '(' Space? Sequence?  Space? ')'
 func (p *Parser) Group() (bool, error) {
 
 	if !p.NextByteIs('(') {
@@ -315,7 +314,7 @@ func (p *Parser) Group() (bool, error) {
 	return true, nil
 }
 
-// scalar ::= quoted | string
+// Scalar ::= quoted | string
 func (p *Parser) Scalar() (string, bool) {
 	b, ok := p.Quoted()
 	if ok {
@@ -324,12 +323,10 @@ func (p *Parser) Scalar() (string, bool) {
 	return p.String()
 }
 
-/* Comment
-
-   Anything from # up to the end of the line.
-
-   BUG(): Special cases: #?, #{
-*/
+// Comment consumes anything from # up to the end of the line.
+//
+// BUG(): Special cases: #?, #{
+//
 func (p *Parser) Comment() bool {
 	c := p.Read()
 
@@ -574,7 +571,7 @@ func (p *Parser) Space() (bool, int) {
 	return true, n
 }
 
-// end returns true if the end of stream has been reached.
+// End returns true if the end of stream has been reached.
 //
 // end < stream > bool
 func (p *Parser) End() bool {
@@ -586,6 +583,7 @@ func (p *Parser) End() bool {
 	return false
 }
 
+// Newline returns true is a newline is found at the current position.
 func (p *Parser) Newline() bool {
 	c := p.Read()
 	if c == '\r' {
@@ -600,7 +598,7 @@ func (p *Parser) Newline() bool {
 	return false
 }
 
-// token reads from the Parser input stream and returns
+// Token reads from the Parser input stream and returns
 // a token or nil. A token is defined as a sequence of
 // letters and/or numbers and/or _.
 //
@@ -633,6 +631,8 @@ func (p *Parser) Token() (string, bool) {
 	return string(buf), true
 }
 
+// Number returns true if it finds a number at the current parser position
+// It returns also the number found.
 func (p *Parser) Number() (string, bool) {
 
 	c := p.Read()
@@ -666,6 +666,8 @@ func (p *Parser) Number() (string, bool) {
 	return string(buf), true
 }
 
+// Operator returns true if it finds an operator at the current parser position
+// It returns also the operator found.
 func (p *Parser) Operator() (string, bool) {
 
 	c := p.Read()
@@ -690,7 +692,7 @@ func (p *Parser) Operator() (string, bool) {
 	return string(buf), true
 }
 
-// expression := expr1 (op2 expr1)*
+// Expression := expr1 (op2 expr1)*
 //
 func (p *Parser) Expression() bool {
 	if !p.UnaryExpression() {
@@ -713,7 +715,7 @@ func (p *Parser) Expression() bool {
 	}
 }
 
-// expr1 := cpath | constant | op1 cpath | op1 constant | '(' expr ')' | op1 '(' expr ')'
+// UnaryExpression := cpath | constant | op1 cpath | op1 constant | '(' expr ')' | op1 '(' expr ')'
 //
 func (p *Parser) UnaryExpression() bool {
 
@@ -721,7 +723,7 @@ func (p *Parser) UnaryExpression() bool {
 	p.Unread()
 
 	if IsLetter(c) {
-		p.ev.Add(TYPE_PATH)
+		p.ev.Add(TypePath)
 		p.ev.Inc()
 		p.Path()
 		p.ev.Dec()
@@ -747,7 +749,7 @@ func (p *Parser) UnaryExpression() bool {
 
 	if p.NextByteIs('(') {
 
-		p.ev.Add(TYPE_GROUP)
+		p.ev.Add(TypeGroup)
 		p.ev.Inc()
 		p.Space()
 		p.Expression()
@@ -809,13 +811,13 @@ func (p *Parser) Variable() bool {
 
 	c = p.Read()
 	if c == '(' {
-		p.ev.Add(TYPE_EXPRESSION)
+		p.ev.Add(TypeExpression)
 		p.ev.Inc()
 		p.Expression()
 		p.Space()
 		c = p.Read() // Should be ')'
 	} else {
-		p.ev.Add(TYPE_PATH)
+		p.ev.Add(TypePath)
 		p.ev.Inc()
 		if c != '{' {
 			p.Unread()
@@ -836,7 +838,7 @@ func (p *Parser) Variable() bool {
 
 }
 
-// index ::= '[' expression ']'
+// Index ::= '[' expression ']'
 func (p *Parser) Index() bool {
 
 	if !p.NextByteIs('[') {
@@ -845,7 +847,7 @@ func (p *Parser) Index() bool {
 
 	i := p.ev.Level()
 
-	p.ev.Add(TYPE_INDEX)
+	p.ev.Add(TypeIndex)
 	p.ev.Inc()
 
 	p.Space()
@@ -861,7 +863,7 @@ func (p *Parser) Index() bool {
 	return true
 }
 
-// selector ::= '{' expression? '}'
+// Selector ::= '{' expression? '}'
 func (p *Parser) Selector() bool {
 
 	if !p.NextByteIs('{') {
@@ -870,7 +872,7 @@ func (p *Parser) Selector() bool {
 
 	i := p.ev.Level()
 
-	p.ev.Add(TYPE_SELECTOR)
+	p.ev.Add(TypeSelector)
 	p.ev.Inc()
 
 	p.Space()
@@ -886,7 +888,7 @@ func (p *Parser) Selector() bool {
 	return true
 }
 
-// args ::= '(' space? sequence? space? ')'
+// Args ::= '(' space? sequence? space? ')'
 func (p *Parser) Args() (bool, error) {
 
 	if !p.NextByteIs('(') {
@@ -895,7 +897,7 @@ func (p *Parser) Args() (bool, error) {
 
 	i := p.ev.Level()
 
-	p.ev.Add(TYPE_GROUP)
+	p.ev.Add(TypeGroup)
 	p.ev.Inc()
 
 	p.Space()
@@ -911,7 +913,7 @@ func (p *Parser) Args() (bool, error) {
 	return true, nil
 }
 
-// arglist ::= space? expression space? [, space? expression]* space?
+// ArgList ::= space? expression space? [, space? expression]* space?
 //
 // arglist < stream > events
 //
@@ -925,7 +927,7 @@ func (p *Parser) ArgList() bool {
 	for {
 		p.Space()
 
-		p.ev.Add(TYPE_EXPRESSION)
+		p.ev.Add(TypeExpression)
 		p.ev.Inc()
 		if !p.Expression() {
 			p.ev.Dec()

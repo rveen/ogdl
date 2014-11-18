@@ -57,7 +57,7 @@ func IsDigit(c int) bool {
 	return unicode.IsDigit(rune(c))
 }
 
-// isTokentChar returns true for letters, digits and _ (as per Unicode).
+// IsTokenChar returns true for letters, digits and _ (as per Unicode).
 func IsTokenChar(c int) bool {
 	return unicode.IsLetter(rune(c)) || unicode.IsDigit(rune(c)) || c == '_'
 }

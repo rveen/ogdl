@@ -118,7 +118,6 @@ func (e *EventHandler) Graph() *Graph {
 		return nil
 	}
 
-	// Check if e.gl[0] is transparent and has only one subnode.
 	return e.gl[0]
 }
 

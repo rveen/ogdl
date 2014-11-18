@@ -178,7 +178,7 @@ func (g *Graph) GetAt(i int) *Graph {
 	return g.Out[i]
 }
 
-// Get(path) recurses a Graph following the given path and returns
+// Get recurses a Graph following the given path and returns
 // the result.
 //
 // This function returns consequently a *Graph. It may be a pointer within
@@ -343,7 +343,7 @@ func (g *Graph) Delete(n interface{}) {
 	}
 }
 
-// DeleteN removes a subnode by index
+// DeleteAt removes a subnode by index
 func (g *Graph) DeleteAt(i int) {
 	if i < 0 {
 		return

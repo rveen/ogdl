@@ -12,5 +12,5 @@ package ogdl
 func NewPath(s string) *Graph {
 	parse := NewStringParser(s)
 	parse.Path()
-	return parse.GraphTop(TYPE_PATH)
+	return parse.GraphTop(TypePath)
 }

@@ -13,13 +13,13 @@ package ogdl
 func NewExpression(s string) *Graph {
 	p := NewStringParser(s)
 	p.Expression()
-	g := p.GraphTop(TYPE_EXPRESSION)
+	g := p.GraphTop(TypeExpression)
 	g._ast()
 
 	return g
 }
 
-// ast reorganizes the expression graph in the form of an abstract syntax tree.
+// Ast reorganizes the expression graph in the form of an abstract syntax tree.
 func (g *Graph) Ast() {
 
 	if g == nil {
@@ -27,7 +27,7 @@ func (g *Graph) Ast() {
 	}
 
 	for _, node := range g.Out {
-		if node.String() == TYPE_EXPRESSION {
+		if node.String() == TypeExpression {
 			node._ast()
 		} else {
 			node.Ast()

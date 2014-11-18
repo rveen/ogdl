@@ -12,20 +12,21 @@ import (
 	"strings"
 )
 
+// Nodes containing these strings are special
 const (
-	TYPE_EXPRESSION = "!e"
-	TYPE_PATH       = "!p"
-	TYPE_VARIABLE   = "!v"
-	TYPE_SELECTOR   = "!s"
-	TYPE_INDEX      = "!i"
-	TYPE_GROUP      = "!g"
-	TYPE_TEMPLATE   = "!t"
+	TypeExpression = "!e"
+	TypePath       = "!p"
+	TypeVariable   = "!v"
+	TypeSelector   = "!s"
+	TypeIndex      = "!i"
+	TypeGroup      = "!g"
+	TypeTemplate   = "!t"
 
-	TYPE_IF    = "!if"
-	TYPE_END   = "!end"
-	TYPE_ELSE  = "!else"
-	TYPE_FOR   = "!for"
-	TYPE_BREAK = "!break"
+	TypeIf    = "!if"
+	TypeEnd   = "!end"
+	TypeElse  = "!else"
+	TypeFor   = "!for"
+	TypeBreak = "!break"
 )
 
 // Parser is used to parse textual OGDL streams, paths, empressions and
@@ -63,14 +64,17 @@ type Parser struct {
 	spaces int
 }
 
+// NewStringParser creates an OGDL parser from a string 
 func NewStringParser(s string) *Parser {
 	return &Parser{strings.NewReader(s), NewEventHandler(), make([]int, 32), [2]int{0, 0}, 0, 0, 1, 0}
 }
 
+// NewParser creates an OGDL parser from a generic io.Reader
 func NewParser(r io.Reader) *Parser {
 	return &Parser{bufio.NewReader(r), NewEventHandler(), make([]int, 32), [2]int{0, 0}, 0, 0, 1, 0}
 }
 
+// NewFileParser creates an OGDL parser that reads from a file
 func NewFileParser(s string) *Parser {
 	b, err := ioutil.ReadFile(s)
 	if err != nil || len(b) == 0 {
@@ -81,23 +85,27 @@ func NewFileParser(s string) *Parser {
 	return &Parser{buf, NewEventHandler(), make([]int, 32), [2]int{0, 0}, 0, 0, 1, 0}
 }
 
+// NewBytesParser creates an OGDL parser from a []byte source 
 func NewBytesParser(b []byte) *Parser {
 	buf := bytes.NewBuffer(b)
 	return &Parser{buf, NewEventHandler(), make([]int, 32), [2]int{0, 0}, 0, 0, 1, 0}
 }
 
+// Parse parses OGDL text contained in a byte array. It returns a *Graph 
 func Parse(b []byte) *Graph {
 	p := NewBytesParser(b)
 	p.Ogdl()
 	return p.Graph()
 }
 
+// ParseString parses OGDL text from the given string. It returns a *Graph
 func ParseString(s string) *Graph {
 	p := NewBytesParser([]byte(s))
 	p.Ogdl()
 	return p.Graph()
 }
 
+// ParseFile parses OGDL text contained in a file. It returns a Graph
 func ParseFile(s string) *Graph {
 	p := NewFileParser(s)
 	if p==nil {
@@ -107,10 +115,15 @@ func ParseFile(s string) *Graph {
 	return p.Graph()
 }
 
+// Graph returns the *Graph object associated with this parser (where root
+// where the OGDL tree is build on).
 func (p *Parser) Graph() *Graph {
 	return p.ev.Graph()
 }
 
+// Graph returns the *Graph object associated with this parser (where root
+// where the OGDL tree is build on). Additionally, the name of the root node
+// is set to the given string.
 func (p *Parser) GraphTop(s string) *Graph {
 	return p.ev.GraphTop(s)
 }
@@ -222,12 +235,12 @@ func (p *Parser) EmitBytes(b []byte) {
     p.ev.AddBytes(b)
 }
 
-// Inc event handler level
+// Inc increments the level by 1
 func (p *Parser) Inc() {
     p.ev.Inc()
 }
 
-// Doc event handler level
+// Dec decrements the level by 1
 func (p *Parser) Dec() {
     p.ev.Dec()
 }

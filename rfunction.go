@@ -9,6 +9,8 @@ import (
 	"net"
 )
 
+// RFunction represents a remote function (also known as a remote procedure
+// call). 
 type RFunction struct {
 	cfg  *Graph
 	host string
@@ -16,7 +18,7 @@ type RFunction struct {
 	conn *net.TCPConn
 }
 
-// RFunctions opens a connection to a TCP/IP server specified in the
+// NewRFunction opens a connection to a TCP/IP server specified in the
 // Graph supplied. It also makes an initialization call, if the Graph has an
 // 'init' section.
 func NewRFunction(g *Graph) (*RFunction, error) {
@@ -126,14 +128,14 @@ func (rf *RFunction) Call(g *Graph) (*Graph, error) {
     if c==-1 {
         rf._init()
         return rf.call(b)
-    } else {
-        p.unread()
-    }
+    } 
+    
+    p.unread()
 	
 	r := p.Parse()
 	
 	if r==nil || r.Len()==0 {
-	    return nil, errors.New("Nil response")
+	    return nil, errors.New("nil response")
 	}
 	return r,nil
 }
@@ -161,14 +163,13 @@ func (rf *RFunction) CallBinary(b []byte) (*Graph, error) {
     if c==-1 {
         rf._init()
         return rf.call(b)
-    } else {
-        p.unread()
-    }
+    } 
+    p.unread()
 	
 	r := p.Parse()
 	
 	if r==nil || r.Len()==0 {
-	    return nil, errors.New("Nil response")
+	    return nil, errors.New("nil response")
 	}
 	return r,nil
 }
@@ -180,7 +181,7 @@ func (rf *RFunction) call(b []byte) (*Graph, error) {
 	    return nil, err
 	}
 	if n<len(b) {
-	    return nil, errors.New("Could not write all bytes")
+	    return nil, errors.New("could not write all bytes")
 	}
 
 	p := NewBinParser(rf.conn)
@@ -195,7 +196,7 @@ func (rf *RFunction) call(b []byte) (*Graph, error) {
 	r := p.Parse()
 	
 	if r==nil || r.Len()==0 {
-	    return nil, errors.New("Nil response")
+	    return nil, errors.New("nil response")
 	}
 	return r,nil
 }

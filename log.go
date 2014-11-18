@@ -59,7 +59,7 @@ func (log *Log) Add(g *Graph) int64 {
 	return i
 }
 
-// Add adds an OGDL binary object to the log. The starting position into
+// AddBinary adds an OGDL binary object to the log. The starting position into
 // the log is returned.
 func (log *Log) AddBinary(b []byte) int64 {
 
@@ -93,7 +93,7 @@ func (log *Log) Get(i int64) (*Graph, error, int64) {
 	return g, err, i + int64(p.n)
 }
 
-// Get returns the OGDL object at the position given and the position of the
+// GetBinary returns the OGDL object at the position given and the position of the
 // next object, or an error. The object returned is in binary form, exactly
 // as it is stored in the log.
 func (log *Log) GetBinary(i int64) ([]byte, error, int64) {

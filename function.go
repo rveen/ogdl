@@ -16,10 +16,12 @@ var factory map[string]func() interface{}
 // they can be called from within templates.
 var functions map[string]func(g *Graph, p *Graph, i int) []byte // interface{}
 
+// FunctionAddConstructor adds a factory kind of function to the context.
 func FunctionAddConstructor(s string, f func() interface{}) {
 	factory[s] = f
 }
 
+// FunctionAdd adds a function to the context.
 func FunctionAdd(s string, f func(*Graph, *Graph, int) []byte) {
 	functions[s] = f
 }
@@ -180,7 +182,7 @@ func (g *Graph) Function(p *Graph, ix int, context *Graph) (interface{}, error) 
 	return me.Call(args)[0].Interface(), nil
 }
 
-// Function enables calling Go functions from templates. 
+// Function2 enables calling Go functions from templates. 
 //
 func (g *Graph) Function2 (p *Graph, ix int, context *Graph) (interface{}, error) {
 
@@ -191,9 +193,13 @@ func (g *Graph) Function2 (p *Graph, ix int, context *Graph) (interface{}, error
         return nil,nil
     }
 
-println("type:",reflect.TypeOf(g.GetAt(0).This).String(),"->",g.String(),g.GetAt(0).String())
+// println("type:",reflect.TypeOf(g.GetAt(0).This).String(),"->",g.String(),g.GetAt(0).String())
 
     v := reflect.ValueOf(g.GetAt(0).This)
+    if ! v.IsValid() {
+        return nil, nil
+    }
+    
 	fn := p.GetAt(ix)
 	ag := p.GetAt(ix + 1)
 
