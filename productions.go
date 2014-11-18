@@ -65,7 +65,7 @@ func (p *Parser) Line() (bool, error) {
 
 	// if a line begins with non-uniform space, throw a syntax error.
 	if sp && n == 0 {
-		errors.New("Non-uniform space")
+		errors.New("non-uniform space")
 	}
 
 	if p.End() {
@@ -306,7 +306,7 @@ func (p *Parser) Group() (bool, error) {
 	p.WhiteSpace()
 
 	if !p.NextByteIs(')') {
-		return false, errors.New("Missing )")
+		return false, errors.New("missing )")
 	}
 
 	// Level before and after a group is the same
@@ -803,9 +803,9 @@ func (p *Parser) Variable() bool {
 	if c == '\\' {
 		p.ev.Add("$")
 		return true
-	} else {
-		p.Unread()
-	}
+	} 
+	
+	p.Unread()
 
 	i := p.ev.Level()
 
@@ -905,7 +905,7 @@ func (p *Parser) Args() (bool, error) {
 	p.Space()
 
 	if !p.NextByteIs(')') {
-		return false, errors.New("Missing )")
+		return false, errors.New("missing )")
 	}
 
 	/* Level before and after is the same */
@@ -961,9 +961,9 @@ func (p *Parser) TokenList() {
 
 		if comma && !p.NextByteIs(',') {
 			return
-		} else {
-			p.Space()
-		}
+		} 
+		
+		p.Space()
 
 		s, ok := p.Token()
 		if !ok {

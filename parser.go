@@ -121,7 +121,7 @@ func (p *Parser) Graph() *Graph {
 	return p.ev.Graph()
 }
 
-// Graph returns the *Graph object associated with this parser (where root
+// GraphTop returns the *Graph object associated with this parser (where root
 // where the OGDL tree is build on). Additionally, the name of the root node
 // is set to the given string.
 func (p *Parser) GraphTop(s string) *Graph {
