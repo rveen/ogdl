@@ -12,21 +12,51 @@ import (
 
 // path.go
 
-func TestPath1(t *testing.T) {
+func TestPath(t *testing.T) {
 
 	p := NewPath("a")
 
 	if p.Len() != 1 {
 		t.Error("size != 1")
 	}
-}
 
-func TestPath2(t *testing.T) {
-	p := NewPath("a.b")
-
-	if p.Len() != 2 {
-		t.Error("size != 2")
+	p = NewPath("a.b")
+	s := p.Show()
+	if s != "!p\n  a\n  b" {
+		t.Error("Path, index", s)
 	}
+
+	p = NewPath("[0]")
+
+	s = p.Show()
+	if s != "!p\n  !i\n    0" {
+		t.Error("Path, index", s)
+	}
+
+	p = NewPath("a[1]")
+
+	s = p.Show()
+	if s != "!p\n  a\n  !i\n    1" {
+		t.Error("Path, index")
+	}
+
+	// Function arguments vs. expression elements
+
+	p = NewPath("a(b)")
+
+	s = p.Show()
+	if s != "!p\n  a\n  !g\n    !e\n      !p\n        b" {
+		t.Error("Path, index", s)
+	}
+
+	p = NewPath("a.(b)")
+
+	s = p.Show()
+	if s != "!p\n  a\n  !e\n    !e\n      !p\n        b" {
+		t.Error("Path, index", s)
+	}
+
+	// Todo: a() check that it can tolerate zero arguments
 }
 
 // binary.go
@@ -35,35 +65,35 @@ func TestBinParser1(t *testing.T) {
 
 	// newVarInt
 	b := newVarInt(0x3fff)
-	p := NewBytesBinParser(b)
+	p := newBytesBinParser(b)
 	i := p.varInt()
 	if i != 0x3fff && len(b) != 2 {
 		t.Error("varInt 0x3fff")
 	}
 
 	b = newVarInt(0x4000)
-	p = NewBytesBinParser(b)
+	p = newBytesBinParser(b)
 	i = p.varInt()
 	if i != 0x4000 && len(b) != 3 {
 		t.Error("varInt 0x4000")
 	}
 
 	b = newVarInt(0x1fffff)
-	p = NewBytesBinParser(b)
+	p = newBytesBinParser(b)
 	i = p.varInt()
 	if i != 0x1fffff && len(b) != 4 {
 		t.Error("varInt 0x1fffff", i)
 	}
 
 	b = newVarInt(0xfffffff)
-	p = NewBytesBinParser(b)
+	p = newBytesBinParser(b)
 	i = p.varInt()
 	if i != 0xfffffff && len(b) != 4 {
 		t.Error("varInt 0xfffffff", i)
 	}
 
 	b = newVarInt(127)
-	p = NewBytesBinParser(b)
+	p = newBytesBinParser(b)
 	i = p.varInt()
 	if i != 127 && len(b) != 1 {
 		t.Error("varInt 127")
@@ -84,19 +114,19 @@ func TestBinParser1(t *testing.T) {
 	h3 := []byte{1, 'H', 0}
 	h4 := []byte{1, 'G', 1}
 
-	p = NewBytesBinParser(h)
+	p = newBytesBinParser(h)
 	if !p.header() {
 		t.Error("header")
 	}
-	p = NewBytesBinParser(h2)
+	p = newBytesBinParser(h2)
 	if p.header() {
 		t.Error("header")
 	}
-	p = NewBytesBinParser(h3)
+	p = newBytesBinParser(h3)
 	if p.header() {
 		t.Error("header")
 	}
-	p = NewBytesBinParser(h4)
+	p = newBytesBinParser(h4)
 	if p.header() {
 		t.Error("header")
 	}
@@ -106,7 +136,7 @@ func TestBinParser2(t *testing.T) {
 
 	s := "a"
 
-	p := NewBinParser(bytes.NewReader([]byte(s)))
+	p := newBinParser(bytes.NewReader([]byte(s)))
 
 	c := p.read()
 	if c != 'a' {
@@ -130,11 +160,25 @@ func TestBinParser3(t *testing.T) {
 
 	r := []byte{1, 'G', 0, 1, 'a', 0, 2, 'b', 0, 0}
 
-	g := NewGraph("a")
-	g.Add("b")
+	// Starting from a NilGraph
+	g := New()
 	b := g.Binary()
 
+	if len(b) != 4 {
+		t.Error("Binary() on NilGraph")
+	}
+
+	// Starting from a NilGraph
+	g = New()
+	g.Add("a").Add("b")
+	b = g.Binary()
+
 	if string(r) != string(b) {
+
+		for i := 0; i < len(b); i++ {
+			println(b[i])
+		}
+
 		t.Error("Binary() failed")
 	}
 
@@ -144,8 +188,8 @@ func TestBinParser3(t *testing.T) {
 		t.Error("Binary nil failed")
 	}
 
-	g = BinParse(r)
-	g = g.Out[0]
+	g = FromBinary(r)
+	// g = g.Out[0]
 
 	if g.Len() != 1 {
 		t.Error("BinParse() failed")
@@ -159,10 +203,10 @@ func TestBinParser4(t *testing.T) {
 
 	r := []byte{1, 'G', 0 /*lev*/, 1 /*bin*/, 1 /* len */, 1, 0x55 /*end bin */, 0, 0}
 
-	g := BinParse(r)
-	g = g.Out[0]
+	g := FromBinary(r)
+	//g = g.Out[0]
 
-	if g.Len() != 0 {
+	if g.Len() != 1 {
 		t.Error("BinParse() failed")
 	}
 	if g.String() != "U" {
@@ -172,11 +216,33 @@ func TestBinParser4(t *testing.T) {
 
 // parser.go
 
+func TestBehavior_Parser(t *testing.T) {
+	p := FromString("a")
+
+	if p.This != nil {
+		t.Error("parse should always return a nil root")
+	}
+
+	if p.Text() != "a" {
+		t.Error("", p.Text())
+	}
+
+	p = FromString("a,b")
+
+	if p.This != nil {
+		t.Error("parse should always return a nil root")
+	}
+
+	if p.Text() != "a\nb" {
+		t.Error("")
+	}
+}
+
 func TestParser0(t *testing.T) {
 
-	p := NewParser(strings.NewReader("a b"))
+	p := newParser(strings.NewReader("a b"))
 	p.Ogdl()
-	s := p.Graph().Text()
+	s := p.graph().Text()
 	if s != "a\n  b" {
 		t.Error("Parser0")
 	}
@@ -205,7 +271,7 @@ var textOut = [...]string{
 func TestParser1(t *testing.T) {
 
 	for i := 0; i < len(textIn); i++ {
-		g := ParseString(textIn[i])
+		g := FromString(textIn[i])
 		if g.Text() != textOut[i] {
 			t.Error("Parser error")
 		}
@@ -213,50 +279,61 @@ func TestParser1(t *testing.T) {
 }
 
 // line level resolution (need asserts)
-
+// TODO:
+/*
 func Test_Level(t *testing.T) {
 
-    p := NewStringParser("")
+	p := NewStringParser("")
 
-    // First time any n will return level 0
-    p.setLevel(0,0)
-    pr(p)
-    
-    p.setLevel(1,2)
-    pr(p)
-    
-    p.setLevel(3,4)
-    pr(p)
+	// First time any n will return level 0
+	p.setLevel(0, 0)
+	pr(p)
+
+	p.setLevel(1, 2)
+	pr(p)
+
+	p.setLevel(3, 4)
+	pr(p)
 }
 
 func pr(p *Parser) {
-    for i:=0; i<10; i++ {
-        print(p.getLevel(i)," ")
-    }
-    println("")
-    
-    for i:=0; i<5; i++ {
-        print(p.ind[i]," ")
-    }
-    println("\n--")
-}
+	for i := 0; i < 10; i++ {
+		print(p.getLevel(i), " ")
+	}
+	println("")
+
+	for i := 0; i < 5; i++ {
+		print(p.ind[i], " ")
+	}
+	println("\n--")
+} */
 
 // Special cases
 
 func TestParser2(t *testing.T) {
 
-	println("TODO:")
-	// BUGS:
-	n := ParseString(" a")
-	println(n.Text())
-	n = ParseString("a (b c) d")
-	println(n.Text())
+	g := FromString(" a")
+	if g.Text() != "a" {
+		t.Error()
+	}
+
+	g1 := FromString("a b c")
+	g2 := FromString("a (b) c")
+
+	if g1.Text() != g2.Text() {
+		t.Error()
+	}
+
+	g = FromString("a (b c) d")
+	if g.Text() == "a\n  b\n    c\n    d" {
+		t.Log("TO BE IMPLEMENTED")
+	}
 }
 
 // Blocks
 
 func TestParseBlock1(t *testing.T) {
-	p := NewBytesParser([]byte("a \\\n  b\n  c"))
+	p := newBytesParser([]byte("a \\\n  b\n  c"))
 	p.String()
 	p.Space()
 	p.ev.Inc()
@@ -267,12 +344,14 @@ func TestParseBlock1(t *testing.T) {
 }
 
 func TestParseBlock2(t *testing.T) {
-	g := ParseString("a \\\n  b")
-	println(g.Text())
+	g := FromString("a \\\n  b c")
+	if g.Text() != "a\n \"b c\"" {
+		t.Error()
+	}
 }
 
 func TestBlockPrint(t *testing.T) {
-	g := ParseString("a \\\n  b\n  c")
+	g := FromString("a \\\n  b\n  c")
 
 	// Blocks are currently printed back as quoted strings
 	if g.Text() != "a\n \"b\n  c\"" {
@@ -284,12 +363,12 @@ func TestBlockPrint(t *testing.T) {
 
 func TestComment(t *testing.T) {
 
-	g := ParseString("#comment")
+	g := FromString("#comment")
 	if g.Text() != "" {
 		t.Error("comment 1:", g.Text())
 	}
 
-	g = ParseString("#comment\nnot#acomment")
+	g = FromString("#comment\nnot#acomment")
 	if g.Text() != "not#acomment" {
 		t.Error("comment 2:", g.Text())
 	}
@@ -299,7 +378,7 @@ func TestComment(t *testing.T) {
 
 func TestUnread(t *testing.T) {
 
-	p := NewStringParser("ab")
+	p := newStringParser("ab")
 
 	c := p.Read()
 	if c != 'a' {
@@ -339,119 +418,266 @@ func TestUnread(t *testing.T) {
 // Character classes. Samples.
 
 func TestChars(t *testing.T) {
-	if !IsSpaceChar(' ') {
+	if !isSpaceChar(' ') {
 		t.Error("Error in character class")
 	}
 
-	if !IsBreakChar('\n') {
+	if !isBreakChar('\n') {
 		t.Error("Error in character class")
 	}
 
-	if !IsBreakChar('\r') {
+	if !isBreakChar('\r') {
 		t.Error("Error in character class")
 	}
 
-	if !IsSpaceChar('\t') {
+	if !isSpaceChar('\t') {
 		t.Error("Error in character class")
 	}
 
-	if IsSpaceChar('a') {
+	if isSpaceChar('a') {
 		t.Error("Error in character class")
 	}
 
-	if IsTextChar('(') {
+	if isTextChar('(') {
 		t.Error("Error in character class")
 	}
 
-	if IsTextChar('\t') {
+	if isTextChar('\t') {
 		t.Error("Error in character class")
 	}
 
-	if !IsTextChar('_') {
+	if !isTextChar('_') {
 		t.Error("Error in character class")
 	}
 
-	if !IsDigit('1') {
+	if !isDigit('1') {
 		t.Error("Error in character class")
 	}
 
-	if IsDigit('x') {
+	if isDigit('x') {
 		t.Error("Error in character class")
 	}
 
-	if IsDigit(-1) {
+	if isDigit(-1) {
 		t.Error("Error in character class")
 	}
 
-	if IsLetter('1') {
+	if isLetter('1') {
 		t.Error("Error in character class")
 	}
 
-	if IsLetter(-1) {
+	if isLetter(-1) {
 		t.Error("Error in character class")
 	}
 
-	if !IsEndChar(0) {
+	if !isEndChar(0) {
 		t.Error("Error in character class")
 	}
 
-	if IsEndChar('\t') {
+	if isEndChar('\t') {
 		t.Error("Error in character class")
 	}
 
-	if IsOperatorChar(-1) {
+	if isOperatorChar(-1) {
 		t.Error("Error in character class")
 	}
 
-	if !IsOperatorChar('>') {
+	if !isOperatorChar('>') {
 		t.Error("Error in character class")
 	}
 
-	if IsTemplateTextChar('$') {
+	if isTemplateTextChar('$') {
 		t.Error("Error in character class")
 	}
 
-	if !IsTemplateTextChar(' ') {
+	if !isTemplateTextChar(' ') {
 		t.Error("Error in character class")
 	}
 
-	if IsTokenChar('$') {
+	if isTokenChar('$') {
 		t.Error("Error in character class")
 	}
 }
 
 // graph.go
 
-func TestCopyAndSubstitute(t *testing.T) {
-	g := ParseString("a b, c d, aa a")
+func TestBehavior_Get(t *testing.T) {
 
-	g2 := NilGraph()
+	g := FromString("a b")
+	n := g.Get("a")
+	s := n.Text()
+	if s != "b" {
+		t.Error("ogdl.Get")
+	}
+
+	g = New()
+	g.Add("a").Add("b")
+
+	n = g.Get("a")
+	s = n.Text()
+	if s != "b" {
+		t.Error("ogdl.Get")
+	}
+
+	g = New("a")
+	g.Add("b")
+
+	// Get does not operate on the root node
+	n = g.Get("a")
+	s = n.Text()
+	if s != "" {
+		t.Error("ogdl.Get (root node)")
+	}
+
+	g = FromString("a (b, c)")
+	n = g.Get("a")
+	s = n.Text()
+	if s != "b\nc" {
+		t.Error("ogdl.Get (root node)")
+	}
+
+	g = FromString("a (b, c)")
+	n = g.Get("a[0]")
+	s = n.Text()
+	if s != "b" {
+		t.Error("ogdl.Get", s)
+	}
+
+	g = FromString("a b")
+	n = g.Get("a[0]")
+	s = n.Text()
+	if s != "b" {
+		t.Error("ogdl.Get")
+	}
+
+	g = FromString("a (b c, d)")
+	n = g.Get("a").Get("b")
+	s = n.Text()
+	if s != "c" {
+		t.Error("ogdl.Get")
+	}
+
+	g = FromString("a (b (c, e), d)")
+	n = g.Get("a").Get("b")
+	s = n.Text()
+	if s != "c\ne" {
+		t.Error("ogdl.Get")
+	}
+
+	// Index
+	g = FromString("a, b")
+	n = g.Get("[0]")
+
+	s = n.Text()
+	if s != "a" {
+		t.Error("Get index", n.Text())
+	}
+}
+
+// Check correct get chaining
+func Test_GetEquivalence(t *testing.T) {
+
+	// Simple case
+	g := FromString("a b c")
+	n := g.Get("a").Get("b")
+	m := g.Get("a.b")
+
+	t1, _ := g.GetString("a.b")
+	t2 := n.String()
+
+	s := n.Text()
+	if s != "c" {
+		t.Error("Get case 1", n.Text())
+	}
+
+	s = m.Text()
+	if s != "c" {
+		t.Error("Get case 2", m.Text())
+	}
+
+	if t1 != "c" {
+		t.Error("Get eqv", m.Text())
+	}
+
+	if t1 != t2 {
+		t.Error("Get eqv", m.Text())
+	}
+
+	// Index
+	g = FromString("a (c, b)")
+	n = g.Get("a").Get("[0]")
+	m = g.Get("a[0]")
+
+	s = n.Text()
+	if s != "c" {
+		t.Error("Get case 3", n.Text())
+	}
+
+	s = m.Text()
+	if s != "c" {
+		t.Error("Get case 4", m.Text())
+	}
+
+	// Selector
+}
+
+func TestCopyAndSubstitute(t *testing.T) {
+	g := FromString("a b, c d, aa a")
+
+	g2 := New()
 	g2.Copy(g)
 
-	if !g.Equal(g2) {
+	if !g.Equals(g2) {
 		t.Error("copy or equal failed")
 	}
 
-	g3 := ParseString("x b, c d, aa x")
+	g3 := FromString("x b, c d, aa x")
 	g.Substitute("a", "x")
-	if !g.Equal(g3) {
+	if !g.Equals(g3) {
 		t.Error("copy or equal failed")
+	}
+}
+
+func TestGetChaining(t *testing.T) {
+
+	g := FromString("a b c")
+
+	n := g.Get("x").String()
+
+	if n != "" {
+		t.Error("Get('unknown').String() should return ''")
+	}
+
+	i := g.Get("x").Int64()
+
+	if i != 0 {
+		t.Error("Get('unknown').Int64() should return 0")
+	}
+
+	i = g.Get("x").Int64(-2)
+
+	if i != -2 {
+		t.Error("Get('unknown').Int64(default) should return default")
+	}
+
+	n = g.Get("a").Get("b").String()
+	if n != "c" {
+		t.Error("Get chaining error")
 	}
 }
 
 func TestGet1(t *testing.T) {
 
-	g := ParseString("a b c")
+	g := FromString("a b c")
 
-	v, _ := g.GetString("a")
-	s := _typeOf(v)
+	v, _ := g.GetString("a.b")
 
-	if v != "b" {
-		t.Error("GetString()")
+	if v != "c" {
+		t.Error("GetString()", g.Get("a.b").String())
 	}
 
 	g2 := g.Get("a.b")
-	if g2.Len() != 0 || g2.String() != "c" {
+	if g2.String() != "c" {
 		t.Error("Get")
 	}
 
@@ -459,7 +685,7 @@ func TestGet1(t *testing.T) {
 	g.Add("d").Add(1.0)
 
 	i := g.Get("n").Scalar()
-	s = _typeOf(i)
+	s := _typeOf(i)
 	if s != "int64" || i != int64(1) {
 		t.Error("Scalar()")
 	}
@@ -475,7 +701,7 @@ func TestGet1(t *testing.T) {
 
 func TestNilGraph(t *testing.T) {
 
-	g := NilGraph()
+	g := New()
 
 	if g.Len() != 0 {
 		t.Error("nil node size not 0")
@@ -485,7 +711,7 @@ func TestNilGraph(t *testing.T) {
 		t.Error("IsNil() incorrect")
 	}
 
-	g = NewGraph(nil)
+	g = New(nil)
 
 	if g.Len() != 0 {
 		t.Error("nil node size not 0")
@@ -499,7 +725,7 @@ func TestNilGraph(t *testing.T) {
 
 func TestNewGraph(t *testing.T) {
 
-	g := NewGraph("a")
+	g := New("a")
 
 	if g.Len() != 0 {
 		t.Error("new node size not 0")
@@ -511,7 +737,7 @@ func TestNewGraph(t *testing.T) {
 }
 
 func TestDepth(t *testing.T) {
-	g := NewGraph("a")
+	g := New("a")
 
 	if g.Depth() != 0 {
 		t.Error("g.Depth() != 0")
@@ -542,8 +768,36 @@ func TestDepth(t *testing.T) {
 	}
 }
 
+func TestAddChaining(t *testing.T) {
+
+	g := New("a")
+	s := g.Show()
+	if s != "_\n  a" {
+		t.Error("New( ... )")
+	}
+
+	g.Add("b").Add("c")
+	s = g.Show()
+	if s != "_\n  a\n  b\n    c" {
+		t.Error("Add chaining")
+	}
+
+	g = New().Add("b")
+	s = g.Show()
+	if s != "b" {
+		t.Error("Add after NewGraph")
+	}
+
+	g = New()
+	g.Add("a").Add("b")
+	s = g.Show()
+	if s != "_\n  a\n    b" {
+		t.Error("Add chaining on NilGraph")
+	}
+}
+
 func TestGraph_String(t *testing.T) {
-	g := NilGraph()
+	g := New()
 	s := g.String()
 	if len(s) != 0 {
 		t.Error("g.String() returns something with a nil node")
@@ -552,7 +806,7 @@ func TestGraph_String(t *testing.T) {
 
 func TestGraph_Delete(t *testing.T) {
 
-	g := NilGraph()
+	g := New()
 
 	g.Add(1)
 	g.Add(2)
@@ -717,36 +971,76 @@ func TestCompare(t *testing.T) {
 
 func TestEvalPath(t *testing.T) {
 
-	g := NilGraph()
-	g.Add("a").Add(1)
-
-	p := NewPath("a")
-
-	i := g.Eval(p)
-	s := reflect.TypeOf(i).String()
-	if i != 1 || s != "int" {
-		t.Error("EvalPath 1")
+	// Create a path and check it
+	path := NewPath("a")
+	s := path.Show()
+	if s != "!p\n  a" {
+		t.Error("NewPath", s)
 	}
 
-	// Creating a nil root or not should not make a difference
-	g = NewGraph("a")
-	g.Add(1)
-	i = g.Eval(p)
-	s = reflect.TypeOf(i).String()
+	g := New()
+	g.Add("a").Add("b")
+
+	i := g.EvalPath(path)
+
+	if _string(i) != "b" {
+		t.Error("EvalPath", _show(i))
+	}
+
+	g = New()
+	g.Add("a").Add(1)
+
+	i = g.EvalPath(path)
+	s = _typeOf(i)
 	if i != 1 || s != "int" {
-		t.Error("EvalPath 2")
+		t.Error("EvalPath 1", _show(i), _typeOf(i))
+	}
+
+	g = New()
+	g.Add("a").Add("id").Add("100")
+	i = g.EvalPath(path)
+
+	if _text(i) != "id\n  100" || _typeOf(i) != "*ogdl.Graph" {
+		println(_show(i), _typeOf(i))
+		t.Error()
 	}
 }
 
+func TestEvalPath_Index2(t *testing.T) {
+
+	g := FromString("a b (c, d)")
+
+	p := NewPath("a")
+	i := g.EvalPath(p)
+	if _show(i) != "_\n  b\n    c\n    d" {
+		t.Error(_show(i))
+	}
+
+	p = NewPath("a[0]")
+	i = g.EvalPath(p)
+	if _show(i) != "_\n  b\n    c\n    d" {
+		t.Error(_show(i))
+	}
+
+}
+
 func TestEvalPath_Index(t *testing.T) {
-	g := ParseString("a (b 1, b 2)")
+	g := FromString("a (b 1, b 2)")
 
 	p := NewPath("a.b[0]")
 
 	i := g.EvalPath(p)
 
 	if _string(i) != "1" {
-		t.Error("EvalPath_Index")
+		t.Error("EvalPath_Index", _string(i))
+	}
+
+	p = NewPath("a.b")
+
+	i = g.EvalPath(p)
+
+	if _string(i) != "1" {
+		t.Error("EvalPath_Index", _string(i))
 	}
 
 	p = NewPath("a.b{1}")
@@ -754,7 +1048,7 @@ func TestEvalPath_Index(t *testing.T) {
 	i = g.EvalPath(p)
 
 	if _string(i) != "2" {
-		t.Error("EvalPath_Selector")
+		t.Error("EvalPath_Selector", _text(i))
 	}
 
 	p = NewPath("a.b{}")
@@ -768,8 +1062,8 @@ func TestEvalPath_Index(t *testing.T) {
 
 func TestEvalScalar(t *testing.T) {
 
-	g := NilGraph()
-	p := NewGraph("1")
+	g := New()
+	p := New("1")
 
 	// constants
 	i := g.Eval(p)
@@ -778,35 +1072,35 @@ func TestEvalScalar(t *testing.T) {
 		t.Error("Eval constant")
 	}
 
-	p = NewGraph("1.1")
+	p = New("1.1")
 	i = g.Eval(p)
 	s = reflect.TypeOf(i).String()
 	if i != float64(1.1) || s != "float64" {
 		t.Error("Eval constant int")
 	}
 
-	p = NewGraph(1.1)
+	p = New(1.1)
 	i = g.Eval(p)
 	s = reflect.TypeOf(i).String()
 	if i != float64(1.1) || s != "float64" {
 		t.Error("Eval constant float")
 	}
 
-	p = NewGraph('c')
+	p = New('c')
 	i = g.Eval(p)
 	s = reflect.TypeOf(i).String()
 	if i != int64('c') || s != "int64" {
 		t.Error("Eval constant char")
 	}
 
-	p = NewGraph("true")
+	p = New("true")
 	i = g.Eval(p)
 	s = reflect.TypeOf(i).String()
 	if i != true || s != "bool" {
 		t.Error("Eval constant bool")
 	}
 
-	p = NewGraph(true)
+	p = New(true)
 	i = g.Eval(p)
 	s = reflect.TypeOf(i).String()
 	if i != true || s != "bool" {
@@ -822,12 +1116,13 @@ func TestEvalScalar(t *testing.T) {
 //
 func TestEvalArgOfGraph(t *testing.T) {
 
-	g := NilGraph()
+	g := New()
 	g.Add("a").Add("c").Add(int64(1))
 	g.Add("b").Add("c")
 
-	p := NewPath("a(b)")
+	p := NewPath("a.(b)")
 	r := g.Eval(p)
+
 	ty := _typeOf(r)
 
 	if ty != "int64" || r != int64(1) {
@@ -838,8 +1133,7 @@ func TestEvalArgOfGraph(t *testing.T) {
 func TestEvalExpression(t *testing.T) {
 
 	// The context
-	g := NewGraph("a")
-	g.Add("b")
+	g := FromString("a b")
 
 	// 'a' is a string constant
 	p := NewExpression("a=='b'")
@@ -896,13 +1190,13 @@ func TestEvalExpression(t *testing.T) {
 	}
 
 	// Assign
-	g = NilGraph()
+	g = New()
 	e = "a=1"
 	p = NewExpression(e)
 	g.Eval(p)
 
-	if i, _ := g.GetInt64("a"); i != 1 {
-		t.Error(e, _typeOf(g), _text(g))
+	if i, err := g.GetInt64("a"); i != 1 || err != nil {
+		t.Error(e, _typeOf(i), _text(i), err.Error())
 	}
 
 	e = "a+=12"
@@ -1056,7 +1350,7 @@ func TestEvalExpression(t *testing.T) {
 
 func TestEvalBool(t *testing.T) {
 
-	g := NilGraph()
+	g := New()
 	g.Add("a").Add(1)
 
 	p := NewExpression("1=='1'")
@@ -1082,49 +1376,50 @@ func TestEvalBool(t *testing.T) {
 
 func TestGetTypes(t *testing.T) {
 
-	g := ParseString("aa, ab, bb, axx, aj, vv")
-	r, _ := g.GetSimilar("a[a-b]")
+	g := New("aa, ab, bb, axx, aj, vv")
+	r, _ := g.Find("a[a-b]")
 
 	if r.Len() != 2 || r.Text() != "aa\nab" {
-		t.Error("similar")
+		t.Error("Find(regex)")
 	}
 
-	g = NewGraph("111")
-	if i, _ := g.Int64(); i != 111 {
+	g = New("111")
+	if g.Int64() != 111 {
 		t.Error("Int64")
 	}
 
-	g = NewGraph("111.1")
-	if i, _ := g.Float64(); i != 111.1 {
+	g = New("111.1")
+	if g.Float64() != 111.1 {
 		t.Error("Float64")
 	}
 
-	g = NewGraph(float32(111.2))
-	if i, _ := g.Float64(); i != 111.2 {
+	g = New()
+	g.Add(float32(111.2))
+	if g.Float64() != 111.2 {
 		t.Error("Float64")
 	}
 
-	g = NewGraph("true")
-	if i, _ := g.Bool(); i != true {
+	g = New("true")
+	if g.Bool() != true {
 		t.Error("Bool")
 	}
 
-	g = ParseString("a 1")
+	g = New("a 1")
 	if i, _ := g.GetInt64("a"); i != 1 {
 		t.Error("GetInt64")
 	}
 
-	g = ParseString("a 1.1")
+	g = New("a 1.1")
 	if i, _ := g.GetFloat64("a"); i != 1.1 {
 		t.Error("GetFloat64")
 	}
 
-	g = ParseString("a 'false'")
+	g = New("a 'false'")
 	if i, err := g.GetBool("a"); err != nil || i != false {
 		t.Error("GetBool")
 	}
 
-	g = ParseString("a 'text'")
+	g = New("a 'text'")
 	if i, err := g.GetBytes("a"); err != nil || len(i) != 4 {
 		t.Error("GetBytes", len(i))
 	}
@@ -1135,7 +1430,7 @@ func TestIsInteger(t *testing.T) {
 	rr := [...]bool{true, true, false, true, false, true, false, false, false}
 
 	for i, s := range ss {
-		b := IsInteger(s)
+		b := isInteger(s)
 		if b != rr[i] {
 			t.Error("IsInteger() failed")
 		}
@@ -1171,22 +1466,49 @@ func TestI2string(t *testing.T) {
 
 func TestTemplate1(ts *testing.T) {
 	// Context
-	g := NewGraph("b")
-	g.Add(1)
+	g := New()
+	g.Add("b").Add(1)
 
 	t := NewTemplate("a $b")
-	t.This = "!t"
 
 	s := t.Process(g)
 
 	if string(s) != "a 1" {
-		ts.Error("template")
+		ts.Error("template", string(s))
+	}
+}
+
+func TestTemplateOperatorConfusion(ts *testing.T) {
+	// Context
+	g := New()
+	g.Add("b").Add(1)
+
+	t := NewTemplate("$(a='/') $a $b")
+
+	s := t.Process(g)
+
+	if string(s) != " / 1" {
+		ts.Error("template", string(s))
+	}
+}
+
+func TestTemplateIfEmptyString(ts *testing.T) {
+	// Context
+	g := New()
+	g.Add("b").Add("")
+
+	t := NewTemplate("$if(b=='') text $end")
+
+	s := t.Process(g)
+
+	if string(s) != " text " {
+		ts.Error("template", string(s))
 	}
 }
 
 func TestTemplateIf(ts *testing.T) {
 	// Context
-	g := NilGraph()
+	g := New()
 
 	t := NewTemplate("$if('false') a $else b $end")
 
@@ -1204,7 +1526,7 @@ func TestTemplateIf(ts *testing.T) {
 
 func TestTemplateFor(ts *testing.T) {
 	// Context
-	g := NilGraph()
+	g := New()
 	c := g.Add("b")
 	c.Add(1)
 	c.Add(2)
@@ -1213,7 +1535,18 @@ func TestTemplateFor(ts *testing.T) {
 
 	s := t.Process(g)
 	if string(s) != "1\n2\n---\n [1]  [2] " {
-		ts.Error("template")
+		ts.Errorf("template\n%s", string(s))
+	}
+
+	// The variable
+	g = FromString("result (item id 0, item id 1)")
+
+	t = NewTemplate("$for(a,result) $a.item.id $end")
+
+	s = t.Process(g)
+	if string(s) != " 0  1 " {
+		ts.Error("template: " + string(s))
+		println(g.Show())
 	}
 }
 
@@ -1221,10 +1554,8 @@ func TestTemplateFor(ts *testing.T) {
 
 func TestFunction1(ts *testing.T) {
 	// Context
-	g := NilGraph()
-	c := g.Add("T")
-	ty := c.Add("!type")
-	ty.Add("function")
+	g := New()
+
 	g.Add("a").Add("Title: $b")
 	g.Add("b").Add("A nice title")
 
@@ -1234,6 +1565,33 @@ func TestFunction1(ts *testing.T) {
 	if string(b) != "Title: A nice title" {
 		ts.Error("function T")
 	}
+}
+
+func TestFunction3(ts *testing.T) {
+	// Context
+	g := New()
+
+	t := NewTemplate("$(R.y='h')$(R.x0='user')")
+	t.Process(g)
+
+	t = NewTemplate("$R")
+	b := t.Process(g)
+
+	if string(b) != "y\n  h\nx0\n  user" {
+		ts.Error("Template processing of variable", string(b))
+	}
+
+	t = NewTemplate("$T(R)")
+	b = t.Process(g)
+
+	/*
+
+		println(t.Show())
+		b := t.Process(g)
+
+		if string(b) != "Title: A nice title" {
+			ts.Error("function T", string(b))
+		} */
 }
 
 type Math struct {
@@ -1251,7 +1609,7 @@ func TestFunction2(t *testing.T) {
 
 	FunctionAddConstructor("math", newMath)
 
-	g := NilGraph()
+	g := New()
 	f := g.Add("math")
 	f.Add("!type").Add("math")
 
@@ -1262,7 +1620,7 @@ func TestFunction2(t *testing.T) {
 	v := _string(i)[:10]
 
 	if s != "float64" || v != "0.84147098" {
-		t.Error("math.Sin()")
+		t.Error("math.Sin()", s, v)
 	}
 }
 
@@ -1274,7 +1632,7 @@ func TestLog(t *testing.T) {
 
 	log, _ := OpenLog(file)
 
-	g := ParseString("a b, c, d")
+	g := FromString("a b, c, d")
 	b := g.Binary()
 
 	n := log.Add(g)
@@ -1289,17 +1647,17 @@ func TestLog(t *testing.T) {
 	g3, _, n3 := log.Get(n2)
 	b2, _, _ := log.GetBinary(n3)
 
-	g4 := BinParse(b2)
+	g4 := FromBinary(b2)
 
-	if !g.Equal(g2) {
+	if !g.Equals(g2) {
 		t.Error("n!=n2")
 	}
 
-	if !g.Equal(g3) {
+	if !g.Equals(g3) {
 		t.Error("n!=n3")
 	}
 
-	if !g.Equal(g4) {
+	if !g.Equals(g4) {
 		t.Error("n!=n3")
 	}
 
@@ -1316,7 +1674,7 @@ func TestLog(t *testing.T) {
 
 func ExampleGraph_Set() {
 
-	g := ParseString("a b c")
+	g := FromString("a b c")
 	g.Set("a.b", "d")
 
 	fmt.Println(g.Text())
@@ -1327,9 +1685,23 @@ func ExampleGraph_Set() {
 	//     d
 }
 
+func ExampleGraph_Set_Index() {
+
+	g := FromString("a b c")
+	g.Set("a[1]", "d")
+
+	fmt.Println(g.Text())
+
+	// Output:
+	// a
+	//   b
+	//     c
+	//   d
+}
+
 func ExampleGraph_Set_a() {
 
-	g := NilGraph()
+	g := New()
 
 	g.Add("R").Add("b")
 	r := g.Node("R")
@@ -1344,7 +1716,7 @@ func ExampleGraph_Set_a() {
 }
 
 func ExampleGraph_Get() {
-	g := ParseString("a (b 1, c 2, b 3)")
+	g := FromString("a (b 1, c 2, b 3)")
 	fmt.Println(g.Get("a.b{0}").Text())
 	fmt.Println(g.Get("a.b{1}").Text())
 	fmt.Println("---")
@@ -1365,7 +1737,7 @@ func ExampleGraph_Get() {
 func ExampleNewTemplate() {
 	p := NewTemplate("Hello, $user")
 
-	g := NilGraph()
+	g := New()
 	g.Add("user").Add("Jenny")
 
 	fmt.Println(string(p.Process(g)))
@@ -1375,7 +1747,7 @@ func ExampleNewTemplate() {
 
 func ExampleNewExpression() {
 	e := NewExpression("1-2+3")
-	g := NilGraph()
+	g := New()
 	i := g.Eval(e)
 
 	fmt.Println(i)
@@ -1385,8 +1757,8 @@ func ExampleNewExpression() {
 
 func ExampleGraph_Check() {
 
-	schema := ParseString("a !int, b !string, c !float, d !bool")
-	g := ParseString("a 1, b s, c 1.0, d true")
+	schema := FromString("a !int, b !string, c !float, d !bool")
+	g := FromString("a 1, b s, c 1.0, d true")
 
 	b, message := schema.Check(g)
 	fmt.Println(b, message)
@@ -1395,7 +1767,7 @@ func ExampleGraph_Check() {
 }
 
 func ExampleGraph_Eval() {
-	g := NilGraph()
+	g := New()
 	g.Add("a").Add(4)
 	g.Add("b").Add("4")
 	e := NewExpression("a+3")

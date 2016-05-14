@@ -11,26 +11,26 @@ package ogdl
 //     expr1 := path | constant | op1 path | op1 constant | '(' expr ')' | op1 '(' expr ')'
 //     constant ::= quoted | number
 func NewExpression(s string) *Graph {
-	p := NewStringParser(s)
+	p := newStringParser(s)
 	p.Expression()
-	g := p.GraphTop(TypeExpression)
+	g := p.graphTop(TypeExpression)
 	g._ast()
 
 	return g
 }
 
 // Ast reorganizes the expression graph in the form of an abstract syntax tree.
-func (g *Graph) Ast() {
+func (g *Graph) ast() {
 
 	if g == nil {
 		return
 	}
 
 	for _, node := range g.Out {
-		if node.String() == TypeExpression {
+		if node.ThisString() == TypeExpression {
 			node._ast()
 		} else {
-			node.Ast()
+			node.ast()
 		}
 	}
 }
@@ -42,7 +42,7 @@ func (g *Graph) _ast() {
 	}
 
 	for _, node := range g.Out {
-		node.Ast()
+		node.ast()
 	}
 
 	var e1, e2 *Graph
@@ -52,7 +52,7 @@ func (g *Graph) _ast() {
 		for i := 0; i < len(g.Out); i++ {
 
 			node := g.Out[i]
-			if precedence(node.String()) == j {
+			if precedence(node.ThisString()) == j {
 				e1 = g.Out[i-1]
 				e2 = g.Out[i+1]
 				g.Out = append(g.Out[:i-1], g.Out[i:]...)

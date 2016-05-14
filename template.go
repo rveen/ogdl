@@ -36,11 +36,11 @@ import (
 //    $end
 //
 func NewTemplate(s string) *Graph {
-	p := NewStringParser(s)
+	p := newStringParser(s)
 	p.Template()
 
-	t := p.GraphTop(TypeTemplate)
-	t.Ast()
+	t := p.graphTop(TypeTemplate)
+	t.ast()
 	t.simplify()
 	t.flow()
 
@@ -49,11 +49,11 @@ func NewTemplate(s string) *Graph {
 
 // Process processes the parsed template, returning the resulting text in a byte array.
 // The variable parts are resolved out of the Graph given.
-func (t *Graph) Process(c *Graph) []byte {
+func (g *Graph) Process(c *Graph) []byte {
 
 	buffer := &bytes.Buffer{}
 
-	t.process(c, buffer)
+	g.process(c, buffer)
 
 	return buffer.Bytes()
 }
@@ -63,20 +63,13 @@ func (t *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
 	falseIf := false
 
 	for _, n := range t.Out {
-		s := n.String()
+		s := n.ThisString()
 
 		switch s {
 		case TypePath:
 			i := c.Eval(n)
+			buffer.WriteString(_text(i))
 
-			// If i is a graph, we want the full graph converted to string,
-			// not just the root node (which is what _string() returns.
-
-			if g, ok := i.(*Graph); ok {
-				buffer.WriteString(g.Text())
-			} else {
-				buffer.WriteString(_string(c.Eval(n)))
-			}
 		case TypeExpression:
 			// Silent evaluation
 			c.Eval(n)
@@ -102,18 +95,25 @@ func (t *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
 			i := c.Eval(n.GetAt(0).GetAt(1))
 
 			// Check that i is iterable
-
-            gi, ok := i.(*Graph);
-			if !ok || gi==nil {
-				return true
+			gi, ok := i.(*Graph)
+			if !ok || gi == nil {
+				continue
 			}
-						
+
 			// The third is the subtemplate to travel
 			// println ("for type: ",reflect.TypeOf(i).String(), "ok",ok)
 			// Assing expression value to path
 			// XXX if not Graph
+
+			varname := n.GetAt(0).GetAt(0).GetAt(0).String()
+			it := c.Node(varname)
+			if it == nil {
+				it = c.Add(varname)
+			}
+
 			for _, ee := range gi.Out {
-				c.assign(n.GetAt(0).GetAt(0).GetAt(0), ee, '=')
+				it.Out = nil
+				it.Add(ee)
 				brk := n.GetAt(1).process(c, buffer)
 				if brk {
 					break
@@ -123,7 +123,7 @@ func (t *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
 			return true
 
 		default:
-			buffer.WriteString(n.String())
+			buffer.WriteString(n.ThisString())
 		}
 	}
 	return false
@@ -131,9 +131,14 @@ func (t *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
 
 // simplify converts !p TYPE in !TYPE for keywords if, end, else for and break.
 func (t *Graph) simplify() {
+
+	if t == nil {
+		return
+	}
+
 	for _, node := range t.Out {
-		if TypePath == node.String() {
-			s := node.GetAt(0).String()
+		if TypePath == node.ThisString() {
+			s := node.GetAt(0).ThisString()
 
 			switch s {
 			case "if":
@@ -165,7 +170,7 @@ func (t *Graph) flow() {
 	for i := 0; i < t.Len(); i++ {
 
 		node := t.Out[i]
-		s := node.String()
+		s := node.ThisString()
 
 		if s == TypeIf || s == TypeFor {
 			n++

@@ -83,13 +83,13 @@ func (log *Log) Get(i int64) (*Graph, error, int64) {
 		return nil, err, -1
 	}
 
-	p := NewBinParser(log.f)
+	p := newBinParser(log.f)
 	g := p.Parse()
 
-    if p.n == 0 {
-        return g, nil, -1
-    }
-    
+	if p.n == 0 {
+		return g, nil, -1
+	}
+
 	return g, err, i + int64(p.n)
 }
 
@@ -108,7 +108,7 @@ func (log *Log) GetBinary(i int64) ([]byte, error, int64) {
 
 	   There should be a Header first.
 	*/
-	p := NewBinParser(log.f)
+	p := newBinParser(log.f)
 
 	if !p.header() {
 		return nil, err, 0

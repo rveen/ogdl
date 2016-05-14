@@ -4,13 +4,36 @@
 
 package ogdl
 
-import "strconv"
+import (
+	// "log"
+	"strconv"
+)
+
+// evalGraph
+func (g *Graph) evalGraph(e *Graph) {
+
+	for i, n := range e.Out {
+		switch n.ThisString() {
+		case TypePath:
+			n.This = g.EvalPath(n)
+			n.Out = nil
+		case TypeExpression:
+			v := g.EvalExpression(n)
+			if nn, ok := v.(*Graph); ok {
+				e.Out[i] = nn
+			} else {
+				n.This = v
+				n.Out = nil
+			}
+		}
+	}
+}
 
 // Eval takes a parsed expression and evaluates it
 // in the context of the current graph.
 func (g *Graph) Eval(e *Graph) interface{} {
 
-	switch e.String() {
+	switch e.ThisString() {
 	case TypePath:
 		return g.EvalPath(e)
 	case TypeExpression:
@@ -23,10 +46,10 @@ func (g *Graph) Eval(e *Graph) interface{} {
 
 	// Return constant in its normalizad native form
 	// either: int64, float64, string, bool or []byte
-	return e.Scalar()
+	return e.ThisScalar()
 }
 
-// EvalBool takes a parsed expression and evaluates it in the context of the 
+// EvalBool takes a parsed expression and evaluates it in the context of the
 // current graph, and converts the result to a boolean.
 func (g *Graph) EvalBool(e *Graph) bool {
 	b, _ := _boolf(g.Eval(e))
@@ -44,17 +67,9 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 		return nil
 	}
 
-	// Normalize the context graph, so that the root is
-	// always transparent.
-
 	var node, nodePrev *Graph
 
-	if !g.IsNil() {
-		node = NilGraph()
-		node.Add(g)
-	} else {
-		node = g
-	}
+	node = g
 
 	iknow := false
 
@@ -62,8 +77,8 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 		n := p.Out[i]
 
 		// For each path element, look at its type:
-		// token, index, selector, arglist
-		s := n.String()
+		// token, index, selector, arglist, keyword
+		s := n.ThisString()
 
 		iknow = false
 
@@ -74,6 +89,7 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 			if n.Len() == 0 {
 				return "empty []"
 			}
+
 			itf := g.EvalExpression(n.Out[0])
 			ix, ok := _int64(itf)
 			if !ok || ix < 0 {
@@ -88,12 +104,12 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 				return nil
 			}
 
-			elemPrev := p.Out[i-1].String()
+			elemPrev := p.Out[i-1].ThisString()
 			if len(elemPrev) == 0 {
 				return nil
 			}
 
-			r := NilGraph()
+			r := New()
 
 			if n.Len() == 0 {
 				// This case is {}, meaning that we must return
@@ -107,7 +123,7 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 				}
 				node = r
 			} else {
-				i, err := strconv.Atoi(n.Out[0].String())
+				i, err := strconv.Atoi(n.Out[0].ThisString())
 				if err != nil || i < 0 {
 					return nil
 				}
@@ -116,7 +132,7 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 				i++
 				// of all the nodes with name elemPrev, select the ith.
 				for _, nn := range nodePrev.Out {
-					if nn.String() == elemPrev {
+					if nn.ThisString() == elemPrev {
 						i--
 						if i == 0 {
 
@@ -135,27 +151,53 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 		case "_len":
 			return node.Len()
 
+		case "_this":
+			return node.ThisString()
+
 		case TypeGroup:
+			// We have hit an argument list of a function
+			// Subnodes in n are the individual argument expressions
+
+			itf, err := node.Function(p, i, g)
+			if err != nil {
+				return err.Error()
+			}
+			return itf
+
+		case TypeExpression:
+			// An expression is to be used as path element
 			// The following format is supported: ( expression )
 			// The expression is evaluated and used as path element
 			itf := g.EvalExpression(n.Out[0])
 			str := _string(itf)
+
 			if len(str) == 0 {
 				return nil // expr does not evaluate to a string
 			}
 			s = str
+			// [!] .().
 			fallthrough
 		default:
 			nn := node.Node(s)
 
 			if nn == nil {
-				// It may have a !type
-				itf, _ := node.Function(p, i, g)
-				
-				if itf == nil { 				
-				    itf, _ = node.Function2(p,i,g)
+
+				// Check if it is a function call
+				// A requisite is that the next element in path is !g
+				if i >= len(p.Out)-1 {
+					return nil
+				}
+				n = p.Out[i+1]
+				if n.ThisString() != TypeGroup {
+					return nil
+				}
+
+				itf, err := node.Function(p, i, g)
+				if err != nil {
+					return err.Error()
 				}
 				return itf
+
 			}
 
 			iknow = true
@@ -169,28 +211,31 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 		return nil
 	}
 
-	// iknow is true if the path includes the token that is now at the root of node.
+	// log.Printf("EvalPath before simplification (%v)\n%s\n", iknow, node.Show())
+
+	// iknow is true if the path includes the token that is now at the root.
 	// We don't want to return what we already know.
 
-	if iknow {
-		if node.Len() == 1 {
-			node = node.Out[0]
-		} else {
-			node2 := NilGraph()
-			node2.Out = node.Out
-			return node2
+	if node.This != nil && iknow {
+		node2 := New()
+		node2.Out = node.Out
+		node = node2
+	} else {
+		node2 := New()
+		node2.Add(node)
+		node = node2
+	}
+
+	// log.Printf("EvalPath after simplification 1\n%s\n", node.Show())
+
+	// this should not happen! (a result with no root)
+	/*
+		if node.Len() == 0 {
+			return node.This
 		}
-	}
-
-	// A nil node with one subnode makes no sense. Nil root nodes
-	// are used as list containers.
-	if node.IsNil() && node.Len() == 1 {
-		return node.Out[0]
-	}
-
-	// simplify: do not return Graph if it has no subnodes
-	if node.Len() == 0 {
-		return node.This
+	*/
+	if node.Len() == 1 && node.Out[0].Len() == 0 {
+		return node.Out[0].This
 	}
 
 	return node
@@ -207,7 +252,7 @@ func (g *Graph) EvalExpression(p *Graph) interface{} {
 		return nil
 	}
 
-	s := p.String()
+	s := p.ThisString()
 
 	if len(s) == 0 {
 		return ""
@@ -216,7 +261,7 @@ func (g *Graph) EvalExpression(p *Graph) interface{} {
 	// first check if it is a number because it can have an operatorChar
 	// in front: the minus sign
 	if isNumber(s) {
-		return p.Number()
+		return p.ThisNumber()
 	}
 
 	switch s {
@@ -229,22 +274,28 @@ func (g *Graph) EvalExpression(p *Graph) interface{} {
 		return g.EvalPath(p)
 	case TypeGroup:
 		// expression list
-		r := NewGraph(TypeGroup)
+		r := New(TypeGroup)
 		for _, expr := range p.Out {
 			r.Add(g.EvalExpression(expr))
 		}
 		return r
+	case TypeString:
+		if p.Len() == 0 {
+			return ""
+		}
+		return p.GetAt(0).ThisString()
+
 	}
 
 	c := int(s[0])
 
-    // [!] Operator should be identified. Operators written as strings are
-    // missinterpreted.
-	if IsOperatorChar(c) {
-	    if len(s)<=2 {
-	        if len(s)==1 || IsOperatorChar(int(s[1])) {
-		        return g.evalBinary(p)
-		    }
+	// [!] Operator should be identified. Operators written as strings are
+	// missinterpreted.
+	if isOperatorChar(c) {
+		if len(s) <= 2 {
+			if len(s) == 1 || isOperatorChar(int(s[1])) {
+				return g.evalBinary(p)
+			}
 		}
 	}
 
@@ -252,7 +303,7 @@ func (g *Graph) EvalExpression(p *Graph) interface{} {
 		return s
 	}
 
-	if IsLetter(c) {
+	if isLetter(c) {
 		if s == "false" {
 			return false
 		}
@@ -266,12 +317,11 @@ func (g *Graph) EvalExpression(p *Graph) interface{} {
 }
 
 func (g *Graph) evalBinary(p *Graph) interface{} {
-	// p.String() is the operator
 
 	n1 := p.Out[0]
 	i2 := g.EvalExpression(p.Out[1])
 
-	switch p.String() {
+	switch p.ThisString() {
 
 	case "+":
 		return calc(g.EvalExpression(n1), i2, '+')
@@ -413,7 +463,7 @@ func (g *Graph) assign(p *Graph, v interface{}, op int) interface{} {
 	// if p doesn't exist, just set it to the value given
 	left := g.get(p)
 	if left != nil {
-		return g.set(p, calc(left.This, v, op))
+		return g.set(p, calc(left.Out[0].This, v, op))
 	}
 
 	switch op {

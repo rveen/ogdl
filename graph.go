@@ -18,16 +18,13 @@ type Graph struct {
 	Out  []*Graph
 }
 
-// NewGraph creates a Graph instance with the given name.
-// At this stage it is a single node without outgoing edges.
-func NewGraph(n interface{}) *Graph {
+// New returns a pointer to Graph, which will be either empty or contain the
+// (optional) object given.
+func New(n ...interface{}) *Graph {
+	if len(n) == 0 {
+		return &Graph{}
+	}
 	return &Graph{n, nil}
-}
-
-// NilGraph returns a pointer to a 'null' Graph, also called transparent
-// node.
-func NilGraph() *Graph {
-	return &Graph{}
 }
 
 // IsNil returns true is this node has no content, i.e, is a transparent node.
@@ -75,8 +72,8 @@ func (g *Graph) Depth() int {
 	return i + 1
 }
 
-// Equal returns true if the given graph and the receiver graph are equal.
-func (g *Graph) Equal(c *Graph) bool {
+// Equals returns true if the given graph and the receiver graph are equal.
+func (g *Graph) Equals(c *Graph) bool {
 
 	if c.This != g.This {
 		return false
@@ -86,7 +83,7 @@ func (g *Graph) Equal(c *Graph) bool {
 	}
 
 	for i := 0; i < g.Len(); i++ {
-		if g.Out[i].Equal(c.Out[i]) == false {
+		if g.Out[i].Equals(c.Out[i]) == false {
 			return false
 		}
 	}
@@ -97,7 +94,7 @@ func (g *Graph) Equal(c *Graph) bool {
 //
 // An eventual nil root will not be bypassed.
 func (g *Graph) Add(n interface{}) *Graph {
-	if node, ok := n.(*Graph); ok && node!=nil {
+	if node, ok := n.(*Graph); ok && node != nil {
 		if node.IsNil() {
 			for _, node2 := range node.Out {
 				g.Out = append(g.Out, node2)
@@ -131,7 +128,7 @@ func (g *Graph) addEqualNodes(g2 *Graph, key string, recurse bool) *Graph {
 
 	if g2 != nil {
 		for _, n := range g2.Out {
-			if key == n.String() {
+			if key == _string(n.This) {
 				g.AddNodes(n)
 			}
 			if recurse {
@@ -161,7 +158,7 @@ func (g *Graph) Copy(c *Graph) {
 func (g *Graph) Node(s string) *Graph {
 
 	for _, node := range g.Out {
-		if s == node.String() {
+		if s == _string(node.This) {
 			return node
 		}
 	}
@@ -178,12 +175,12 @@ func (g *Graph) GetAt(i int) *Graph {
 	return g.Out[i]
 }
 
-// Get recurses a Graph following the given path and returns
-// the result.
+// Get recurses a Graph following a given path and returns the result.
 //
-// This function returns consequently a *Graph. It may be a pointer within
-// the recursed Graph (the receiver), or a newly created one. We leave the
-// handling of specific types to the functions defined in get_types.go.
+// This function returns a *Graph in any condition. When there is nothing to
+// return, then an nil Graph is returned. This behavior is designed so that
+// the next function in a chain never gets an invalid receiver, avoiding null
+// pointer errors.
 //
 // OGDL Path:
 // elements are separated by '.' or [] or {}
@@ -191,26 +188,22 @@ func (g *Graph) GetAt(i int) *Graph {
 // selector := {N}
 // tokens can be quoted
 //
-// Future:
-// .*., .**.
-// ./regex/.
-//
-// Nil receiver behavior: return nil.
 func (g *Graph) Get(s string) *Graph {
 	if g == nil {
-		return nil
+		return (*Graph)(nil)
 	}
 	// Parse the input string into a Path graph.
 	path := NewPath(s)
 
-	if path == nil {
-		return nil
+	g = g.get(path)
+	if g == nil {
+		return (*Graph)(nil)
 	}
-	return g.get(path)
+	return g
 }
 
 func (g *Graph) get(path *Graph) *Graph {
-	if g == nil {
+	if g == nil || path == nil {
 		return nil
 	}
 
@@ -225,81 +218,84 @@ func (g *Graph) get(path *Graph) *Graph {
 
 	for _, elem := range path.Out {
 
-		c := elem.String()[0]
+		p := elem.ThisString()
 
-		if c == '!' {
-			iknow = false
-			c = elem.String()[1]
+		iknow = false
 
-			switch c {
+		switch p {
 
-			case 'i':
-				if elem.Len() == 0 {
-					return nil
-				}
+		case TypeIndex:
 
-				i, err := strconv.Atoi(elem.Out[0].String())
-				if err != nil {
-					return nil
-				}
-				nodePrev = node
-				node = node.GetAt(i)
-				if node == nil {
-					return nil
-				}
-				elemPrev = node.String()
-
-			case 's':
-				if nodePrev == nil || nodePrev.Len() == 0 || len(elemPrev) == 0 {
-					return nil
-				}
-
-				r := NilGraph()
-
-				if elem.Len() == 0 {
-					// This case is {}, meaning that we must return
-					// all ocurrences of the token just before (elemPrev).
-					// And that means creating a new Graph object.
-
-					r.addEqualNodes(nodePrev, elemPrev, false)
-
-					if r.Len() == 0 {
-						return nil
-					}
-					node = r
-				} else {
-					i, err := strconv.Atoi(elem.Out[0].String())
-					if err != nil || i < 0 {
-						return nil
-					}
-
-					// {0} must still be handled: add it to r
-
-					i++
-					// of all the nodes with name elemPrev, select the ith.
-					for _, nn := range nodePrev.Out {
-						if nn.String() == elemPrev {
-							i--
-							if i == 0 {
-								r.AddNodes(nn)
-								node = r
-								break
-							}
-						}
-					}
-					if i > 0 {
-						return nil
-					}
-				}
-
-			default:
+			if elem.Len() == 0 {
 				return nil
 			}
-		} else {
+
+			i, err := strconv.Atoi(elem.Out[0].ThisString())
+			if err != nil {
+				return nil
+			}
+			nodePrev = node
+			node = node.GetAt(i)
+			if node == nil {
+				return nil
+			}
+			elemPrev = node.ThisString()
+
+		case TypeSelector:
+
+			if nodePrev == nil || nodePrev.Len() == 0 || len(elemPrev) == 0 {
+				return nil
+			}
+
+			r := New()
+
+			if elem.Len() == 0 {
+				// This case is {}, meaning that we must return
+				// all ocurrences of the token just before (elemPrev).
+
+				r.addEqualNodes(nodePrev, elemPrev, false)
+
+				if r.Len() == 0 {
+					return nil
+				}
+				node = r
+			} else {
+				i, err := strconv.Atoi(elem.Out[0].ThisString())
+				if err != nil || i < 0 {
+					return nil
+				}
+
+				// {0} must still be handled: add it to r
+
+				i++
+				// of all the nodes with name elemPrev, select the ith.
+				for _, nn := range nodePrev.Out {
+					if nn.ThisString() == elemPrev {
+						i--
+						if i == 0 {
+							r.AddNodes(nn)
+							node = r
+							break
+						}
+					}
+				}
+				if i > 0 {
+					return nil
+				}
+			}
+
+		case "_len":
+
+			nn := New()
+			nn.Add(node.Len())
+			return nn
+
+		default:
+
 			iknow = true
 			nodePrev = node
-			elemPrev = elem.String()
-			node = node.Node(elemPrev)			
+			elemPrev = p
+			node = node.Node(p)
 		}
 
 		if node == nil {
@@ -311,25 +307,11 @@ func (g *Graph) get(path *Graph) *Graph {
 		return nil
 	}
 
-	// iknow true if the path includes the token that is now at the root of node.
-	// We don't want to return what we already know.
-
-	if iknow {
-		if node.Len() == 1 {
-			node = node.Out[0]
-		} else {
-			node2 := NilGraph()
-			node2.Out = node.Out
-			return node2
-		}
+	if node.This != nil && !iknow {
+		node2 := New()
+		node2.Add(node)
+		node = node2
 	}
-
-	// A nil node with one subnode makes no sense. Nil root nodes
-	// are used as list containers.
-	if node.IsNil() && node.Len() == 1 {
-		return node.Out[0]
-	}
-
 	return node
 }
 
@@ -345,10 +327,7 @@ func (g *Graph) Delete(n interface{}) {
 
 // DeleteAt removes a subnode by index
 func (g *Graph) DeleteAt(i int) {
-	if i < 0 {
-		return
-	}
-	if i >= g.Len() {
+	if i < 0 || i >= g.Len() {
 		return
 	}
 	g.Out = append(g.Out[:i], g.Out[i+1:]...)
@@ -371,6 +350,7 @@ func (g *Graph) Set(s string, val interface{}) *Graph {
 	return g.set(path, val)
 }
 
+// TODO: Clean this code:
 func (g *Graph) set(path *Graph, val interface{}) *Graph {
 
 	node := g
@@ -380,10 +360,23 @@ func (g *Graph) set(path *Graph, val interface{}) *Graph {
 
 	for ; i < len(path.Out); i++ {
 
-		elem := path.Out[i]
-
 		prev = node
-		node = node.Node(elem.String())
+
+		elem := path.Out[i]
+		if elem.ThisString() == TypeIndex {
+			i := elem.Int64()
+			if len(node.Out) <= int(i) {
+				o := make([]*Graph, i+1)
+				for j, n := range node.Out {
+					o[j] = n
+				}
+				node.Out = o
+			}
+			node.Out[i] = New(val)
+			return node.Out[i]
+		} else {
+			node = node.Node(elem.ThisString())
+		}
 
 		if node == nil {
 			break
@@ -395,6 +388,20 @@ func (g *Graph) set(path *Graph, val interface{}) *Graph {
 
 		for ; i < len(path.Out); i++ {
 			elem := path.Out[i]
+
+			if elem.ThisString() == TypeIndex {
+				i := elem.Int64()
+				if len(node.Out) <= int(i) {
+					o := make([]*Graph, i+1)
+					for j, n := range node.Out {
+						o[j] = n
+					}
+					node.Out = o
+				}
+				node.Out[i] = New(val)
+				return node.Out[i]
+			}
+
 			node = node.Add(elem.This)
 		}
 	}
@@ -410,7 +417,7 @@ func (g *Graph) set(path *Graph, val interface{}) *Graph {
 // characters. Null elements are not printed, and act as transparent nodes.
 //
 // BUG():Handle comments correctly.
-//
+// BUG(): 2 times almost the same code:
 func (g *Graph) Text() string {
 	if g == nil {
 		return ""
@@ -418,7 +425,42 @@ func (g *Graph) Text() string {
 
 	buffer := &bytes.Buffer{}
 
-	g._text(0, buffer)
+	// Do not print the 'root' node
+	for _, node := range g.Out {
+		node._text(0, buffer, false)
+	}
+
+	// remove trailing \n
+
+	s := buffer.String()
+
+	if len(s) == 0 {
+		return ""
+	}
+
+	if s[len(s)-1] == '\n' {
+		s = s[0 : len(s)-1]
+	}
+
+	// unquote
+
+	if s[0] == '"' {
+		s = s[1 : len(s)-1]
+		// But then also replace \"
+		s = strings.Replace(s, "\\\"", "\"", -1)
+	}
+
+	return s
+}
+
+func (g *Graph) Show() string {
+	if g == nil {
+		return ""
+	}
+
+	buffer := &bytes.Buffer{}
+
+	g._text(0, buffer, true)
 
 	// remove trailing \n
 
@@ -446,7 +488,7 @@ func (g *Graph) Text() string {
 // _text is the private, lower level, implementation of Text().
 // It takes two parameters, the level and a buffer to which the
 // result is printed.
-func (g *Graph) _text(n int, buffer *bytes.Buffer) {
+func (g *Graph) _text(n int, buffer *bytes.Buffer, show bool) {
 
 	sp := ""
 	for i := 0; i < n; i++ {
@@ -466,7 +508,12 @@ func (g *Graph) _text(n int, buffer *bytes.Buffer) {
 	   [!] Cannot print blocks at level 0? Or can we?
 	*/
 
-	if strings.IndexAny(g.String(), "\n\r \t'\",()") != -1 {
+	s := "_"
+	if g != nil {
+		s = _string(g.This)
+	}
+
+	if strings.IndexAny(s, "\n\r \t'\",()") != -1 {
 
 		// print quoted, but not at level 0
 		// Do not convert " to \" below if level==0 !
@@ -479,14 +526,14 @@ func (g *Graph) _text(n int, buffer *bytes.Buffer) {
 
 		cp = 0
 
-		for i := 0; i < len(g.String()); i++ {
-			c = g.String()[i] // byte, not rune
+		for i := 0; i < len(s); i++ {
+			c = s[i] // byte, not rune
 			if c == 13 {
 				continue // ignore CR's
 			} else if c == 10 {
 				buffer.WriteByte('\n')
 				buffer.WriteString(sp)
-			} else if c == '"' && n>0 {
+			} else if c == '"' && n > 0 {
 				if cp != '\\' {
 					buffer.WriteString("\\\"")
 				}
@@ -501,18 +548,23 @@ func (g *Graph) _text(n int, buffer *bytes.Buffer) {
 		}
 		buffer.WriteString("\n")
 	} else {
-		if len(g.String()) == 0 {
+		if len(s) == 0 && !show {
 			n--
 		} else {
+			if len(s) == 0 && show {
+				s = "_"
+			}
 			buffer.WriteString(sp)
-			buffer.WriteString(g.String())
+			buffer.WriteString(s)
 			buffer.WriteByte('\n')
 		}
 	}
 
-	for i := 0; i < len(g.Out); i++ {
-		node := g.Out[i]
-		node._text(n+1, buffer)
+	if g != nil {
+		for i := 0; i < len(g.Out); i++ {
+			node := g.Out[i]
+			node._text(n+1, buffer, show)
+		}
 	}
 }
 
@@ -520,7 +572,7 @@ func (g *Graph) _text(n int, buffer *bytes.Buffer) {
 // equal to s by v.
 func (g *Graph) Substitute(s string, v interface{}) {
 	for _, n := range g.Out {
-		if n.String() == s {
+		if _string(n.This) == s {
 			n.This = v
 		}
 		n.Substitute(s, v)

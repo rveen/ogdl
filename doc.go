@@ -44,8 +44,8 @@
 // then,
 //
 //    g := ogdl.ParseFile("config.g")
-//    ip,_ := g.GetString("eth0.ip")
-//    to,_ := g.GetInt64("eth0.timeout")
+//    ip := g.Get("eth0.ip").String()
+//    to := g.Get("eth0.timeout").Int64()
 //
 //    println("ip:",ip,", timeout:",to)
 //

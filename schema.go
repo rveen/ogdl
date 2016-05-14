@@ -6,16 +6,16 @@ package ogdl
 
 // Check returns true if the Graph given as a parameter conforms to the
 // schema represented by the receiver Graph.
-func (schema *Graph) Check(g *Graph) (bool, string) {
+func (g *Graph) Check(x *Graph) (bool, string) {
 
 	for i := 0; i < g.Len(); i++ {
-		ns := schema.GetAt(i)
-		nx := g.GetAt(i)
+		ns := g.GetAt(i)
+		nx := x.GetAt(i)
 
 		b := ns.checkNode(nx)
 		if !b {
 			if ns != nil {
-				return false, "want " + ns.String() + ", got " + nx.String()
+				return false, "want " + ns.ThisString() + ", got " + nx.ThisString()
 			}
 		}
 
@@ -34,8 +34,8 @@ func (schema *Graph) checkNode(g *Graph) bool {
 		return false
 	}
 
-	sx := g.String()
-	sc := schema.String()
+	sx := g.ThisString()
+	sc := schema.ThisString()
 
 	ty := g.Type()
 	var ok bool

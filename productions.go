@@ -16,7 +16,7 @@ import (
 // but is still parsed by Line())
 //
 //     Graph ::= Line* End
-func (p *Parser) Ogdl() error {
+func (p *parser) Ogdl() error {
 
 	for {
 		more, err := p.Line()
@@ -59,7 +59,7 @@ func (p *Parser) Ogdl() error {
 //      e        -> level 2
 //    f          -> level 1
 //
-func (p *Parser) Line() (bool, error) {
+func (p *parser) Line() (bool, error) {
 
 	sp, n := p.Space()
 
@@ -73,7 +73,7 @@ func (p *Parser) Line() (bool, error) {
 	}
 
 	// We should not have a Comma here, but lets ignore it.
-	if p.NextByteIs(',') {
+	if p.nextByteIs(',') {
 		p.Space() // Eat eventual space characters
 	}
 
@@ -116,7 +116,7 @@ func (p *Parser) Line() (bool, error) {
 
 		p.Space()
 
-		co := p.NextByteIs(',')
+		co := p.nextByteIs(',')
 
 		if co {
 			p.Space()
@@ -127,9 +127,9 @@ func (p *Parser) Line() (bool, error) {
 
 	}
 
-    // Set the indentation to level rules for subsequent lines
-	p.setLevel(l,n)
-	p.setLevel(p.ev.Level(),n+1)
+	// Set the indentation to level rules for subsequent lines
+	p.setLevel(l, n)
+	p.setLevel(p.ev.Level(), n+1)
 
 	return true, nil
 }
@@ -153,20 +153,17 @@ func (p *Parser) Line() (bool, error) {
 // Note: On the other hand it would be stupid not to recognize for example
 // Unicode quotation marks if we know that we have UTF-8. But when do we
 // know for sure?
-func (p *Parser) Path() bool {
-
-	c := p.Read()
-	p.Unread()
-
-	if !IsLetter(c) {
-		return false
-	}
+func (p *parser) Path() bool {
 
 	var b string
 	var begin = true
 	var anything = false
 	var ok bool
 	var err error
+
+	// dot keeps track of just read dots. This is used in Args(), to
+	// distinguish between a(b) and a.(b)
+	var dot bool
 
 	for {
 
@@ -176,14 +173,19 @@ func (p *Parser) Path() bool {
 		// A dot is requiered before a token or quoted, except at
 		// the beginning
 
-		if !p.NextByteIs('.') && !begin {
-			// If not [, {, (, break
+		if !begin {
+			c := p.Read()
 
-			c = p.Read()
-			p.Unread()
+			if c != '.' {
+				dot = false
+				p.Unread()
 
-			if c != '[' && c != '(' && c != '{' {
-				break
+				// If not [, {, (, break
+				if c != '[' && c != '(' && c != '{' {
+					break
+				}
+			} else {
+				dot = true
 			}
 		}
 
@@ -220,7 +222,7 @@ func (p *Parser) Path() bool {
 			continue
 		}
 
-		ok, err = p.Args()
+		ok, err = p.Args(dot)
 		if ok {
 			anything = true
 			continue
@@ -251,7 +253,7 @@ func (p *Parser) Path() bool {
 //
 //   This method returns two booleans: if there has been a sequence, and if the last element was a Group
 //
-func (p *Parser) Sequence() (bool, bool, error) {
+func (p *parser) Sequence() (bool, bool, error) {
 
 	i := p.ev.Level()
 
@@ -279,7 +281,7 @@ func (p *Parser) Sequence() (bool, bool, error) {
 
 		p.WhiteSpace()
 
-		co := p.NextByteIs(',')
+		co := p.nextByteIs(',')
 
 		if co {
 			p.WhiteSpace()
@@ -291,21 +293,21 @@ func (p *Parser) Sequence() (bool, bool, error) {
 }
 
 // Group ::= '(' Space? Sequence?  Space? ')'
-func (p *Parser) Group() (bool, error) {
+func (p *parser) Group() (bool, error) {
 
-	if !p.NextByteIs('(') {
+	if !p.nextByteIs('(') {
 		return false, nil
 	}
 
 	i := p.ev.Level()
 
-    p.WhiteSpace()
+	p.WhiteSpace()
 
 	p.Sequence()
 
 	p.WhiteSpace()
 
-	if !p.NextByteIs(')') {
+	if !p.nextByteIs(')') {
 		return false, errors.New("missing )")
 	}
 
@@ -315,7 +317,7 @@ func (p *Parser) Group() (bool, error) {
 }
 
 // Scalar ::= quoted | string
-func (p *Parser) Scalar() (string, bool) {
+func (p *parser) Scalar() (string, bool) {
 	b, ok := p.Quoted()
 	if ok {
 		return b, true
@@ -327,13 +329,13 @@ func (p *Parser) Scalar() (string, bool) {
 //
 // BUG(): Special cases: #?, #{
 //
-func (p *Parser) Comment() bool {
+func (p *parser) Comment() bool {
 	c := p.Read()
 
 	if c == '#' {
 		for {
 			c = p.Read()
-			if IsEndChar(c) || IsBreakChar(c) {
+			if isEndChar(c) || isBreakChar(c) {
 				break
 			}
 			if c == 13 {
@@ -359,11 +361,11 @@ func (p *Parser) Comment() bool {
 // TOTHINK: Many productions return a string and not []byte, which could be
 // more efficient, but has no type information: []byte can be a raw binary or
 // a string.
-func (p *Parser) String() (string, bool) {
+func (p *parser) String() (string, bool) {
 
 	c := p.Read()
 
-	if !IsTextChar(c) || c == '#' {
+	if !isTextChar(c) || c == '#' {
 		p.Unread()
 		return "", false
 	}
@@ -373,7 +375,7 @@ func (p *Parser) String() (string, bool) {
 
 	for {
 		c = p.Read()
-		if !IsTextChar(c) {
+		if !isTextChar(c) {
 			p.Unread()
 			break
 		}
@@ -384,7 +386,7 @@ func (p *Parser) String() (string, bool) {
 }
 
 // Quoted string. Can have newlines in it.
-func (p *Parser) Quoted() (string, bool) {
+func (p *parser) Quoted() (string, bool) {
 
 	cs := p.Read()
 	if cs != '"' && cs != '\'' {
@@ -426,7 +428,7 @@ func (p *Parser) Quoted() (string, bool) {
 }
 
 // Block ::= '\\' NL LINES_OF_TEXT
-func (p *Parser) Block() (string, bool) {
+func (p *parser) Block() (string, bool) {
 
 	var c int
 
@@ -499,7 +501,7 @@ func (p *Parser) Block() (string, bool) {
 }
 
 // Break is NL, CR or CR+NL
-func (p *Parser) Break() bool {
+func (p *parser) Break() bool {
 	c := p.Read()
 	if c == 13 {
 		c = p.Read()
@@ -517,17 +519,17 @@ func (p *Parser) Break() bool {
 
 // WhiteSpace is equivalent to Space | Break. It consumes all white space,
 // whether spaces, tabs or newlines
-func (p *Parser) WhiteSpace() bool {
+func (p *parser) WhiteSpace() bool {
 
-    any := false;
-    for {
-	    c := p.Read()
-	    if c != 13 && c != 10 && c != 9 && c != 32 {
-	        break
-	    }
-	    any = true
+	any := false
+	for {
+		c := p.Read()
+		if c != 13 && c != 10 && c != 9 && c != 32 {
+			break
+		}
+		any = true
 	}
-	
+
 	p.Unread()
 	return any
 }
@@ -535,7 +537,7 @@ func (p *Parser) WhiteSpace() bool {
 // Space is (0x20|0x09)+. It returns a boolean indicating
 // if space has been found, and an integer indicating
 // how many spaces, iff uniform (either all 0x20 or 0x09)
-func (p *Parser) Space() (bool, int) {
+func (p *parser) Space() (bool, int) {
 
 	// The Block() production eats to many spaces trying to
 	// detect the end of it. They are saved in p.spaces.
@@ -574,7 +576,7 @@ func (p *Parser) Space() (bool, int) {
 // End returns true if the end of stream has been reached.
 //
 // end < stream > bool
-func (p *Parser) End() bool {
+func (p *parser) End() bool {
 	c := p.Read()
 	if c < 32 && c != 9 && c != 10 && c != 13 {
 		return true
@@ -584,7 +586,7 @@ func (p *Parser) End() bool {
 }
 
 // Newline returns true is a newline is found at the current position.
-func (p *Parser) Newline() bool {
+func (p *parser) Newline() bool {
 	c := p.Read()
 	if c == '\r' {
 		c = p.Read()
@@ -607,11 +609,11 @@ func (p *Parser) Newline() bool {
 //  1
 //  143lasd034
 //
-func (p *Parser) Token() (string, bool) {
+func (p *parser) Token() (string, bool) {
 
 	c := p.Read()
 
-	if !IsTokenChar(c) {
+	if !isTokenChar(c) {
 		p.Unread()
 		return "", false
 	}
@@ -621,7 +623,7 @@ func (p *Parser) Token() (string, bool) {
 
 	for {
 		c = p.Read()
-		if !IsTokenChar(c) {
+		if !isTokenChar(c) {
 			p.Unread()
 			break
 		}
@@ -633,17 +635,17 @@ func (p *Parser) Token() (string, bool) {
 
 // Number returns true if it finds a number at the current parser position
 // It returns also the number found.
-func (p *Parser) Number() (string, bool) {
+func (p *parser) Number() (string, bool) {
 
 	c := p.Read()
 
-	if !IsDigit(c) {
+	if !isDigit(c) {
 		if c != '-' {
 			p.Unread()
 			return "", false
 		}
 		d := p.Read()
-		if !IsDigit(d) {
+		if !isDigit(d) {
 			p.Unread()
 			p.Unread()
 			return "", false
@@ -656,7 +658,7 @@ func (p *Parser) Number() (string, bool) {
 
 	for {
 		c = p.Read()
-		if !IsDigit(c) && c != '.' {
+		if !isDigit(c) && c != '.' {
 			p.Unread()
 			break
 		}
@@ -668,11 +670,11 @@ func (p *Parser) Number() (string, bool) {
 
 // Operator returns true if it finds an operator at the current parser position
 // It returns also the operator found.
-func (p *Parser) Operator() (string, bool) {
+func (p *parser) Operator() (string, bool) {
 
 	c := p.Read()
 
-	if !IsOperatorChar(c) {
+	if !isOperatorChar(c) {
 		p.Unread()
 		return "", false
 	}
@@ -682,7 +684,7 @@ func (p *Parser) Operator() (string, bool) {
 
 	for {
 		c = p.Read()
-		if !IsOperatorChar(c) {
+		if !isOperatorChar(c) {
 			p.Unread()
 			break
 		}
@@ -694,7 +696,7 @@ func (p *Parser) Operator() (string, bool) {
 
 // Expression := expr1 (op2 expr1)*
 //
-func (p *Parser) Expression() bool {
+func (p *parser) Expression() bool {
 	if !p.UnaryExpression() {
 		return false
 	}
@@ -717,12 +719,12 @@ func (p *Parser) Expression() bool {
 
 // UnaryExpression := cpath | constant | op1 cpath | op1 constant | '(' expr ')' | op1 '(' expr ')'
 //
-func (p *Parser) UnaryExpression() bool {
+func (p *parser) UnaryExpression() bool {
 
 	c := p.Read()
 	p.Unread()
 
-	if IsLetter(c) {
+	if isLetter(c) {
 		p.ev.Add(TypePath)
 		p.ev.Inc()
 		p.Path()
@@ -738,7 +740,10 @@ func (p *Parser) UnaryExpression() bool {
 
 	b, ok = p.Quoted()
 	if ok {
+		p.ev.Add(TypeString)
+		p.ev.Inc()
 		p.ev.Add(b)
+		p.ev.Dec()
 		return true
 	}
 
@@ -747,7 +752,7 @@ func (p *Parser) UnaryExpression() bool {
 		p.ev.Add(b)
 	}
 
-	if p.NextByteIs('(') {
+	if p.nextByteIs('(') {
 
 		p.ev.Add(TypeGroup)
 		p.ev.Inc()
@@ -756,18 +761,18 @@ func (p *Parser) UnaryExpression() bool {
 		p.Space()
 		p.ev.Dec()
 
-		return p.NextByteIs(')')
+		return p.nextByteIs(')')
 	}
 
 	return p.Path()
 }
 
 // Text parses text in a template.
-func (p *Parser) Text() bool {
+func (p *parser) Text() bool {
 
 	c := p.Read()
 
-	if !IsTemplateTextChar(c) {
+	if !isTemplateTextChar(c) {
 		p.Unread()
 		return false
 	}
@@ -777,7 +782,7 @@ func (p *Parser) Text() bool {
 
 	for {
 		c := p.Read()
-		if !IsTemplateTextChar(c) {
+		if !isTemplateTextChar(c) {
 
 			p.Unread()
 			break
@@ -790,7 +795,7 @@ func (p *Parser) Text() bool {
 }
 
 // Variable parses variables in a template. They begin with $.
-func (p *Parser) Variable() bool {
+func (p *parser) Variable() bool {
 
 	c := p.Read()
 
@@ -803,8 +808,8 @@ func (p *Parser) Variable() bool {
 	if c == '\\' {
 		p.ev.Add("$")
 		return true
-	} 
-	
+	}
+
 	p.Unread()
 
 	i := p.ev.Level()
@@ -839,9 +844,9 @@ func (p *Parser) Variable() bool {
 }
 
 // Index ::= '[' expression ']'
-func (p *Parser) Index() bool {
+func (p *parser) Index() bool {
 
-	if !p.NextByteIs('[') {
+	if !p.nextByteIs('[') {
 		return false
 	}
 
@@ -854,7 +859,7 @@ func (p *Parser) Index() bool {
 	p.Expression()
 	p.Space()
 
-	if !p.NextByteIs(']') {
+	if !p.nextByteIs(']') {
 		return false // error
 	}
 
@@ -864,9 +869,9 @@ func (p *Parser) Index() bool {
 }
 
 // Selector ::= '{' expression? '}'
-func (p *Parser) Selector() bool {
+func (p *parser) Selector() bool {
 
-	if !p.NextByteIs('{') {
+	if !p.nextByteIs('{') {
 		return false
 	}
 
@@ -879,7 +884,7 @@ func (p *Parser) Selector() bool {
 	p.Expression()
 	p.Space()
 
-	if !p.NextByteIs('}') {
+	if !p.nextByteIs('}') {
 		return false // error
 	}
 
@@ -889,22 +894,27 @@ func (p *Parser) Selector() bool {
 }
 
 // Args ::= '(' space? sequence? space? ')'
-func (p *Parser) Args() (bool, error) {
+func (p *parser) Args(dot bool) (bool, error) {
 
-	if !p.NextByteIs('(') {
+	if !p.nextByteIs('(') {
 		return false, nil
 	}
 
 	i := p.ev.Level()
 
-	p.ev.Add(TypeGroup)
+	if !dot {
+		p.ev.Add(TypeGroup)
+	} else {
+		p.ev.Add(TypeExpression)
+
+	}
 	p.ev.Inc()
 
 	p.Space()
 	p.ArgList()
 	p.Space()
 
-	if !p.NextByteIs(')') {
+	if !p.nextByteIs(')') {
 		return false, errors.New("missing )")
 	}
 
@@ -920,7 +930,7 @@ func (p *Parser) Args() (bool, error) {
 // arglist can be empty, then returning false (this fact is not represented
 // in the BNF definition).
 //
-func (p *Parser) ArgList() bool {
+func (p *parser) ArgList() bool {
 
 	something := false
 
@@ -938,12 +948,12 @@ func (p *Parser) ArgList() bool {
 		something = true
 
 		p.Space()
-		p.NextByteIs(',')
+		p.nextByteIs(',')
 	}
 }
 
 // Template ::= (Text | Variable)*
-func (p *Parser) Template() {
+func (p *parser) Template() {
 	for {
 		if !p.Text() && !p.Variable() {
 			break
@@ -952,17 +962,17 @@ func (p *Parser) Template() {
 }
 
 // TokenList ::= token [, token]*
-func (p *Parser) TokenList() {
+func (p *parser) TokenList() {
 
 	comma := false
 
 	for {
 		p.Space()
 
-		if comma && !p.NextByteIs(',') {
+		if comma && !p.nextByteIs(',') {
 			return
-		} 
-		
+		}
+
 		p.Space()
 
 		s, ok := p.Token()
@@ -970,7 +980,7 @@ func (p *Parser) TokenList() {
 			return
 		}
 
-		p.Emit(s)
+		p.emit(s)
 		comma = true
 	}
 }

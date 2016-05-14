@@ -21,6 +21,7 @@ const (
 	TypeIndex      = "!i"
 	TypeGroup      = "!g"
 	TypeTemplate   = "!t"
+	TypeString     = "!string"
 
 	TypeIf    = "!if"
 	TypeEnd   = "!end"
@@ -36,12 +37,12 @@ const (
 // write to and event handler.
 //
 // BUG(): Level 2 (graphs) not implemented.
-type Parser struct {
+type parser struct {
 	// The input (byte) stream
 	in io.ByteReader
 
 	// The output (event) stream
-	ev EventHandler
+	ev *eventHandler
 
 	// ind holds indentation at different levels, that is,
 	// the number of spaces at each level.
@@ -64,75 +65,81 @@ type Parser struct {
 	spaces int
 }
 
-// NewStringParser creates an OGDL parser from a string 
-func NewStringParser(s string) *Parser {
-	return &Parser{strings.NewReader(s), NewEventHandler(), make([]int, 32), [2]int{0, 0}, 0, 0, 1, 0}
+// NewStringParser creates an OGDL parser from a string
+func newStringParser(s string) *parser {
+	return &parser{strings.NewReader(s), newEventHandler(), make([]int, 32), [2]int{0, 0}, 0, 0, 1, 0}
 }
 
 // NewParser creates an OGDL parser from a generic io.Reader
-func NewParser(r io.Reader) *Parser {
-	return &Parser{bufio.NewReader(r), NewEventHandler(), make([]int, 32), [2]int{0, 0}, 0, 0, 1, 0}
+func newParser(r io.Reader) *parser {
+	return &parser{bufio.NewReader(r), newEventHandler(), make([]int, 32), [2]int{0, 0}, 0, 0, 1, 0}
 }
 
 // NewFileParser creates an OGDL parser that reads from a file
-func NewFileParser(s string) *Parser {
+func newFileParser(s string) *parser {
 	b, err := ioutil.ReadFile(s)
 	if err != nil || len(b) == 0 {
 		return nil
 	}
 
 	buf := bytes.NewBuffer(b)
-	return &Parser{buf, NewEventHandler(), make([]int, 32), [2]int{0, 0}, 0, 0, 1, 0}
+	return &parser{buf, newEventHandler(), make([]int, 32), [2]int{0, 0}, 0, 0, 1, 0}
 }
 
-// NewBytesParser creates an OGDL parser from a []byte source 
-func NewBytesParser(b []byte) *Parser {
+// NewBytesParser creates an OGDL parser from a []byte source
+func newBytesParser(b []byte) *parser {
 	buf := bytes.NewBuffer(b)
-	return &Parser{buf, NewEventHandler(), make([]int, 32), [2]int{0, 0}, 0, 0, 1, 0}
+	return &parser{buf, newEventHandler(), make([]int, 32), [2]int{0, 0}, 0, 0, 1, 0}
 }
 
-// Parse parses OGDL text contained in a byte array. It returns a *Graph 
-func Parse(b []byte) *Graph {
-	p := NewBytesParser(b)
+// FromBytes parses OGDL text contained in a byte array. It returns a *Graph
+func FromBytes(b []byte) *Graph {
+	p := newBytesParser(b)
 	p.Ogdl()
-	return p.Graph()
+	return p.graph()
 }
 
-// ParseString parses OGDL text from the given string. It returns a *Graph
-func ParseString(s string) *Graph {
-	p := NewBytesParser([]byte(s))
+// FromString parses OGDL text from the given string. It returns a *Graph
+func FromString(s string) *Graph {
+	p := newBytesParser([]byte(s))
 	p.Ogdl()
-	return p.Graph()
+	return p.graph()
 }
 
-// ParseFile parses OGDL text contained in a file. It returns a Graph
-func ParseFile(s string) *Graph {
-	p := NewFileParser(s)
-	if p==nil {
-	    return nil
+// FromFile parses OGDL text contained in a file. It returns a Graph
+func FromFile(s string) *Graph {
+	p := newFileParser(s)
+	if p == nil {
+		return nil
 	}
 	p.Ogdl()
-	return p.Graph()
+	return p.graph()
 }
 
 // Graph returns the *Graph object associated with this parser (where root
 // where the OGDL tree is build on).
-func (p *Parser) Graph() *Graph {
+func (p *parser) graph() *Graph {
 	return p.ev.Graph()
 }
 
 // GraphTop returns the *Graph object associated with this parser (where root
 // where the OGDL tree is build on). Additionally, the name of the root node
 // is set to the given string.
-func (p *Parser) GraphTop(s string) *Graph {
+func (p *parser) graphTop(s string) *Graph {
 	return p.ev.GraphTop(s)
+}
+
+// Handler returns the event handler associated with the parser
+// (TODO: we could export 'ev' as 'Handler' instead)
+func (p *parser) handler() *eventHandler {
+	return p.ev
 }
 
 // NextByteIs tests if the next character in the
 // stream is the one given as parameter, in which
 // case it is consumed.
 //
-func (p *Parser) NextByteIs(c int) bool {
+func (p *parser) nextByteIs(c int) bool {
 	ch := p.Read()
 	if ch == c {
 		return true
@@ -142,7 +149,7 @@ func (p *Parser) NextByteIs(c int) bool {
 }
 
 // Read reads the next byte out of the stream.
-func (p *Parser) Read() int {
+func (p *parser) Read() int {
 
 	var c int
 
@@ -170,7 +177,7 @@ func (p *Parser) Read() int {
 // Up to two consecutive Unread()'s can be issued.
 //
 // BUG: line-- if newline
-func (p *Parser) Unread() {
+func (p *parser) Unread() {
 	p.lastn++
 	p.lastnl--
 }
@@ -178,69 +185,69 @@ func (p *Parser) Unread() {
 // setLevel sets the nesting level for a given indentation (number of spaces)
 // This function is used by the line() production for parsing OGDL text.
 //
-// setLevel sets ind[lev] = n, all ind[>lev] = 0 and assures that 
+// setLevel sets ind[lev] = n, all ind[>lev] = 0 and assures that
 // ind[0..lev-1] has increasing n, adjusting n if necessary.
-func (p *Parser) setLevel(lev, n int) {
+func (p *parser) setLevel(lev, n int) {
 
 	// Set ind[level] to the number of spaces + 1 (zero is nil)
 	p.ind[lev] = n + 1
 
 	// Fill holes
-    for i:=1; i<lev; i++ {
-        if p.ind[i] < p.ind[i-1] {
-            p.ind[i] = p.ind[i-1]
-        }
-    }
-    
-    for i:=lev+1; i<len(p.ind); i++ {
-        p.ind[i]=0
-    }
+	for i := 1; i < lev; i++ {
+		if p.ind[i] < p.ind[i-1] {
+			p.ind[i] = p.ind[i-1]
+		}
+	}
+
+	for i := lev + 1; i < len(p.ind); i++ {
+		p.ind[i] = 0
+	}
 }
 
 // getLevel returns the nesting level corresponding to the given indentation.
 // This function is used by the line() production for parsing OGDL text.
-// 
+//
 // getLevel returns the level for which ind[level] is equal or higher than n.
-func (p *Parser) getLevel(n int) int {
+func (p *parser) getLevel(n int) int {
 
-    l := 0
-    
+	l := 0
+
 	for i := 0; i < len(p.ind); i++ {
 		if p.ind[i] >= n {
 			return i
 		}
-		if i!=0 && p.ind[i] == 0 {
+		if i != 0 && p.ind[i] == 0 {
 			l = i - 1
 			break
 		}
 	}
-	if l<0 {
-	    return 0
+	if l < 0 {
+		return 0
 	}
 	return l
 }
 
-/* 
+/*
   The following functions are public in order for the Parser to be used
   outside of the current package
 */
 
 // Emit sends a string to the event handler
-func (p *Parser) Emit(s string) {
-    p.ev.Add(s)
+func (p *parser) emit(s string) {
+	p.ev.Add(s)
 }
 
 // EmitBytes sends a byte array to the event handler
-func (p *Parser) EmitBytes(b []byte) {
-    p.ev.AddBytes(b)
+func (p *parser) emitBytes(b []byte) {
+	p.ev.AddBytes(b)
 }
 
 // Inc increments the level by 1
-func (p *Parser) Inc() {
-    p.ev.Inc()
+func (p *parser) inc() {
+	p.ev.Inc()
 }
 
 // Dec decrements the level by 1
-func (p *Parser) Dec() {
-    p.ev.Dec()
+func (p *parser) dec() {
+	p.ev.Dec()
 }

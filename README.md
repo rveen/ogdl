@@ -42,8 +42,8 @@ If we have a text file 'conf.g' like this:
 then,
 
     g := ogdl.ParseFile("conf.g")
-    ip,_ := g.GetString("eth0.ip")
-    to,_ := g.GetInt("eth0.timeout")
+    ip := g.Get("eth0.ip").String()
+    to := g.Get("eth0.timeout").Int64()
     println("ip:",ip,", timeout:",to)
 
 will print

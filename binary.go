@@ -25,7 +25,7 @@ import (
 //
 //     length ::= multibyte-integer
 //     data :: byte[length]
-type BinParser struct {
+type binParser struct {
 	r    *bufio.Reader
 	last int
 	// n counts the bytes read. Used in log.go.
@@ -34,13 +34,13 @@ type BinParser struct {
 
 // NewBytesBinParser creates a parser that can convert a binary OGDL byte stream into an
 // ogdl.Graph object. To actually parse the stream, the method Parse() has to be invoked.
-func NewBytesBinParser(b []byte) *BinParser {
-	return &BinParser{bufio.NewReader(bytes.NewReader(b)), 0, 0}
+func newBytesBinParser(b []byte) *binParser {
+	return &binParser{bufio.NewReader(bytes.NewReader(b)), 0, 0}
 }
 
 // NewFileBinParser creates a parser that can convert a binary OGDL file into an
 // ogdl.Graph object. To actually parse the stream, the method Parse() has to be invoked.
-func NewFileBinParser(file string) *BinParser {
+func newFileBinParser(file string) *binParser {
 
 	// Read the entire file into memory
 	b, err := ioutil.ReadFile(file)
@@ -48,22 +48,35 @@ func NewFileBinParser(file string) *BinParser {
 		return nil
 	}
 
-	return NewBytesBinParser(b)
+	return newBytesBinParser(b)
 }
 
 //NewBinParser creates a parser that can convert a binary OGDL stream into an
 // ogdl.Graph object. To actually parse the stream, the method Parse() has to be invoked.
-func NewBinParser(r io.Reader) *BinParser {
-	return &BinParser{bufio.NewReader(r), 0, 0}
+func newBinParser(r io.Reader) *binParser {
+	return &binParser{bufio.NewReader(r), 0, 0}
 }
 
-// BinParse converts an OGDL binary stream of bytes into a Graph.
-func BinParse(b []byte) *Graph {
-	p := NewBytesBinParser(b)
+// FromBinary converts an OGDL binary stream of bytes into a Graph.
+func FromBinary(b []byte) *Graph {
+	p := newBytesBinParser(b)
+	return p.Parse()
+}
+
+// FromBinaryReader converts an OGDL binary stream of bytes into a Graph.
+func FromBinaryReader(r io.Reader) *Graph {
+	p := newBinParser(r)
+	return p.Parse()
+}
+
+// FromBinaryFile converts an OGDL binary stream of bytes into a Graph.
+func FromBinaryFile(file string) *Graph {
+	p := newFileBinParser(file)
 	return p.Parse()
 }
 
 // Binary converts a Graph to a binary OGDL byte stream.
+
 func (g *Graph) Binary() []byte {
 
 	if g == nil {
@@ -76,7 +89,10 @@ func (g *Graph) Binary() []byte {
 	buf[1] = 'G'
 	buf[2] = 0
 
-	buf = g.bin(1, buf)
+	// The 'root' node is bypassed (it's the 'holder')
+	for _, node := range g.Out {
+		buf = node.bin(1, buf)
+	}
 
 	// Ending null
 	buf = append(buf, 0)
@@ -87,9 +103,10 @@ func (g *Graph) Binary() []byte {
 func (g *Graph) bin(level int, buf []byte) []byte {
 
 	// Skip empty nodes
-	if len(g.String()) != 0 {
+	b := _bytes(g.This)
+	if b != nil && len(b) != 0 {
 		buf = append(buf, newVarInt(level)...)
-		buf = append(buf, g.Bytes()...)
+		buf = append(buf, b...)
 		buf = append(buf, 0)
 		level++
 	}
@@ -102,13 +119,13 @@ func (g *Graph) bin(level int, buf []byte) []byte {
 }
 
 // Parse parses a binary OGDL stream and returns a Graph.
-func (p *BinParser) Parse() *Graph {
+func (p *binParser) Parse() *Graph {
 
 	if !p.header() {
 		return nil
 	}
 
-	ev := NewEventHandler()
+	ev := newEventHandler()
 
 	for {
 		lev, bin, b := p.line(true)
@@ -169,7 +186,7 @@ func newVarInt(i int) []byte {
 // header is the parser production that reads the header from the stream
 //
 // header ::= 0x01 'G' 0x00
-func (p *BinParser) header() bool {
+func (p *binParser) header() bool {
 
 	if p.read() != 1 {
 		return false
@@ -191,7 +208,7 @@ func (p *BinParser) header() bool {
 //   0x00 - 0x1FFFFF:  110xxxxx xxxxxxxx xxxxxxxx
 //   0x00 - 0xFFFFFFF: 1110xxxx xxxxxxxx xxxxxxxx xxxxxxxx
 //    ...
-func (p *BinParser) varInt() int {
+func (p *binParser) varInt() int {
 
 	b0 := p.read()
 
@@ -234,7 +251,7 @@ func (p *BinParser) varInt() int {
 // This function accepts one boolean parameter that can be set to false if the
 // actual byte content is not needed and we just want to walk through the
 // stream. This functionality is used in log.go.
-func (p *BinParser) line(write bool) (int, bool, []byte) {
+func (p *binParser) line(write bool) (int, bool, []byte) {
 
 	// Read an integer (the level)
 	level := p.varInt()
@@ -288,7 +305,7 @@ func (p *BinParser) line(write bool) (int, bool, []byte) {
 
 // read reads one character (byte) from the stream, returning it in the for of an int.
 // Returning an int permits signaling an EOS with -1.
-func (p *BinParser) read() int {
+func (p *binParser) read() int {
 
 	i, err := p.r.ReadByte()
 
@@ -306,7 +323,7 @@ func (p *BinParser) read() int {
 
 // unread puts the last character readed back into the stream.
 // (unread is used in rfunction.go, not in this file)
-func (p *BinParser) unread() {
+func (p *binParser) unread() {
 	if p.last > 0 {
 		p.n--
 		p.r.UnreadByte()
