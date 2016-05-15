@@ -76,7 +76,6 @@ func FromBinaryFile(file string) *Graph {
 }
 
 // Binary converts a Graph to a binary OGDL byte stream.
-
 func (g *Graph) Binary() []byte {
 
 	if g == nil {

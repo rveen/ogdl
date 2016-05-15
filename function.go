@@ -65,7 +65,7 @@ func FunctionAdd(s string, f func(*Graph, []interface{}) []byte) {
 //   !g
 //    !e
 //      1.0
-
+//
 func (g *Graph) Function(p *Graph, ix int, context *Graph) (interface{}, error) {
 
 	// !type may be there. If not, then a simple function is assumed.

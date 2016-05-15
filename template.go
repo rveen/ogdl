@@ -58,11 +58,11 @@ func (g *Graph) Process(c *Graph) []byte {
 	return buffer.Bytes()
 }
 
-func (t *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
+func (g *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
 
 	falseIf := false
 
-	for _, n := range t.Out {
+	for _, n := range g.Out {
 		s := n.ThisString()
 
 		switch s {
@@ -130,13 +130,13 @@ func (t *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
 }
 
 // simplify converts !p TYPE in !TYPE for keywords if, end, else for and break.
-func (t *Graph) simplify() {
+func (g *Graph) simplify() {
 
-	if t == nil {
+	if g == nil {
 		return
 	}
 
-	for _, node := range t.Out {
+	for _, node := range g.Out {
 		if TypePath == node.ThisString() {
 			s := node.GetAt(0).ThisString()
 
@@ -163,13 +163,13 @@ func (t *Graph) simplify() {
 }
 
 // flow nests 'if' and 'for' loops.
-func (t *Graph) flow() {
+func (g *Graph) flow() {
 	n := 0
 	var nod *Graph
 
-	for i := 0; i < t.Len(); i++ {
+	for i := 0; i < g.Len(); i++ {
 
-		node := t.Out[i]
+		node := g.Out[i]
 		s := node.ThisString()
 
 		if s == TypeIf || s == TypeFor {
@@ -192,7 +192,7 @@ func (t *Graph) flow() {
 			n--
 			if n == 0 {
 				nod.flow()
-				t.DeleteAt(i)
+				g.DeleteAt(i)
 				i--
 				continue
 			}
@@ -200,7 +200,7 @@ func (t *Graph) flow() {
 
 		if n > 0 {
 			nod.Add(node)
-			t.DeleteAt(i)
+			g.DeleteAt(i)
 			i--
 		}
 	}

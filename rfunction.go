@@ -19,7 +19,6 @@ type RFunction struct {
 	host     string
 	conn     net.Conn
 	protocol int
-	valid    bool
 }
 
 // NewRFunction opens a connection to a TCP/IP server specified in the
@@ -88,7 +87,7 @@ func TCPServerV2(host string, handler func(net.Conn, *Graph) *Graph, timeout int
 		}
 
 		// Handle the connection in a new goroutine.
-		go handler_v2(conn, handler, timeout)
+		go handlerV2(conn, handler, timeout)
 	}
 }
 
@@ -108,11 +107,11 @@ func TCPServerV1(host string, handler func(net.Conn, *Graph) *Graph, timeout int
 		}
 
 		// Handle the connection in a new goroutine.
-		go handler_v1(conn, handler, timeout)
+		go handlerV1(conn, handler, timeout)
 	}
 }
 
-func handler_v1(c net.Conn, handler func(net.Conn, *Graph) *Graph, timeout int) {
+func handlerV1(c net.Conn, handler func(net.Conn, *Graph) *Graph, timeout int) {
 
 	for {
 		// Set a time out (maximum time until next message)
@@ -135,7 +134,7 @@ func handler_v1(c net.Conn, handler func(net.Conn, *Graph) *Graph, timeout int) 
 	}
 }
 
-func handler_v2(c net.Conn, handler func(net.Conn, *Graph) *Graph, timeout int) {
+func handlerV2(c net.Conn, handler func(net.Conn, *Graph) *Graph, timeout int) {
 
 	b4 := make([]byte, 4)
 
@@ -358,6 +357,7 @@ func (rf *RFunction) callV1(g *Graph) (*Graph, error) {
 	return r, nil
 }
 
+// Close closes the underlying connection, if open.
 func (rf *RFunction) Close() {
 	if rf.conn != nil {
 		rf.conn.Close()

@@ -129,12 +129,6 @@ func (p *parser) graphTop(s string) *Graph {
 	return p.ev.GraphTop(s)
 }
 
-// Handler returns the event handler associated with the parser
-// (TODO: we could export 'ev' as 'Handler' instead)
-func (p *parser) handler() *eventHandler {
-	return p.ev
-}
-
 // NextByteIs tests if the next character in the
 // stream is the one given as parameter, in which
 // case it is consumed.
@@ -240,14 +234,4 @@ func (p *parser) emit(s string) {
 // EmitBytes sends a byte array to the event handler
 func (p *parser) emitBytes(b []byte) {
 	p.ev.AddBytes(b)
-}
-
-// Inc increments the level by 1
-func (p *parser) inc() {
-	p.ev.Inc()
-}
-
-// Dec decrements the level by 1
-func (p *parser) dec() {
-	p.ev.Dec()
 }

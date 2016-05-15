@@ -374,9 +374,8 @@ func (g *Graph) set(path *Graph, val interface{}) *Graph {
 			}
 			node.Out[i] = New(val)
 			return node.Out[i]
-		} else {
-			node = node.Node(elem.ThisString())
 		}
+		node = node.Node(elem.ThisString())
 
 		if node == nil {
 			break
@@ -453,6 +452,7 @@ func (g *Graph) Text() string {
 	return s
 }
 
+// Show prints the Graph as text including this (the top) node.
 func (g *Graph) Show() string {
 	if g == nil {
 		return ""

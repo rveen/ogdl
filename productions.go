@@ -65,7 +65,7 @@ func (p *parser) Line() (bool, error) {
 
 	// if a line begins with non-uniform space, throw a syntax error.
 	if sp && n == 0 {
-		errors.New("non-uniform space")
+		return false, errors.New("non-uniform space")
 	}
 
 	if p.End() {

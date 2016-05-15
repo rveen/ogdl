@@ -28,16 +28,16 @@ func (g *Graph) Check(x *Graph) (bool, string) {
 	return true, ""
 }
 
-func (schema *Graph) checkNode(g *Graph) bool {
+func (g *Graph) checkNode(x *Graph) bool {
 
-	if schema == nil || g == nil {
+	if g == nil || x == nil {
 		return false
 	}
 
-	sx := g.ThisString()
-	sc := schema.ThisString()
+	sx := x.ThisString()
+	sc := g.ThisString()
 
-	ty := g.Type()
+	ty := x.Type()
 	var ok bool
 
 	// literal | literal* | literal? | literal+ | ** | ***
@@ -49,15 +49,15 @@ func (schema *Graph) checkNode(g *Graph) bool {
 	switch sc {
 
 	case "!float":
-		_, ok = _float64f(g.This)
+		_, ok = _float64f(x.This)
 		return ok
 
 	case "!int":
-		_, ok = _int64f(g.This)
+		_, ok = _int64f(x.This)
 		return ok
 
 	case "!bool":
-		_, ok = _boolf(g.This)
+		_, ok = _boolf(x.This)
 		return ok
 
 	case "!string":

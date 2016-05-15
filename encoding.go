@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 )
 
-// FromJson converts a Json text stream into OGDL
+// FromJSON converts a JSON text stream into OGDL
 //
 // Json types returned by Unmashal:
 // bool, for JSON booleans
@@ -14,7 +14,7 @@ import (
 // map[string]interface{}, for JSON objects
 // nil for JSON null
 //
-func FromJson(buf []byte) (*Graph, error) {
+func FromJSON(buf []byte) (*Graph, error) {
 
 	var v interface{}
 

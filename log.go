@@ -75,33 +75,33 @@ func (log *Log) AddBinary(b []byte) int64 {
 
 // Get returns the OGDL object at the position given and the position of the
 // next object, or an error.
-func (log *Log) Get(i int64) (*Graph, error, int64) {
+func (log *Log) Get(i int64) (*Graph, int64, error) {
 
 	/* Position in file */
 	_, err := log.f.Seek(i, 0)
 	if err != nil {
-		return nil, err, -1
+		return nil, -1, err
 	}
 
 	p := newBinParser(log.f)
 	g := p.Parse()
 
 	if p.n == 0 {
-		return g, nil, -1
+		return g, -1, nil
 	}
 
-	return g, err, i + int64(p.n)
+	return g, i + int64(p.n), err
 }
 
 // GetBinary returns the OGDL object at the position given and the position of the
 // next object, or an error. The object returned is in binary form, exactly
 // as it is stored in the log.
-func (log *Log) GetBinary(i int64) ([]byte, error, int64) {
+func (log *Log) GetBinary(i int64) ([]byte, int64, error) {
 
 	// Position in file
 	_, err := log.f.Seek(i, 0)
 	if err != nil {
-		return nil, err, 0
+		return nil, 0, err
 	}
 
 	/* Read until EOS of binary OGDL.
@@ -111,7 +111,7 @@ func (log *Log) GetBinary(i int64) ([]byte, error, int64) {
 	p := newBinParser(log.f)
 
 	if !p.header() {
-		return nil, err, 0
+		return nil, 0, err
 	}
 	for {
 		lev, _, _ /* typ, b*/ := p.line(false)
@@ -126,5 +126,5 @@ func (log *Log) GetBinary(i int64) ([]byte, error, int64) {
 	b := make([]byte, n)
 	_, err = log.f.ReadAt(b, i)
 
-	return b, err, int64(n)
+	return b, int64(n), err
 }
