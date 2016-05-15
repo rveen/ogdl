@@ -75,7 +75,7 @@ func (g *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
 			c.Eval(n)
 		case TypeIf:
 			// evaluate the expression
-			b := c.EvalBool(n.GetAt(0).GetAt(0))
+			b := c.evalBool(n.GetAt(0).GetAt(0))
 
 			if b {
 				n.GetAt(1).process(c, buffer)

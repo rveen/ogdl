@@ -84,7 +84,7 @@ func (g *Graph) Function(p *Graph, ix int, context *Graph) (interface{}, error) 
 		// Prepare a pre-evaluated parameter array
 		var args []interface{}
 		for _, arg := range p.Out[ix+1].Out {
-			args = append(args, context.EvalExpression(arg))
+			args = append(args, context.evalExpression(arg))
 		}
 		return fu(context, args), nil
 		// return nil, nil
@@ -205,7 +205,7 @@ func (g *Graph) Function(p *Graph, ix int, context *Graph) (interface{}, error) 
 	// Prepare a pre-evaluated parameter array
 	var args []interface{}
 	for _, arg := range p.Out[ix+1].Out {
-		args = append(args, context.EvalExpression(arg))
+		args = append(args, context.evalExpression(arg))
 
 	}
 

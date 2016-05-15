@@ -15,10 +15,10 @@ func (g *Graph) evalGraph(e *Graph) {
 	for i, n := range e.Out {
 		switch n.ThisString() {
 		case TypePath:
-			n.This = g.EvalPath(n)
+			n.This = g.evalPath(n)
 			n.Out = nil
 		case TypeExpression:
-			v := g.EvalExpression(n)
+			v := g.evalExpression(n)
 			if nn, ok := v.(*Graph); ok {
 				e.Out[i] = nn
 			} else {
@@ -35,9 +35,9 @@ func (g *Graph) Eval(e *Graph) interface{} {
 
 	switch e.ThisString() {
 	case TypePath:
-		return g.EvalPath(e)
+		return g.evalPath(e)
 	case TypeExpression:
-		return g.EvalExpression(e)
+		return g.evalExpression(e)
 	}
 
 	if e.Len() != 0 {
@@ -51,7 +51,7 @@ func (g *Graph) Eval(e *Graph) interface{} {
 
 // EvalBool takes a parsed expression and evaluates it in the context of the
 // current graph, and converts the result to a boolean.
-func (g *Graph) EvalBool(e *Graph) bool {
+func (g *Graph) evalBool(e *Graph) bool {
 	b, _ := _boolf(g.Eval(e))
 	return b
 }
@@ -61,7 +61,7 @@ func (g *Graph) EvalBool(e *Graph) bool {
 //
 // This function is similar to ogdl.Get, but for complexer paths. Code could
 // be shared.
-func (g *Graph) EvalPath(p *Graph) interface{} {
+func (g *Graph) evalPath(p *Graph) interface{} {
 
 	if p.Len() == 0 {
 		return nil
@@ -90,7 +90,7 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 				return "empty []"
 			}
 
-			itf := g.EvalExpression(n.Out[0])
+			itf := g.evalExpression(n.Out[0])
 			ix, ok := _int64(itf)
 			if !ok || ix < 0 {
 				return "[] does not evaluate to a valid integer"
@@ -168,7 +168,7 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 			// An expression is to be used as path element
 			// The following format is supported: ( expression )
 			// The expression is evaluated and used as path element
-			itf := g.EvalExpression(n.Out[0])
+			itf := g.evalExpression(n.Out[0])
 			str := _string(itf)
 
 			if len(str) == 0 {
@@ -245,7 +245,7 @@ func (g *Graph) EvalPath(p *Graph) interface{} {
 // g can have native types (other things than strings), but
 // p only []byte or string
 //
-func (g *Graph) EvalExpression(p *Graph) interface{} {
+func (g *Graph) evalExpression(p *Graph) interface{} {
 
 	// Return nil and empty strings as is
 	if p.This == nil {
@@ -267,16 +267,16 @@ func (g *Graph) EvalExpression(p *Graph) interface{} {
 	switch s {
 	case "!":
 		// Unary expression !expr
-		return !g.EvalBool(p.Out[0])
+		return !g.evalBool(p.Out[0])
 	case TypeExpression:
-		return g.EvalExpression(p.GetAt(0))
+		return g.evalExpression(p.GetAt(0))
 	case TypePath:
-		return g.EvalPath(p)
+		return g.evalPath(p)
 	case TypeGroup:
 		// expression list
 		r := New(TypeGroup)
 		for _, expr := range p.Out {
-			r.Add(g.EvalExpression(expr))
+			r.Add(g.evalExpression(expr))
 		}
 		return r
 	case TypeString:
@@ -319,20 +319,20 @@ func (g *Graph) EvalExpression(p *Graph) interface{} {
 func (g *Graph) evalBinary(p *Graph) interface{} {
 
 	n1 := p.Out[0]
-	i2 := g.EvalExpression(p.Out[1])
+	i2 := g.evalExpression(p.Out[1])
 
 	switch p.ThisString() {
 
 	case "+":
-		return calc(g.EvalExpression(n1), i2, '+')
+		return calc(g.evalExpression(n1), i2, '+')
 	case "-":
-		return calc(g.EvalExpression(n1), i2, '-')
+		return calc(g.evalExpression(n1), i2, '-')
 	case "*":
-		return calc(g.EvalExpression(n1), i2, '*')
+		return calc(g.evalExpression(n1), i2, '*')
 	case "/":
-		return calc(g.EvalExpression(n1), i2, '/')
+		return calc(g.evalExpression(n1), i2, '/')
 	case "%":
-		return calc(g.EvalExpression(n1), i2, '%')
+		return calc(g.evalExpression(n1), i2, '%')
 
 	case "=":
 		return g.assign(n1, i2, '=')
@@ -348,22 +348,22 @@ func (g *Graph) evalBinary(p *Graph) interface{} {
 		return g.assign(n1, i2, '%')
 
 	case "==":
-		return compare(g.EvalExpression(n1), i2, '=')
+		return compare(g.evalExpression(n1), i2, '=')
 	case ">=":
-		return compare(g.EvalExpression(n1), i2, '+')
+		return compare(g.evalExpression(n1), i2, '+')
 	case "<=":
-		return compare(g.EvalExpression(n1), i2, '-')
+		return compare(g.evalExpression(n1), i2, '-')
 	case "!=":
-		return compare(g.EvalExpression(n1), i2, '!')
+		return compare(g.evalExpression(n1), i2, '!')
 	case ">":
-		return compare(g.EvalExpression(n1), i2, '>')
+		return compare(g.evalExpression(n1), i2, '>')
 	case "<":
-		return compare(g.EvalExpression(n1), i2, '<')
+		return compare(g.evalExpression(n1), i2, '<')
 
 	case "&&":
-		return logic(g.EvalExpression(n1), i2, '&')
+		return logic(g.evalExpression(n1), i2, '&')
 	case "||":
-		return logic(g.EvalExpression(n1), i2, '|')
+		return logic(g.evalExpression(n1), i2, '|')
 
 	}
 

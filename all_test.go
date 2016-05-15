@@ -981,7 +981,7 @@ func TestEvalPath(t *testing.T) {
 	g := New()
 	g.Add("a").Add("b")
 
-	i := g.EvalPath(path)
+	i := g.evalPath(path)
 
 	if _string(i) != "b" {
 		t.Error("EvalPath", _show(i))
@@ -990,7 +990,7 @@ func TestEvalPath(t *testing.T) {
 	g = New()
 	g.Add("a").Add(1)
 
-	i = g.EvalPath(path)
+	i = g.evalPath(path)
 	s = _typeOf(i)
 	if i != 1 || s != "int" {
 		t.Error("EvalPath 1", _show(i), _typeOf(i))
@@ -998,7 +998,7 @@ func TestEvalPath(t *testing.T) {
 
 	g = New()
 	g.Add("a").Add("id").Add("100")
-	i = g.EvalPath(path)
+	i = g.evalPath(path)
 
 	if _text(i) != "id\n  100" || _typeOf(i) != "*ogdl.Graph" {
 		println(_show(i), _typeOf(i))
@@ -1011,13 +1011,13 @@ func TestEvalPath_Index2(t *testing.T) {
 	g := FromString("a b (c, d)")
 
 	p := NewPath("a")
-	i := g.EvalPath(p)
+	i := g.evalPath(p)
 	if _show(i) != "_\n  b\n    c\n    d" {
 		t.Error(_show(i))
 	}
 
 	p = NewPath("a[0]")
-	i = g.EvalPath(p)
+	i = g.evalPath(p)
 	if _show(i) != "_\n  b\n    c\n    d" {
 		t.Error(_show(i))
 	}
@@ -1029,7 +1029,7 @@ func TestEvalPath_Index(t *testing.T) {
 
 	p := NewPath("a.b[0]")
 
-	i := g.EvalPath(p)
+	i := g.evalPath(p)
 
 	if _string(i) != "1" {
 		t.Error("EvalPath_Index", _string(i))
@@ -1037,7 +1037,7 @@ func TestEvalPath_Index(t *testing.T) {
 
 	p = NewPath("a.b")
 
-	i = g.EvalPath(p)
+	i = g.evalPath(p)
 
 	if _string(i) != "1" {
 		t.Error("EvalPath_Index", _string(i))
@@ -1045,7 +1045,7 @@ func TestEvalPath_Index(t *testing.T) {
 
 	p = NewPath("a.b{1}")
 
-	i = g.EvalPath(p)
+	i = g.evalPath(p)
 
 	if _string(i) != "2" {
 		t.Error("EvalPath_Selector", _text(i))
@@ -1053,7 +1053,7 @@ func TestEvalPath_Index(t *testing.T) {
 
 	p = NewPath("a.b{}")
 
-	i = g.EvalPath(p)
+	i = g.evalPath(p)
 
 	if _text(i) != "1\n2" {
 		t.Error("EvalPath_Selector", _text(i))
@@ -1354,19 +1354,19 @@ func TestEvalBool(t *testing.T) {
 	g.Add("a").Add(1)
 
 	p := NewExpression("1=='1'")
-	r := g.EvalBool(p)
+	r := g.evalBool(p)
 	if r != true {
 		t.Error("1=='1'")
 	}
 
 	p = NewExpression("true")
-	r = g.EvalBool(p)
+	r = g.evalBool(p)
 	if r != false {
 		t.Error("true as a path")
 	}
 
 	p = NewExpression("'true'")
-	r = g.EvalBool(p)
+	r = g.evalBool(p)
 	if r != true {
 		t.Error("'true' keyword")
 	}
