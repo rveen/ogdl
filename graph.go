@@ -178,7 +178,7 @@ func (g *Graph) GetAt(i int) *Graph {
 // Get recurses a Graph following a given path and returns the result.
 //
 // This function returns a *Graph in any condition. When there is nothing to
-// return, then an nil Graph is returned. This behavior is designed so that
+// return, a nil Graph is returned. This behavior is designed so that
 // the next function in a chain never gets an invalid receiver, avoiding null
 // pointer errors.
 //
