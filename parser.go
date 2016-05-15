@@ -106,6 +106,13 @@ func FromString(s string) *Graph {
 	return p.graph()
 }
 
+// FromReader parses OGDL text coming from a generic io.Reader
+func FromReader(r io.Reader) *Graph {
+	p := newParser(r)
+	p.Ogdl()
+	return p.graph()
+}
+
 // FromFile parses OGDL text contained in a file. It returns a Graph
 func FromFile(s string) *Graph {
 	p := newFileParser(s)

@@ -33,20 +33,7 @@ func main() {
 		}
 	}
 
-	p := ogdl.NewParser(source)
-	if p == nil {
-		println("Parser == nil")
-		return
-	}
-
-	err = p.Ogdl()
-
-	if err != nil {
-		println("Error", err.Error())
-		return
-	}
-
-	g := p.Graph()
+	g := ogdl.FromReader(source)
 
 	r := g
 
