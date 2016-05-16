@@ -24,10 +24,10 @@ func New(n ...interface{}) *Graph {
 	if len(n) == 0 {
 		return &Graph{}
 	}
-	return &Graph{n, nil}
+	return &Graph{n[0], nil}
 }
 
-// IsNil returns true is this node has no content, i.e, is a transparent node.
+// IsNil returns true is this node has no content.
 func (g *Graph) IsNil() bool {
 	if g.This == nil {
 		return true
@@ -46,6 +46,11 @@ func (g *Graph) Len() int {
 // Type returns the name of the native type contained in the current node.
 func (g *Graph) Type() string {
 	return reflect.TypeOf(g.This).String()
+}
+
+// Kind returns the name of the native type contained in the current node.
+func (g *Graph) Kind() string {
+	return reflect.ValueOf(g.This).Kind().String()
 }
 
 // Depth returns the depth of the graph if it is a tree, or -1 if it has
@@ -315,7 +320,7 @@ func (g *Graph) get(path *Graph) *Graph {
 	return node
 }
 
-// Delete removes all subnodes with the given value or content
+// Delete removes all subnodes with the given content
 func (g *Graph) Delete(n interface{}) {
 	for i := 0; i < g.Len(); i++ {
 		if g.Out[i].This == n {

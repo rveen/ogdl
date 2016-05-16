@@ -5,7 +5,6 @@
 package ogdl
 
 import (
-	// "log"
 	"strconv"
 )
 
@@ -156,13 +155,14 @@ func (g *Graph) evalPath(p *Graph) interface{} {
 
 		case TypeGroup:
 			// We have hit an argument list of a function
-			// Subnodes in n are the individual argument expressions
-
-			itf, err := node.Function(p, i, g)
-			if err != nil {
-				return err.Error()
+			if node.Len() > 0 && node.GetAt(0).Kind() == "func" {
+				itf, err := g.function(p, i, node.GetAt(0).This)
+				if err != nil {
+					return err.Error()
+				}
+				return itf
 			}
-			return itf
+			return nil
 
 		case TypeExpression:
 			// An expression is to be used as path element
@@ -177,22 +177,25 @@ func (g *Graph) evalPath(p *Graph) interface{} {
 			s = str
 			// [!] .().
 			fallthrough
+
 		default:
 			nn := node.Node(s)
 
 			if nn == nil {
 
-				// Check if it is a function call
-				// A requisite is that the next element in path is !g
-				if i >= len(p.Out)-1 {
-					return nil
-				}
-				n = p.Out[i+1]
-				if n.ThisString() != TypeGroup {
-					return nil
+				// Check if 'node' contains a type (other than Graph, that is)
+				// A type means a struct with fields or associated methods.
+				// That type can be in the Graph pointed to by node.Out[0] or
+				// node.Node("!type")
+
+				// Check first if _type is available
+				ty := node.Node("!type")
+				if ty == nil && node.Len() > 0 {
+					ty = node.GetAt(0)
 				}
 
-				itf, err := node.Function(p, i, g)
+				itf, err := g.function(p, i, ty.This)
+
 				if err != nil {
 					return err.Error()
 				}

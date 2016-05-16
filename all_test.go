@@ -770,7 +770,7 @@ func TestDepth(t *testing.T) {
 
 func TestAddChaining(t *testing.T) {
 
-	g := New("a")
+	g := FromString("a")
 	s := g.Show()
 	if s != "_\n  a" {
 		t.Error("New( ... )")
@@ -1376,19 +1376,19 @@ func TestEvalBool(t *testing.T) {
 
 func TestGetTypes(t *testing.T) {
 
-	g := New("aa, ab, bb, axx, aj, vv")
+	g := FromString("aa, ab, bb, axx, aj, vv")
 	r, _ := g.Find("a[a-b]")
 
 	if r.Len() != 2 || r.Text() != "aa\nab" {
 		t.Error("Find(regex)")
 	}
 
-	g = New("111")
+	g = FromString("111")
 	if g.Int64() != 111 {
 		t.Error("Int64")
 	}
 
-	g = New("111.1")
+	g = FromString("111.1")
 	if g.Float64() != 111.1 {
 		t.Error("Float64")
 	}
@@ -1399,27 +1399,27 @@ func TestGetTypes(t *testing.T) {
 		t.Error("Float64")
 	}
 
-	g = New("true")
+	g = FromString("true")
 	if g.Bool() != true {
 		t.Error("Bool")
 	}
 
-	g = New("a 1")
+	g = FromString("a 1")
 	if i, _ := g.GetInt64("a"); i != 1 {
 		t.Error("GetInt64")
 	}
 
-	g = New("a 1.1")
+	g = FromString("a 1.1")
 	if i, _ := g.GetFloat64("a"); i != 1.1 {
 		t.Error("GetFloat64")
 	}
 
-	g = New("a 'false'")
+	g = FromString("a 'false'")
 	if i, err := g.GetBool("a"); err != nil || i != false {
 		t.Error("GetBool")
 	}
 
-	g = New("a 'text'")
+	g = FromString("a 'text'")
 	if i, err := g.GetBytes("a"); err != nil || len(i) != 4 {
 		t.Error("GetBytes", len(i))
 	}
@@ -1552,21 +1552,6 @@ func TestTemplateFor(ts *testing.T) {
 
 // function.go
 
-func TestFunction1(ts *testing.T) {
-	// Context
-	g := New()
-
-	g.Add("a").Add("Title: $b")
-	g.Add("b").Add("A nice title")
-
-	t := NewTemplate("$T(a)")
-	b := t.Process(g)
-
-	if string(b) != "Title: A nice title" {
-		ts.Error("function T")
-	}
-}
-
 func TestFunction3(ts *testing.T) {
 	// Context
 	g := New()
@@ -1597,21 +1582,19 @@ func TestFunction3(ts *testing.T) {
 type Math struct {
 }
 
-func newMath() interface{} {
-	return &Math{}
-}
-
 func (*Math) Sin(x float64) float64 {
 	return math.Sin(x)
 }
 
-func TestFunction2(t *testing.T) {
+func Sin(x float64) float64 {
+	return math.Sin(x)
+}
 
-	FunctionAddConstructor("math", newMath)
+func TestFunction2b(t *testing.T) {
 
 	g := New()
 	f := g.Add("math")
-	f.Add("!type").Add("math")
+	f.Add(&Math{})
 
 	path := NewPath("math.Sin(1.0)")
 
@@ -1620,7 +1603,24 @@ func TestFunction2(t *testing.T) {
 	v := _string(i)[:10]
 
 	if s != "float64" || v != "0.84147098" {
-		t.Error("math.Sin()", s, v)
+		t.Error("math.Sin()", s, v, i)
+	}
+}
+
+func TestFunction2c(t *testing.T) {
+
+	g := New()
+	f := g.Add("Sin")
+	f.Add(Sin)
+
+	path := NewPath("Sin(1.0)")
+
+	i := g.Eval(path)
+	s := _typeOf(i)
+	v := _string(i)[:10]
+
+	if s != "float64" || v != "0.84147098" {
+		t.Error("Sin()", s, v)
 	}
 }
 
@@ -1643,8 +1643,8 @@ func TestLog(t *testing.T) {
 		t.Error("log.Add", o)
 	}
 
-	g2, _, n2 := log.Get(0)
-	g3, _, n3 := log.Get(n2)
+	g2, n2, _ := log.Get(0)
+	g3, n3, _ := log.Get(n2)
 	b2, _, _ := log.GetBinary(n3)
 
 	g4 := FromBinary(b2)
