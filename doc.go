@@ -77,4 +77,14 @@
 //
 //     The gateway's IP is 192.168.1.10
 //
+// Function signature conventions
+//
+// Some rules are followed:
+//
+//   .<Type>()      Return the first subnode content converted to the specified type.
+//   .This<Type>()  Return the node content itself converted to the specified type.
+//   .Get()         Return the specified path as a (possible nil) *Graph object.
+//   .Get<Type>()   Return the specified path converted to the specified type.
+//                  These series of functions return value and error.
+//
 package ogdl
