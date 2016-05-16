@@ -37,7 +37,7 @@ func (g *Graph) checkNode(x *Graph) bool {
 	sx := x.ThisString()
 	sc := g.ThisString()
 
-	ty := x.Type()
+	ty := x.ThisType()
 	var ok bool
 
 	// literal | literal* | literal? | literal+ | ** | ***

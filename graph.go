@@ -44,12 +44,12 @@ func (g *Graph) Len() int {
 }
 
 // Type returns the name of the native type contained in the current node.
-func (g *Graph) Type() string {
+func (g *Graph) ThisType() string {
 	return reflect.TypeOf(g.This).String()
 }
 
 // Kind returns the name of the native type contained in the current node.
-func (g *Graph) Kind() string {
+func (g *Graph) thisKind() string {
 	return reflect.ValueOf(g.This).Kind().String()
 }
 

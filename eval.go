@@ -155,7 +155,7 @@ func (g *Graph) evalPath(p *Graph) interface{} {
 
 		case TypeGroup:
 			// We have hit an argument list of a function
-			if node.Len() > 0 && node.GetAt(0).Kind() == "func" {
+			if node.Len() > 0 && node.GetAt(0).thisKind() == "func" {
 				itf, err := g.function(p, i, node.GetAt(0).This)
 				if err != nil {
 					return err.Error()
