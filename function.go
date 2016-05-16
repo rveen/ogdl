@@ -9,23 +9,6 @@ import (
 	"reflect"
 )
 
-// factory[] is a map that stores type constructors.
-var factory map[string]func() interface{}
-
-// functions[] is a map for storing functions with a suitable signature so that
-// they can be called from within templates.
-var functions map[string]func(*Graph, []interface{}) []byte // interface{}
-
-// FunctionAddConstructor adds a factory kind of function to the context.
-func FunctionAddConstructor(s string, f func() interface{}) {
-	factory[s] = f
-}
-
-// FunctionAdd adds a function to the context.
-func FunctionAdd(s string, f func(*Graph, []interface{}) []byte) {
-	functions[s] = f
-}
-
 // Function enables calling Go functions from templates.
 //
 // INPUT FORMAT
