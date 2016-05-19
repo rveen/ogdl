@@ -6,6 +6,7 @@ package ogdl
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 )
 
@@ -65,9 +66,16 @@ func (g *Graph) function(path *Graph, ix int, typ interface{}) (interface{}, err
 			}
 		}
 
+		/* DEBUG CODE
+		for i := 0; i < v.Type().NumIn(); i++ {
+			println("> ", v.Type().In(i).String())
+		}
+		for i := 0; i < len(vargs); i++ {
+			println("< ", vargs[i].Type().String())
+		} */
+
 		if v.Type().NumIn() != len(args) {
-			s := "Invalid number of arguments in function"
-			return nil, errors.New(s)
+			return nil, fmt.Errorf("Invalid number of arguments in function (is %d, soll %d)\n%s", len(args), v.Type().NumIn(), path.Show())
 		}
 
 		// TODO: return 0..2 values

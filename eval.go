@@ -62,7 +62,7 @@ func (g *Graph) evalBool(e *Graph) bool {
 // be shared.
 func (g *Graph) evalPath(p *Graph) interface{} {
 
-	if p.Len() == 0 {
+	if p.Len() == 0 || g == nil {
 		return nil
 	}
 
@@ -151,7 +151,7 @@ func (g *Graph) evalPath(p *Graph) interface{} {
 			return node.Len()
 
 		case "_this":
-			return node.ThisString()
+			return node //.ThisString()
 
 		case TypeGroup:
 			// We have hit an argument list of a function
@@ -192,6 +192,9 @@ func (g *Graph) evalPath(p *Graph) interface{} {
 				ty := node.Node("!type")
 				if ty == nil && node.Len() > 0 {
 					ty = node.GetAt(0)
+				}
+				if ty == nil {
+					return nil
 				}
 
 				itf, err := g.function(p, i, ty.This)
