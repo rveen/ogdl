@@ -162,6 +162,9 @@ func (g *Graph) Copy(c *Graph) {
 // It returns nil if not found.
 func (g *Graph) Node(s string) *Graph {
 
+	if g == nil {
+		return nil
+	}
 	for _, node := range g.Out {
 		if s == _string(node.This) {
 			return node
