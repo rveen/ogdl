@@ -45,13 +45,16 @@
 //
 //    g := ogdl.FromFile("config.g")
 //    ip := g.Get("eth0.ip").String()
-//    to := g.Get("eth0.timeout").Int64()
+//    to := g.Get("eth0.timeout").Int64(60)
 //
 //    println("ip:",ip,", timeout:",to)
 //
 // will print
 //
 //    ip: 192.168.1.1, timeout: 20
+//
+// If the timeout parameter were not present, then the default value (60) will be
+// assigned to 'to'. The default value is optional, and can thus be omitted.
 //
 // The configuration file can be written in a conciser way:
 //

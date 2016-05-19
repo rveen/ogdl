@@ -51,4 +51,4 @@ will print
     ip: 192.168.1.1, timeout: 20
 
 If the timeout parameter were not present, then the default value (60) will be
-assigned to 'to'. The default value is optional, and can be omitted.
+assigned to 'to'. The default value is optional, and can thus be omitted.
