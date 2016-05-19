@@ -49,7 +49,7 @@ func isOperatorChar(c int) bool {
 
 // IsLetter returns true if the given character is a letter, as per Unicode.
 func isLetter(c int) bool {
-	return unicode.IsLetter(rune(c))
+	return unicode.IsLetter(rune(c)) || c == '_'
 }
 
 // IsDigit returns true if the given character a numeric digit, as per Unicode.
