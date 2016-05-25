@@ -60,6 +60,10 @@ func (g *Graph) Process(c *Graph) []byte {
 
 func (g *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
 
+	if g == nil || g.Out == nil {
+		return false
+	}
+
 	falseIf := false
 
 	for _, n := range g.Out {
