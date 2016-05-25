@@ -162,7 +162,7 @@ func (g *Graph) Copy(c *Graph) {
 // It returns nil if not found.
 func (g *Graph) Node(s string) *Graph {
 
-	if g == nil {
+	if g == nil || g.Out == nil {
 		return nil
 	}
 	for _, node := range g.Out {
@@ -172,6 +172,18 @@ func (g *Graph) Node(s string) *Graph {
 	}
 
 	return nil
+}
+
+// Create returns the first subnode whose string value is equal to the given string,
+// with its subnodes deleted. If not found, the node is created and returned.
+func (g *Graph) Create(s string) *Graph {
+	n := g.Node(s)
+	if n == nil {
+		return g.Add(s)
+	} else {
+		n.Clear()
+		return n
+	}
 }
 
 // GetAt returns a subnode by index, or nil if the index is out of range.
@@ -325,12 +337,29 @@ func (g *Graph) get(path *Graph) *Graph {
 
 // Delete removes all subnodes with the given content
 func (g *Graph) Delete(n interface{}) {
+
+	if g == nil {
+		return
+	}
 	for i := 0; i < g.Len(); i++ {
 		if g.Out[i].This == n {
-			g.Out = append(g.Out[:i], g.Out[i+1:]...)
+			if i < (g.Len() - 1) {
+				g.Out = append(g.Out[:i], g.Out[i+1:]...)
+			} else {
+				g.Out = g.Out[:i]
+			}
 			i--
 		}
 	}
+}
+
+// Clear removes all subnodes
+func (g *Graph) Clear() {
+
+	if g == nil || g.Out == nil {
+		return
+	}
+	g.Out = nil
 }
 
 // DeleteAt removes a subnode by index
@@ -338,7 +367,11 @@ func (g *Graph) DeleteAt(i int) {
 	if i < 0 || i >= g.Len() {
 		return
 	}
-	g.Out = append(g.Out[:i], g.Out[i+1:]...)
+	if i < (g.Len() - 1) {
+		g.Out = append(g.Out[:i], g.Out[i+1:]...)
+	} else {
+		g.Out = g.Out[:i]
+	}
 }
 
 // Set sets the first occurrence of the given path to the value given.
@@ -579,6 +612,9 @@ func (g *Graph) _text(n int, buffer *bytes.Buffer, show bool) {
 // Substitute traverses the graph substituting all nodes with content
 // equal to s by v.
 func (g *Graph) Substitute(s string, v interface{}) {
+	if g == nil || g.Out == nil {
+		return
+	}
 	for _, n := range g.Out {
 		if _string(n.This) == s {
 			n.This = v
