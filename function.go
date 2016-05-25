@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"runtime"
 )
 
 // Function enables calling Go functions from templates.
@@ -75,7 +76,8 @@ func (g *Graph) function(path *Graph, ix int, typ interface{}) (interface{}, err
 		} */
 
 		if v.Type().NumIn() != len(args) {
-			return nil, fmt.Errorf("Invalid number of arguments in function (is %d, soll %d)\n%s", len(args), v.Type().NumIn(), path.Show())
+			// TODO Check that we print the name of the function
+			return nil, fmt.Errorf("Invalid number of arguments in function %s (is %d, soll %d)\n%s", runtime.FuncForPC(v.Pointer()).Name(), len(args), v.Type().NumIn(), path.Show())
 		}
 
 		// TODO: return 0..2 values
