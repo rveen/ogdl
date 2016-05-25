@@ -15,40 +15,26 @@ import (
 // RFunction represents a remote function (also known as a remote procedure
 // call).
 type RFunction struct {
-	cfg      *Graph
-	host     string
+	Host     string
+	Protocol int
 	conn     net.Conn
-	protocol int
 }
 
-// NewRFunction opens a connection to a TCP/IP server specified in the
-// Graph supplied. It also makes an initialization call, if the Graph has an
-// 'init' section.
-func NewRFunction(cfg *Graph) (*RFunction, error) {
+// connect opens a connection to a TCP/IP server.
+func (rf *RFunction) connect() error {
 
-	host, _ := cfg.GetString("host")
-	prot, _ := cfg.GetInt64("protocol")
-
-	log.Println("rf: host", host, ", protocol", prot, cfg.Show())
-
-	rf := &RFunction{}
-
-	tcpAddr, err := net.ResolveTCPAddr("tcp", host)
+	tcpAddr, err := net.ResolveTCPAddr("tcp", rf.Host)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	rf.cfg = cfg
-	rf.host = host
 	rf.conn = conn
-	rf.protocol = int(prot)
-
-	return rf, nil
+	return nil
 }
 
 func TCPRawServer(host string, handler func(c net.Conn, b []byte) []byte, timeout int) error {
@@ -244,38 +230,41 @@ func (rf *RFunction) Call(g *Graph) (*Graph, error) {
 
 	var r *Graph
 	var err error
-	var addr *net.TCPAddr
 
-	if rf.protocol == 2 {
+	if rf.conn == nil {
+		err = rf.connect()
+		if err != nil {
+			return nil, err
+		}
+		if rf.conn == nil {
+			return nil, errors.New("Connection = nil")
+		}
+	}
+
+	if rf.Protocol == 2 {
 		r, err = rf.callV2(g)
 	} else {
 		r, err = rf.callV1(g)
 	}
 
-	if err != nil {
-		log.Println("Call failed. Retrying", err.Error())
-		addr, err = net.ResolveTCPAddr("tcp", rf.host)
+	/*
+
 		if err != nil {
-			log.Println("Call failed", err.Error())
-			return nil, err
-		}
+			err = rf.connect()
+			if err != nil {
+				return nil, err
+			}
+			if rf.conn == nil {
+				return nil, errors.New("Connection = nil")
+			}
 
-		rf.conn, err = net.DialTCP("tcp", nil, addr)
-		if err != nil {
-			log.Println("Call failed", err.Error())
-			return nil, err
-		}
+			if rf.Protocol == 2 {
+				r, err = rf.callV2(g)
+			} else {
+				r, err = rf.callV1(g)
+			}
+		} */
 
-		if rf.protocol == 2 {
-			r, err = rf.callV2(g)
-		} else {
-			r, err = rf.callV1(g)
-		}
-	}
-
-	if err != nil {
-		log.Println("Call failed", err.Error())
-	}
 	return r, err
 }
 
@@ -338,7 +327,11 @@ func (rf *RFunction) callV1(g *Graph) (*Graph, error) {
 	}
 
 	p := newBinParser(rf.conn)
-
+	if p.r == nil {
+		rf.conn = nil
+		log.Println("callv1, rf.conn buffered reader = nil")
+		return nil, errors.New("callv1, rf.conn buffered reader = nil")
+	}
 	c := p.read()
 	if c == -1 {
 		rf.conn = nil
