@@ -5,7 +5,7 @@
 package main
 
 import (
-	"ogdl"
+	"github.com/rveen/ogdl"
 	"os"
 )
 
