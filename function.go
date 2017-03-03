@@ -40,7 +40,7 @@ import (
 //
 // Functions calls are limited to whole paths.
 //
-func (g *Graph) function(path *Graph, ix int, typ interface{}) (interface{}, error) {
+func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 
 	v := reflect.ValueOf(typ)
 
@@ -53,9 +53,8 @@ func (g *Graph) function(path *Graph, ix int, typ interface{}) (interface{}, err
 
 		// Pre-evaluate
 		var args []interface{}
-		for _, arg := range path.Out[ix].Out {
+		for _, arg := range path.Out[1].Out {
 			args = append(args, g.evalExpression(arg))
-
 		}
 
 		for i, arg := range args {
@@ -66,14 +65,6 @@ func (g *Graph) function(path *Graph, ix int, typ interface{}) (interface{}, err
 				vargs = append(vargs, reflect.ValueOf(arg))
 			}
 		}
-
-		/* DEBUG CODE
-		for i := 0; i < v.Type().NumIn(); i++ {
-			println("> ", v.Type().In(i).String())
-		}
-		for i := 0; i < len(vargs); i++ {
-			println("< ", vargs[i].Type().String())
-		} */
 
 		if v.Type().NumIn() != len(args) {
 			// TODO Check that we print the name of the function
@@ -89,7 +80,7 @@ func (g *Graph) function(path *Graph, ix int, typ interface{}) (interface{}, err
 
 	case reflect.Ptr:
 
-		fn := path.GetAt(ix)
+		fn := path.GetAt(1)
 		if fn == nil {
 			return nil, errors.New("No method")
 		}
@@ -112,7 +103,7 @@ func (g *Graph) function(path *Graph, ix int, typ interface{}) (interface{}, err
 
 		// Pre-evaluate
 		var args []interface{}
-		for _, arg := range path.Out[ix+1].Out {
+		for _, arg := range path.Out[2].Out {
 			args = append(args, g.evalExpression(arg))
 
 		}

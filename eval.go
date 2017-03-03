@@ -153,10 +153,13 @@ func (g *Graph) evalPath(p *Graph) interface{} {
 		case "_this":
 			return node //.ThisString()
 
+		case "_thisString":
+			return node.ThisString()
+
 		case TypeGroup:
 			// We have hit an argument list of a function
-			if node.Len() > 0 && node.GetAt(0).thisKind() == "func" {
-				itf, err := g.function(p, i, node.GetAt(0).This)
+			if node.Len() > 0 {
+				itf, err := g.function(p, node.GetAt(0).This)
 				if err != nil {
 					return err.Error()
 				}
@@ -182,32 +185,17 @@ func (g *Graph) evalPath(p *Graph) interface{} {
 			nn := node.Node(s)
 
 			if nn == nil {
-
-				// Check if 'node' contains a type (other than Graph, that is)
-				// A type means a struct with fields or associated methods.
-				// That type can be in the Graph pointed to by node.Out[0] or
-				// node.Node("!type")
-
-				// Check first if _type is available
-				ty := node.Node("!type")
-				if ty == nil && node.Len() > 0 {
-					ty = node.GetAt(0)
+				if node.Len() != 0 {
+					itf, err := g.function(p, node.Out[0].This)
+					if err != nil {
+						return err.Error()
+					}
+					return itf
 				}
-				if ty == nil {
-					return nil
-				}
-
-				itf, err := g.function(p, i, ty.This)
-
-				if err != nil {
-					return err.Error()
-				}
-				return itf
-
+				return nil
 			}
 
 			iknow = true
-
 			nodePrev = node
 			node = nn
 		}

@@ -99,6 +99,11 @@ func (g *Graph) Equals(c *Graph) bool {
 //
 // An eventual nil root will not be bypassed.
 func (g *Graph) Add(n interface{}) *Graph {
+
+	if g == nil {
+		return nil
+	}
+
 	if node, ok := n.(*Graph); ok && node != nil {
 		if node.IsNil() {
 			for _, node2 := range node.Out {
@@ -117,6 +122,10 @@ func (g *Graph) Add(n interface{}) *Graph {
 
 // AddNodes adds subnodes of the given Graph to the current node.
 func (g *Graph) AddNodes(g2 *Graph) *Graph {
+
+	if g == nil {
+		return nil
+	}
 
 	if g2 != nil {
 		for _, n := range g2.Out {

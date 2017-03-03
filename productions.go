@@ -81,8 +81,8 @@ func (p *parser) Line() (bool, error) {
 	l := p.getLevel(n)
 	p.ev.SetLevel(l)
 
-	// Now we can expect a sequence of scalars, groups, and finally
-	// a block or comment.
+	// Now we can expect a sequence of scalars and finally a block or comment.
+	// This parser is 'flow syntax' tolerant.
 
 	for {
 
@@ -93,9 +93,7 @@ func (p *parser) Line() (bool, error) {
 		} else if err != nil {
 			return false, err
 		} else if p.Comment() {
-			p.Space()
-			p.Break()
-			break
+			return true, nil
 		} else {
 			s, ok := p.Block()
 
@@ -116,10 +114,9 @@ func (p *parser) Line() (bool, error) {
 
 		p.Space()
 
-		co := p.nextByteIs(',')
-
-		if co {
+		if p.nextByteIs(',') {
 			p.Space()
+			// After a comma, reset the level to that of the start of this Line.
 			p.ev.SetLevel(l)
 		} else {
 			p.ev.Inc()
@@ -129,7 +126,7 @@ func (p *parser) Line() (bool, error) {
 
 	// Set the indentation to level rules for subsequent lines
 	p.setLevel(l, n)
-	p.setLevel(p.ev.Level(), n+1)
+	p.setLevel(l+1, n+1)
 
 	return true, nil
 }
@@ -327,7 +324,7 @@ func (p *parser) Scalar() (string, bool) {
 
 // Comment consumes anything from # up to the end of the line.
 //
-// BUG(): Special cases: #?, #{
+// TODO: Should expect a space after # !
 //
 func (p *parser) Comment() bool {
 	c := p.Read()
@@ -337,12 +334,6 @@ func (p *parser) Comment() bool {
 			c = p.Read()
 			if isEndChar(c) || isBreakChar(c) {
 				break
-			}
-			if c == 13 {
-				c := p.Read()
-				if c != 10 {
-					p.Unread()
-				}
 			}
 		}
 		return true

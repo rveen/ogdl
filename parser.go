@@ -184,21 +184,19 @@ func (p *parser) Unread() {
 }
 
 // setLevel sets the nesting level for a given indentation (number of spaces)
-// This function is used by the line() production for parsing OGDL text.
-//
-// setLevel sets ind[lev] = n, all ind[>lev] = 0 and assures that
-// ind[0..lev-1] has increasing n, adjusting n if necessary.
+// setLevel sets ind[lev] = n, and all ind[>lev] = 0.
 func (p *parser) setLevel(lev, n int) {
 
-	// Set ind[level] to the number of spaces + 1 (zero is nil)
-	p.ind[lev] = n + 1
-
-	// Fill holes
-	for i := 1; i < lev; i++ {
-		if p.ind[i] < p.ind[i-1] {
-			p.ind[i] = p.ind[i-1]
-		}
+	// avoid out of index errors (the number of supported indentation levels is
+	// limited, and the parser SHOULD return and error above that)
+	if lev >= len(p.ind) {
+		return
 	}
+
+	// Set ind[level] to the number of spaces
+	p.ind[lev] = n
+
+	// ( If there were any holes, bad things could happend. )
 
 	for i := lev + 1; i < len(p.ind); i++ {
 		p.ind[i] = 0
@@ -228,17 +226,12 @@ func (p *parser) getLevel(n int) int {
 	return l
 }
 
-/*
-  The following functions are public in order for the Parser to be used
-  outside of the current package
-*/
-
-// Emit sends a string to the event handler
+// emit sends a string to the event handler
 func (p *parser) emit(s string) {
 	p.ev.Add(s)
 }
 
-// EmitBytes sends a byte array to the event handler
+// emitBytes sends a byte array to the event handler
 func (p *parser) emitBytes(b []byte) {
 	p.ev.AddBytes(b)
 }

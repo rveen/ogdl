@@ -20,6 +20,10 @@ type RFunction struct {
 	conn     net.Conn
 }
 
+func NewRFunction(host string) *RFunction {
+	return &RFunction{host, 1, nil}
+}
+
 // connect opens a connection to a TCP/IP server.
 func (rf *RFunction) connect() error {
 
@@ -247,23 +251,21 @@ func (rf *RFunction) Call(g *Graph) (*Graph, error) {
 		r, err = rf.callV1(g)
 	}
 
-	/*
-
+	if err != nil {
+		err = rf.connect()
 		if err != nil {
-			err = rf.connect()
-			if err != nil {
-				return nil, err
-			}
-			if rf.conn == nil {
-				return nil, errors.New("Connection = nil")
-			}
+			return nil, err
+		}
+		if rf.conn == nil {
+			return nil, errors.New("Connection = nil")
+		}
 
-			if rf.Protocol == 2 {
-				r, err = rf.callV2(g)
-			} else {
-				r, err = rf.callV1(g)
-			}
-		} */
+		if rf.Protocol == 2 {
+			r, err = rf.callV2(g)
+		} else {
+			r, err = rf.callV1(g)
+		}
+	}
 
 	return r, err
 }
@@ -281,9 +283,11 @@ func (rf *RFunction) callV2(g *Graph) (*Graph, error) {
 	binary.BigEndian.PutUint32(buf2, uint32(len(buf)))
 
 	// Write request (len + body)
+	rf.conn.SetDeadline(time.Now().Add(time.Second * 10))
 	rf.conn.Write(buf2)
 
 	// Read header response
+	rf.conn.SetReadDeadline(time.Now().Add(time.Second * 10))
 	j, _ := rf.conn.Read(b4)
 	if j != 4 {
 		rf.conn = nil
@@ -314,7 +318,9 @@ func (rf *RFunction) callV2(g *Graph) (*Graph, error) {
 func (rf *RFunction) callV1(g *Graph) (*Graph, error) {
 
 	b := g.Binary()
+	rf.conn.SetDeadline(time.Now().Add(time.Second * 10))
 	n, err := rf.conn.Write(b)
+
 	if err != nil {
 		rf.conn = nil
 		log.Println("callv1", err)
@@ -332,6 +338,9 @@ func (rf *RFunction) callV1(g *Graph) (*Graph, error) {
 		log.Println("callv1, rf.conn buffered reader = nil")
 		return nil, errors.New("callv1, rf.conn buffered reader = nil")
 	}
+
+	rf.conn.SetReadDeadline(time.Now().Add(time.Second * 10))
+
 	c := p.read()
 	if c == -1 {
 		rf.conn = nil
