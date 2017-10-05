@@ -7,6 +7,7 @@ package ogdl
 import (
 	"errors"
 	"fmt"
+	// "log"
 	"reflect"
 	"runtime"
 )
@@ -40,7 +41,18 @@ import (
 //
 // Functions calls are limited to whole paths.
 //
+// TODO: Catch panic() att Call(). Return named variables so that defer/recover
+// return something usefull
 func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
+
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println(err)
+			return
+		}
+	}()
+
+	// log.Printf("\n%s\n", path.Show())
 
 	v := reflect.ValueOf(typ)
 
@@ -51,10 +63,15 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 
 	case reflect.Func:
 
+		//log.Println("function.Func", path.Out[1].ThisString(), path.Out[1].Len())
+		//log.Println(runtime.FuncForPC(v.Pointer()).Name())
+		//log.Println(reflect.TypeOf(typ).String())
+
 		// Pre-evaluate
 		var args []interface{}
 		for _, arg := range path.Out[1].Out {
 			args = append(args, g.evalExpression(arg))
+			// log.Printf("%v\n", args[len(args)-1])
 		}
 
 		for i, arg := range args {
@@ -65,6 +82,14 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 				vargs = append(vargs, reflect.ValueOf(arg))
 			}
 		}
+
+		/* DEBUG CODE
+		for i := 0; i < v.Type().NumIn(); i++ {
+			log.Println("> ", v.Type().In(i).String())
+		}
+		for i := 0; i < len(vargs); i++ {
+			log.Println("< ", vargs[i].Type().String())
+		} /**/
 
 		if v.Type().NumIn() != len(args) {
 			// TODO Check that we print the name of the function
@@ -79,6 +104,8 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 		return nil, nil
 
 	case reflect.Ptr:
+
+		// log.Println("function.Ptr")
 
 		fn := path.GetAt(1)
 		if fn == nil {
@@ -103,9 +130,10 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 
 		// Pre-evaluate
 		var args []interface{}
-		for _, arg := range path.Out[2].Out {
-			args = append(args, g.evalExpression(arg))
-
+		if len(path.Out) > 2 {
+			for _, arg := range path.Out[2].Out {
+				args = append(args, g.evalExpression(arg))
+			}
 		}
 
 		for i, arg := range args {
@@ -117,16 +145,18 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 			}
 		}
 
-		if me.Type().NumIn() != len(args) {
-			return nil, errors.New("Invalid number of arguments in method " + fname)
-		}
-
-		for i, arg := range args {
-			v := reflect.TypeOf(arg)
-			if v == nil || me.Type().In(i).String() != v.String() {
-				return nil, errors.New("Invalid argument for method " + fname)
+		// TODO: variadic
+		/*
+			if me.Type().NumIn() != len(args) {
+				return nil, errors.New("Invalid number of arguments in method " + fname)
 			}
-		}
+
+			for i, arg := range args {
+				v := reflect.TypeOf(arg)
+				if v == nil || me.Type().In(i).String() != v.String() {
+					return nil, errors.New("Invalid argument for method " + fname)
+				}
+			}*/
 
 		// TODO: return 0..2 values
 		vv := me.Call(vargs)

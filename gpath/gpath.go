@@ -5,7 +5,8 @@
 package main
 
 import (
-	"github.com/rveen/ogdl"
+	"fmt"
+	"ogdl"
 	"os"
 )
 
@@ -51,5 +52,5 @@ func main() {
 		s += "\n"
 	}
 
-	print(s)
+	fmt.Print(s)
 }

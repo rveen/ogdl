@@ -1,4 +1,4 @@
-// Copyright 2012-2014, Rolf Veen and contributors.
+// Copyright 2012-2017, Rolf Veen and contributors.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -37,6 +37,20 @@ import (
 //
 func NewTemplate(s string) *Graph {
 	p := newStringParser(s)
+	p.Template()
+
+	t := p.graphTop(TypeTemplate)
+	t.ast()
+	t.simplify()
+	t.flow()
+
+	return t
+}
+
+// NewTemplateBytes has the same function as NewTemplate except that the input stream
+// is a byte array.
+func NewTemplateFromBytes(b []byte) *Graph {
+	p := newBytesParser(b)
 	p.Template()
 
 	t := p.graphTop(TypeTemplate)

@@ -153,7 +153,7 @@ func handlerV2(c net.Conn, handler func(net.Conn, *Graph) *Graph, timeout int) {
 		// read body of message
 		buf := make([]byte, l)
 		if buf == nil {
-			log.Println("connection closed: not more memory")
+			log.Printf("connection closed: cannot allocate % bytes\n", l)
 			c.Close()
 			return
 		}
