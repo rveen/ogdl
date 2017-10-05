@@ -6,8 +6,9 @@ package main
 
 import (
 	"fmt"
-	"ogdl"
 	"os"
+
+	"github.com/rveen/ogdl"
 )
 
 func main() {

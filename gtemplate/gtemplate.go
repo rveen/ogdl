@@ -12,8 +12,9 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"ogdl"
 	"os"
+
+	"github.com/rveen/ogdl"
 )
 
 func main() {
