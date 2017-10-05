@@ -94,21 +94,21 @@ func (p *parser) Line() (bool, error) {
 			return false, err
 		} else if p.Comment() {
 			return true, nil
-		} else {
-			s, ok := p.Block()
+		}
 
+		s, ok := p.Block()
+
+		if ok {
+			p.ev.Add(s)
+			p.Break()
+			break
+		} else {
+			b, ok := p.Scalar()
 			if ok {
-				p.ev.Add(s)
+				p.ev.Add(b)
+			} else {
 				p.Break()
 				break
-			} else {
-				b, ok := p.Scalar()
-				if ok {
-					p.ev.Add(b)
-				} else {
-					p.Break()
-					break
-				}
 			}
 		}
 
@@ -405,13 +405,13 @@ func (p *parser) Quoted() (string, bool) {
 			for ; n-lnl > 0; n-- {
 				buf = append(buf, ' ')
 			}
-		} else if c == '\\' {
+		} /*else if c == '\\' {
 			c = p.Read()
 			if c != '"' && c != '\'' {
 				//buf = append(buf, '\\')
 			}
 			buf = append(buf, byte(c))
-		}
+		}*/
 	}
 
 	// May have zero length
@@ -421,9 +421,7 @@ func (p *parser) Quoted() (string, bool) {
 // Block ::= '\\' NL LINES_OF_TEXT
 func (p *parser) Block() (string, bool) {
 
-	var c int
-
-	c = p.Read()
+	c := p.Read()
 	if c != '\\' {
 		p.Unread()
 		return "", false
@@ -811,7 +809,7 @@ func (p *parser) Variable() bool {
 		p.ev.Inc()
 		p.Expression()
 		p.Space()
-		c = p.Read() // Should be ')'
+		p.Read() // Should be ')'
 	} else {
 		p.ev.Add(TypePath)
 		p.ev.Inc()

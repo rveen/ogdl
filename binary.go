@@ -103,7 +103,7 @@ func (g *Graph) bin(level int, buf []byte) []byte {
 
 	// Skip empty nodes
 	b := _bytes(g.This)
-	if b != nil && len(b) != 0 {
+	if len(b) != 0 {
 		buf = append(buf, newVarInt(level)...)
 		buf = append(buf, b...)
 		buf = append(buf, 0)

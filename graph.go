@@ -29,10 +29,7 @@ func New(n ...interface{}) *Graph {
 
 // IsNil returns true is this node has no content.
 func (g *Graph) IsNil() bool {
-	if g.This == nil {
-		return true
-	}
-	return false
+	return g.This == nil
 }
 
 // Len returns the number of subnodes (outgoing edges, out degree) of this node.
@@ -43,14 +40,9 @@ func (g *Graph) Len() int {
 	return len(g.Out)
 }
 
-// Type returns the name of the native type contained in the current node.
+// ThisType returns the name of the native type contained in the current node.
 func (g *Graph) ThisType() string {
 	return reflect.TypeOf(g.This).String()
-}
-
-// Kind returns the name of the native type contained in the current node.
-func (g *Graph) thisKind() string {
-	return reflect.ValueOf(g.This).Kind().String()
 }
 
 // Depth returns the depth of the graph if it is a tree, or -1 if it has
@@ -88,7 +80,7 @@ func (g *Graph) Equals(c *Graph) bool {
 	}
 
 	for i := 0; i < g.Len(); i++ {
-		if g.Out[i].Equals(c.Out[i]) == false {
+		if !g.Out[i].Equals(c.Out[i]) {
 			return false
 		}
 	}
@@ -106,9 +98,7 @@ func (g *Graph) Add(n interface{}) *Graph {
 
 	if node, ok := n.(*Graph); ok && node != nil {
 		if node.IsNil() {
-			for _, node2 := range node.Out {
-				g.Out = append(g.Out, node2)
-			}
+			g.Out = append(g.Out, node.Out...)
 		} else {
 			g.Out = append(g.Out, node)
 		}
@@ -128,9 +118,7 @@ func (g *Graph) AddNodes(g2 *Graph) *Graph {
 	}
 
 	if g2 != nil {
-		for _, n := range g2.Out {
-			g.Out = append(g.Out, n)
-		}
+		g.Out = append(g.Out, g2.Out...)
 	}
 	return g
 }
@@ -189,10 +177,9 @@ func (g *Graph) Create(s string) *Graph {
 	n := g.Node(s)
 	if n == nil {
 		return g.Add(s)
-	} else {
-		n.Clear()
-		return n
 	}
+	n.Clear()
+	return n
 }
 
 // GetAt returns a subnode by index, or nil if the index is out of range.
@@ -563,7 +550,7 @@ func (g *Graph) _text(n int, buffer *bytes.Buffer, show bool) {
 		s = _string(g.This)
 	}
 
-	if strings.IndexAny(s, "\n\r \t'\",()") != -1 {
+	if strings.ContainsAny(s, "\n\r \t'\",()") {
 
 		// print quoted, but not at level 0
 		// Do not convert " to \" below if level==0 !

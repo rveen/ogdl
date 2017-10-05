@@ -6,7 +6,8 @@ package ogdlrf
 
 import (
 	"net"
-	"ogdl"
+
+	"github.com/rveen/ogdl"
 )
 
 // Function is the prototype of functions to be server by ogdlrf.Serve

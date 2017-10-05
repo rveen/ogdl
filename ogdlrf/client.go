@@ -9,8 +9,9 @@ import (
 	"errors"
 	"log"
 	"net"
-	"ogdl"
 	"time"
+
+	"github.com/rveen/ogdl"
 )
 
 // Client represents a the client side of a remote function (also known as a remote

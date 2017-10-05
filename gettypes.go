@@ -13,6 +13,11 @@ import (
 	"strconv"
 )
 
+const (
+	trueStr  = "true"
+	falseStr = "false"
+)
+
 // Find returns a Graph with all subnodes that match the regular
 // expression given. It only walks through the subnodes of the current Graph.
 // If the regex doesn't compile, an error will be returned. If the result set
@@ -71,7 +76,7 @@ func (g *Graph) Bool() bool {
 	return n
 }
 
-// Value returns the graph as a reflect.Value.
+// ThisValue returns this node as a reflect.Value.
 func (g *Graph) ThisValue() reflect.Value {
 	return reflect.ValueOf(g.This)
 }
@@ -99,6 +104,7 @@ func (g *Graph) String(def ...string) string {
 	return _string(g.Interface())
 }
 
+// ThisString returns the current node content as a string
 func (g *Graph) ThisString(def ...string) string {
 
 	// If g is nil, return default or nothing
@@ -117,7 +123,7 @@ func (g *Graph) Bytes() []byte {
 	return _bytes(g.Interface())
 }
 
-// bytes returns the node as []byte, or nil if not possble.
+// ThisBytes returns the node as []byte, or nil if not possble.
 func (g *Graph) ThisBytes() []byte {
 	return _bytes(g.This)
 }
@@ -127,7 +133,7 @@ func (g *Graph) Number() interface{} {
 	return number(g.Interface())
 }
 
-// Number returns either a float64, int64 or nil
+// ThisNumber returns either a float64, int64 or nil
 func (g *Graph) ThisNumber() interface{} {
 	return number(g.This)
 }
@@ -169,6 +175,7 @@ func (g *Graph) Scalar() interface{} {
 	return itf
 }
 
+// ThisScalar returns this node's content as an interface
 func (g *Graph) ThisScalar() interface{} {
 
 	itf := g.This
@@ -192,6 +199,7 @@ func (g *Graph) ThisScalar() interface{} {
 	return itf
 }
 
+// Interface returns the first child of this node as an interface
 func (g *Graph) Interface() interface{} {
 	if g.Out != nil && len(g.Out) != 0 {
 		return g.Out[0].This
@@ -451,18 +459,18 @@ func _boolf(i interface{}) (bool, bool) {
 	case []byte:
 		s := string(v)
 
-		if "false" == s {
+		if falseStr == s {
 			return false, true
 		}
-		if "true" == s {
+		if trueStr == s {
 			return true, true
 		}
 		return false, false
 	case string:
-		if "false" == v {
+		if falseStr == v {
 			return false, true
 		}
-		if "true" == v {
+		if trueStr == v {
 			return true, true
 		}
 		return false, false
@@ -521,6 +529,7 @@ func _text(i interface{}) string {
 	return fmt.Sprint(i)
 }
 
+// _show: this function is used in tests
 func _show(i interface{}) string {
 	if i == nil {
 		return ""
@@ -537,6 +546,7 @@ func _show(i interface{}) string {
 	return fmt.Sprint(i)
 }
 
+// _typeOf: this function is used in tests
 func _typeOf(i interface{}) string {
 	if i == nil {
 		return ""

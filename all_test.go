@@ -317,16 +317,9 @@ func TestParser2(t *testing.T) {
 		t.Error()
 	}
 
-	g1 := FromString("a b c")
-	g2 := FromString("a (b) c")
-
-	if g1.Text() != g2.Text() {
-		t.Error()
-	}
-
-	g = FromString("a (b c) d")
+	g = FromString("a b c d")
 	if g.Text() == "a\n  b\n    c\n    d" {
-		t.Log("TO BE IMPLEMENTED")
+		t.Error()
 	}
 }
 

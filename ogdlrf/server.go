@@ -8,8 +8,9 @@ import (
 	"encoding/binary"
 	"log"
 	"net"
-	"ogdl"
 	"time"
+
+	"github.com/rveen/ogdl"
 )
 
 // Server hold the state of the server side of a remote function.
