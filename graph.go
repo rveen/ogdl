@@ -149,6 +149,9 @@ func (g *Graph) addEqualNodes(g2 *Graph, key string, recurse bool) *Graph {
 // value holds a pointer, copying the interface value makes a copy of the
 // pointer, but not the data it points to.
 func (g *Graph) Copy(c *Graph) {
+	if c == nil {
+		return
+	}
 	for _, n := range c.Out {
 		nn := g.Add(n.This)
 		nn.Copy(n)
