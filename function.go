@@ -7,7 +7,7 @@ package ogdl
 import (
 	"errors"
 	"fmt"
-	// "log"
+	"log"
 	"reflect"
 	"runtime"
 )
@@ -43,6 +43,7 @@ import (
 //
 // TODO: Catch panic() att Call(). Return named variables so that defer/recover
 // return something usefull
+
 func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 
 	defer func() {
@@ -56,6 +57,10 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 
 	v := reflect.ValueOf(typ)
 
+	// Remote functions have this signature
+	var f func(*Graph) (*Graph, error)
+	rfType := reflect.ValueOf(f).Type()
+
 	// Build arguments in the form []reflect.Value
 	var vargs []reflect.Value
 
@@ -64,14 +69,32 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 	case reflect.Func:
 
 		//log.Println("function.Func", path.Out[1].ThisString(), path.Out[1].Len())
+		// log.Println("Func type", v.Type())
 		//log.Println(runtime.FuncForPC(v.Pointer()).Name())
 		//log.Println(reflect.TypeOf(typ).String())
 
 		// Pre-evaluate
 		var args []interface{}
-		for _, arg := range path.Out[1].Out {
-			args = append(args, g.evalExpression(arg))
-			// log.Printf("%v\n", args[len(args)-1])
+
+		if v.Type() == rfType {
+			// Remote function
+			n := New()
+			nn := n.Add(path.Out[1].This)
+			if len(path.Out) > 2 {
+				for _, arg := range path.Out[2].Out {
+					// log.Printf("arg:\n%s\n", arg.Show())
+					nn.Add(g.evalExpression(arg))
+				}
+			}
+
+			log.Println(n.Show())
+			args = append(args, n)
+		} else {
+			// Local function
+			for _, arg := range path.Out[1].Out {
+				args = append(args, g.evalExpression(arg))
+				// log.Printf("%v\n", args[len(args)-1])
+			}
 		}
 
 		for i, arg := range args {
