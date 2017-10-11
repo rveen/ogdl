@@ -39,7 +39,11 @@ func Dial(host string) (*Client, error) {
 func (rf *Client) Call(g *ogdl.Graph) (*ogdl.Graph, error) {
 
 	var err error
+	nretry := 2
 
+	// log.Printf("Client.Call\n%s", g.Show())
+
+retry:
 	if rf.conn == nil {
 		conn, err := net.Dial("tcp", rf.Host)
 		if err != nil {
@@ -54,6 +58,8 @@ func (rf *Client) Call(g *ogdl.Graph) (*ogdl.Graph, error) {
 	b4 := make([]byte, 4)
 	binary.BigEndian.PutUint32(b4, uint32(len(buf)))
 
+	//log.Println("rf.Call, wr len ", len(buf))
+
 	// Write request (len + body)
 	rf.conn.SetDeadline(time.Now().Add(time.Second * 10))
 	rf.conn.Write(b4)
@@ -63,7 +69,12 @@ func (rf *Client) Call(g *ogdl.Graph) (*ogdl.Graph, error) {
 	rf.conn.SetReadDeadline(time.Now().Add(time.Second * 10))
 	j, _ := rf.conn.Read(b4)
 	if j != 4 {
+		rf.Close()
 		rf.conn = nil
+		nretry--
+		if nretry > 0 {
+			goto retry
+		}
 		log.Println("error in message header")
 		return nil, errors.New("error in message header")
 	}
@@ -84,6 +95,8 @@ func (rf *Client) Call(g *ogdl.Graph) (*ogdl.Graph, error) {
 	}
 
 	g = ogdl.FromBinary(buf3)
+
+	// log.Println(" - end of Call")
 
 	return g, err
 }

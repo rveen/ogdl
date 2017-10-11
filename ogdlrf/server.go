@@ -33,8 +33,12 @@ func (s *Server) AddRoute(path string, f Function) {
 
 func (srv *Server) router() Function {
 	return func(c net.Conn, g *ogdl.Graph) *ogdl.Graph {
+
+		if len(g.Out) == 0 {
+			return notFound
+		}
+
 		s := g.Out[0].ThisString()
-		log.Println(s)
 
 		h := srv.rtable[s]
 		if h != nil {
