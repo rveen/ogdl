@@ -63,6 +63,7 @@ func Serve(host string, handler Function, timeout int) error {
 	if err != nil {
 		return err
 	}
+	defer l.Close()
 
 	for {
 		// Wait for a connection.
@@ -77,8 +78,32 @@ func Serve(host string, handler Function, timeout int) error {
 	}
 }
 
+// Serve1 starts a remote function server. Incomming requests should be handled
+// by the given Function. This version of Serve doesn't work with AddRoute.
+func Serve1(host string, handler Function, timeout int) error {
+
+	l, err := net.Listen("tcp", host)
+	if err != nil {
+		return err
+	}
+
+	for {
+		// Wait for a connection.
+		conn, err := l.Accept()
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		// Handle the connection in a new goroutine.
+		go process1(conn, handler, timeout)
+	}
+}
+
 // process handles the request through the given handler.
 func process(c net.Conn, handler Function, timeout int) {
+
+	defer c.Close()
 
 	b4 := make([]byte, 4)
 
@@ -86,36 +111,46 @@ func process(c net.Conn, handler Function, timeout int) {
 
 	for {
 
-		// Set a time out (maximum time until next message)
+		// Each message has a 4 byte header, an integer indicating the length:
+		//
+		//    message = LEN(uint32) BYTES
+		//
+		// Thus, first read 4 bytes (LEN)
+
 		c.SetReadDeadline(time.Now().Add(time.Second * time.Duration(timeout)))
-
-		// Read message: LEN(uint32) BYTES
-
-		// Read 4 bytes (LEN)
 		i, err := c.Read(b4)
-		// Set a time out (maximum time for receiving the body)
-		c.SetReadDeadline(time.Now().Add(time.Millisecond * 1000))
+
+		if i == 0 {
+			return
+		}
 
 		if err != nil || i != 4 {
-			log.Println("connection closed", i, err)
-			c.Close()
+			log.Println("ogdlrf.Serve, error while trying to read LEN,", i, err)
 			return
 		}
 
 		l := int(binary.BigEndian.Uint32(b4))
+		log.Println("ogdlrf.Serve, rec LEN", l)
 
-		// read body of message
+		// Read the body of the message
+
 		buf := make([]byte, l)
 		if buf == nil {
-			log.Println("connection closed: no more memory")
-			c.Close()
+			log.Println("ogdlrf.Serve, cannot allocate memory for message")
 			return
 		}
+
+		// Set a time out (maximum time for receiving the body)
+		c.SetReadDeadline(time.Now().Add(time.Second * time.Duration(timeout)))
 		i, err = c.Read(buf)
 
-		if err != nil || i != l {
-			log.Println("connection pre-closed", err)
-			c.Close()
+		if err != nil {
+			log.Println("ogdlrf.Serve, error reading message body, ", err)
+			return
+		}
+
+		if i != l {
+			log.Println("ogdlrf.Serve, error reading message body, LEN is", i, "should be", l)
 			return
 		}
 
@@ -126,7 +161,55 @@ func process(c net.Conn, handler Function, timeout int) {
 		buf = r.Binary()
 		binary.BigEndian.PutUint32(b4, uint32(len(buf)))
 
-		c.Write(b4)
-		c.Write(buf)
+		i, err = c.Write(b4)
+
+		if i != 4 || err != nil {
+			log.Println("ogdlrf.Serve, error writing LEN header", i, err)
+			return
+		}
+
+		i, err = c.Write(buf)
+
+		if err != nil {
+			log.Println("ogdlrf.Serve, error writing body,", err)
+			return
+		}
+		if i != len(buf) {
+			log.Println("ogdlrf.Serve, error writing body, LEN is", i, "should be", len(buf))
+			return
+		}
+		log.Println("ogdlrf.Serve, body LEN", len(buf))
+	}
+}
+
+// Old format, without the initial length indicator
+func process1(c net.Conn, handler Function, timeout int) {
+
+	defer c.Close()
+
+	for {
+		// Set a time out (maximum time until next message)
+		c.SetReadDeadline(time.Now().Add(time.Second * time.Duration(timeout)))
+
+		// Read the incoming object
+		g := ogdl.FromBinaryReader(c)
+
+		if g == nil {
+			return
+		}
+
+		r := handler(c, g)
+
+		// Write result in binary format
+		b := r.Binary()
+		i, err := c.Write(b)
+
+		if err != nil {
+			log.Println("ogdlrf.Serve, error writing body,", err)
+			return
+		}
+		if i != len(b) {
+			log.Println("ogdlrf.Serve, error writing body, LEN is", i, "should be", len(b))
+		}
 	}
 }
