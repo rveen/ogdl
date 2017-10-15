@@ -158,6 +158,27 @@ func (g *Graph) Copy(c *Graph) {
 	}
 }
 
+// Clone returns a copy of the current graph.
+//
+// Warning (from the Go faq): Copying an interface value makes a copy of the
+// thing stored in the interface value. If the interface value holds a struct,
+// copying the interface value makes a copy of the struct. If the interface
+// value holds a pointer, copying the interface value makes a copy of the
+// pointer, but not the data it points to.
+func (g *Graph) Clone() *Graph {
+	if g == nil {
+		return nil
+	}
+
+	c := New()
+	c.This = g.This
+
+	for _, n := range g.Out {
+		c.Out = append(c.Out, n.Clone())
+	}
+	return c
+}
+
 // Node returns the first subnode whose string value is equal to the given string.
 // It returns nil if not found.
 func (g *Graph) Node(s string) *Graph {

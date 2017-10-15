@@ -17,34 +17,55 @@ import (
 // Client represents a the client side of a remote function (also known as a remote
 // procedure call).
 type Client struct {
-	Host    string
-	conn    net.Conn
-	Timeout int
+	Host     string
+	conn     net.Conn
+	Timeout  int
+	Protocol int
 }
 
-// Dial connect this client to the specified server
-func Dial(host string) (*Client, error) {
-	client := &Client{Host: host, Timeout: 1}
+func (rf *Client) Dial() error {
+	rf.Close()
+	conn, err := net.Dial("tcp", rf.Host)
+	rf.conn = conn
+	return err
+}
 
-	conn, err := net.Dial("tcp", host)
-	if err != nil {
-		return nil, err
+func (rf *Client) Call(g *ogdl.Graph) (*ogdl.Graph, error) {
+
+	var err error
+	var r *ogdl.Graph
+
+	n := 2
+	for {
+		if rf.conn == nil {
+			err = rf.Dial()
+			if err != nil {
+				return nil, errors.New("Cannot establish a connection to " + rf.Host)
+			}
+		}
+
+		if rf.Protocol == 1 {
+			r, err = rf.callV1(g)
+		} else {
+			r, err = rf.callV2(g)
+		}
+		if err == nil {
+			break
+		}
+		n--
+		if n < 0 {
+			break
+		}
+		rf.conn = nil
+		log.Println("Call.retry", n)
 	}
 
-	client.conn = conn
-	return client, nil
+	return r, err
 }
 
 // Call makes a remote call. It sends the given Graph in binary format to the server
 // and returns the response Graph.
-func (rf *Client) Call(g *ogdl.Graph) (*ogdl.Graph, error) {
-
-	// open the connection, and make sure it is closed at the end
-	conn, err := net.Dial("tcp", rf.Host)
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
+func (rf *Client) callV2(g *ogdl.Graph) (*ogdl.Graph, error) {
 
 	// Convert graph to []byte
 	buf := g.Binary()
@@ -53,14 +74,14 @@ func (rf *Client) Call(g *ogdl.Graph) (*ogdl.Graph, error) {
 	b4 := make([]byte, 4)
 	binary.BigEndian.PutUint32(b4, uint32(len(buf)))
 
-	conn.SetDeadline(time.Now().Add(time.Second * 10))
-	i, err := conn.Write(b4)
+	rf.conn.SetDeadline(time.Now().Add(time.Second * time.Duration(rf.Timeout)))
+	i, err := rf.conn.Write(b4)
 	if i != 4 || err != nil {
 		log.Println("ogdlrf.Serve, error writing LEN header", i, err)
 		return nil, errors.New("error writing LEN header")
 	}
 
-	i, err = conn.Write(buf)
+	i, err = rf.conn.Write(buf)
 	if err != nil {
 		log.Println("ogdlrf.Serve, error writing body,", err)
 		return nil, errors.New("error writing body")
@@ -71,8 +92,7 @@ func (rf *Client) Call(g *ogdl.Graph) (*ogdl.Graph, error) {
 	}
 
 	// Read header response
-	conn.SetReadDeadline(time.Now().Add(time.Second * 2))
-	j, err := conn.Read(b4)
+	j, err := rf.conn.Read(b4)
 	if j != 4 {
 		log.Println("error reading incomming message LEN")
 		return nil, errors.New("error in message header")
@@ -86,7 +106,7 @@ func (rf *Client) Call(g *ogdl.Graph) (*ogdl.Graph, error) {
 	log.Println("starting to read, should be", l)
 	for {
 		log.Println("reading ...")
-		i, err = conn.Read(tmp)
+		i, err = rf.conn.Read(tmp)
 		log.Println("reading ...", i)
 		l2 += uint32(i)
 		if err != nil || i == 0 {
@@ -109,83 +129,28 @@ func (rf *Client) Call(g *ogdl.Graph) (*ogdl.Graph, error) {
 	return g, err
 }
 
-// Call makes a remote call. It sends the given Graph in binary format to the server
-// and returns the response Graph.
-func (rf *Client) Call1(g *ogdl.Graph) (*ogdl.Graph, error) {
+func (rf *Client) callV1(g *ogdl.Graph) (*ogdl.Graph, error) {
 
-	nretry := 2
-
-	// log.Printf("Client.Call\n%s", g.Show())
-
-retry:
-	if rf.conn == nil {
-		conn, err := net.Dial("tcp", rf.Host)
-		if err != nil {
-			rf.conn = nil
-			return nil, err
-		}
-		rf.conn = conn
-	}
-
-	buf := g.Binary()
-
-	b4 := make([]byte, 4)
-	binary.BigEndian.PutUint32(b4, uint32(len(buf)))
-
-	//log.Println("rf.Call, wr len ", len(buf))
-
-	// Write request (len + body)
 	rf.conn.SetDeadline(time.Now().Add(time.Second * 10))
-	i, err := rf.conn.Write(b4)
-	if i != 4 || err != nil {
-		log.Println("ogdlrf.Serve, error writing LEN header", i, err)
-		return nil, errors.New("error writing LEN header")
-	}
 
-	i, err = rf.conn.Write(buf)
-	if err != nil {
-		log.Println("ogdlrf.Serve, error writing body,", err)
-		return nil, errors.New("error writing body")
-	}
-	if i != len(buf) {
-		log.Println("ogdlrf.Serve, error writing body, LEN is", i, "should be", len(buf))
-		return nil, errors.New("error writing body")
-	}
+	b := g.Binary()
+	n, err := rf.conn.Write(b)
 
-	// Read header response
-	rf.conn.SetReadDeadline(time.Now().Add(time.Second * 10))
-	j, err := rf.conn.Read(b4)
-	if j != 4 {
-		rf.Close()
-		rf.conn = nil
-		nretry--
-		if nretry > 0 {
-			goto retry
-		}
-		log.Println("error reading incomming message LEN")
-		return nil, errors.New("error in message header")
-	}
-	l := binary.BigEndian.Uint32(b4)
-
-	// Read body response
-	buf3 := make([]byte, l)
-	j, err = rf.conn.Read(buf3)
 	if err != nil {
 		rf.conn = nil
-		log.Println(err)
+		log.Println("callv1", err)
 		return nil, err
 	}
-	if j != int(l) {
+	if n < len(b) {
 		rf.conn = nil
-		log.Println("error in message len", i, l)
-		return nil, errors.New("error in message len")
+		log.Println("callv1", err)
+		return nil, errors.New("could not write all bytes")
 	}
 
-	g = ogdl.FromBinary(buf3)
+	// Read the incoming object
+	g = ogdl.FromBinaryReader(rf.conn)
 
-	// log.Println(" - end of Call")
-
-	return g, err
+	return g, nil
 }
 
 // Close closes the underlying connection, if open.

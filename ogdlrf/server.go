@@ -107,7 +107,7 @@ func process(c net.Conn, handler Function, timeout int) {
 
 	b4 := make([]byte, 4)
 
-	log.Println("connection accepted")
+	log.Println("starting Server.process: connection accepted")
 
 	for {
 
@@ -121,40 +121,45 @@ func process(c net.Conn, handler Function, timeout int) {
 		i, err := c.Read(b4)
 
 		if i == 0 {
-			return
+			break
 		}
 
 		if err != nil || i != 4 {
 			log.Println("ogdlrf.Serve, error while trying to read LEN,", i, err)
-			return
+			break
 		}
 
 		l := int(binary.BigEndian.Uint32(b4))
 		log.Println("ogdlrf.Serve, rec LEN", l)
+		if l == 0 {
+			log.Println("LEN is 0, timeout was", timeout)
+			break
+		}
 
 		// Read the body of the message
 
 		buf := make([]byte, l)
 		if buf == nil {
 			log.Println("ogdlrf.Serve, cannot allocate memory for message")
-			return
+			break
 		}
-
-		// Set a time out (maximum time for receiving the body)
-		c.SetReadDeadline(time.Now().Add(time.Second * time.Duration(timeout)))
 		i, err = c.Read(buf)
 
 		if err != nil {
 			log.Println("ogdlrf.Serve, error reading message body, ", err)
-			return
+			break
 		}
 
 		if i != l {
 			log.Println("ogdlrf.Serve, error reading message body, LEN is", i, "should be", l)
-			return
+			break
 		}
 
 		g := ogdl.FromBinary(buf)
+		if g == nil || g.Out == nil {
+			log.Println("ogdlrf.Serve, nothing in buf to produce a graph")
+			break
+		}
 		r := handler(c, g)
 
 		// Write message back
@@ -165,21 +170,22 @@ func process(c net.Conn, handler Function, timeout int) {
 
 		if i != 4 || err != nil {
 			log.Println("ogdlrf.Serve, error writing LEN header", i, err)
-			return
+			break
 		}
 
 		i, err = c.Write(buf)
 
 		if err != nil {
 			log.Println("ogdlrf.Serve, error writing body,", err)
-			return
+			break
 		}
 		if i != len(buf) {
 			log.Println("ogdlrf.Serve, error writing body, LEN is", i, "should be", len(buf))
-			return
+			break
 		}
 		log.Println("ogdlrf.Serve, body LEN", len(buf))
 	}
+	log.Println("ending Server.process and closing connection")
 }
 
 // Old format, without the initial length indicator
@@ -195,7 +201,7 @@ func process1(c net.Conn, handler Function, timeout int) {
 		g := ogdl.FromBinaryReader(c)
 
 		if g == nil {
-			return
+			break
 		}
 
 		r := handler(c, g)
@@ -206,10 +212,12 @@ func process1(c net.Conn, handler Function, timeout int) {
 
 		if err != nil {
 			log.Println("ogdlrf.Serve, error writing body,", err)
-			return
+			break
 		}
 		if i != len(b) {
 			log.Println("ogdlrf.Serve, error writing body, LEN is", i, "should be", len(b))
 		}
 	}
+
+	log.Println("ending Server.process and closing connection")
 }
