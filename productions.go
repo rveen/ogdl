@@ -82,17 +82,10 @@ func (p *parser) Line() (bool, error) {
 	p.ev.SetLevel(l)
 
 	// Now we can expect a sequence of scalars and finally a block or comment.
-	// This parser is 'flow syntax' tolerant.
 
 	for {
 
-		gr, err := p.Group()
-
-		if gr {
-
-		} else if err != nil {
-			return false, err
-		} else if p.Comment() {
+		if p.Comment() {
 			return true, nil
 		}
 
@@ -104,6 +97,7 @@ func (p *parser) Line() (bool, error) {
 			break
 		} else {
 			b, ok := p.Scalar()
+
 			if ok {
 				p.ev.Add(b)
 			} else {
@@ -405,13 +399,13 @@ func (p *parser) Quoted() (string, bool) {
 			for ; n-lnl > 0; n-- {
 				buf = append(buf, ' ')
 			}
-		} /*else if c == '\\' {
+		} else if c == '\\' {
 			c = p.Read()
 			if c != '"' && c != '\'' {
-				//buf = append(buf, '\\')
+				buf = append(buf, '\\')
 			}
 			buf = append(buf, byte(c))
-		}*/
+		}
 	}
 
 	// May have zero length

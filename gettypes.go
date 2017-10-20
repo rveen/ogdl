@@ -138,6 +138,11 @@ func (g *Graph) ThisNumber() interface{} {
 	return number(g.This)
 }
 
+// ThisInt64 returns a int64 or nil
+func (g *Graph) ThisInt64() (int64, bool) {
+	return _int64f(g.This)
+}
+
 // Scalar returns the current node content, reducing the number of types
 // following these rules:
 //

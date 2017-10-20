@@ -35,7 +35,11 @@ type binParser struct {
 // NewBytesBinParser creates a parser that can convert a binary OGDL byte stream into an
 // ogdl.Graph object. To actually parse the stream, the method Parse() has to be invoked.
 func newBytesBinParser(b []byte) *binParser {
-	return &binParser{bufio.NewReader(bytes.NewReader(b)), 0, 0}
+	p := &binParser{bufio.NewReader(bytes.NewReader(b)), 0, 0}
+	if p.r == nil {
+		return nil
+	}
+	return p
 }
 
 // NewFileBinParser creates a parser that can convert a binary OGDL file into an
@@ -120,7 +124,7 @@ func (g *Graph) bin(level int, buf []byte) []byte {
 // Parse parses a binary OGDL stream and returns a Graph.
 func (p *binParser) Parse() *Graph {
 
-	if !p.header() {
+	if p == nil || !p.header() {
 		return nil
 	}
 
