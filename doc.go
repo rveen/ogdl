@@ -53,7 +53,7 @@
 //
 //    ip: 192.168.1.1, timeout: 20
 //
-// If the timeout parameter were not present, then the default value (60) will be
+// If the timeout parameter was not present, then the default value (60) will be
 // assigned to 'to'. The default value is optional, and can thus be omitted.
 //
 // The configuration file can be written in a conciser way:
