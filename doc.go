@@ -54,7 +54,8 @@
 //    ip: 192.168.1.1, timeout: 20
 //
 // If the timeout parameter was not present, then the default value (60) will be
-// assigned to 'to'. The default value is optional, and can thus be omitted.
+// assigned to 'to'. The default value is optional, but be aware that Int64() will
+// return 0 in case that the parameter doesn't exist.
 //
 // The configuration file can be written in a conciser way:
 //
