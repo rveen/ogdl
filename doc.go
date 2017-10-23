@@ -73,7 +73,7 @@
 //
 // For example (given the previous config file):
 //
-//     g := ogdl.ParseFile("config.g")
+//     g := ogdl.FromFile("config.g")
 //     t := ogdl.NewTemplate("The gateway's IP is $eth0.gateway")
 //     b := t.Process(g)
 //
