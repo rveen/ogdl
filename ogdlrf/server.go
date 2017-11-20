@@ -15,9 +15,10 @@ import (
 
 // Server hold the state of the server side of a remote function.
 type Server struct {
-	Host    string
-	Timeout int
-	rtable  map[string]Function
+	Host     string
+	Timeout  int
+	rtable   map[string]Function
+	Protocol int
 }
 
 var notFound = ogdl.FromString("error notFound")
@@ -52,6 +53,9 @@ func (srv *Server) router() Function {
 // Serve starts a remote function server. Handler functions should be set up with
 // AddRoute.
 func (s *Server) Serve() error {
+	if s.Protocol == 1 {
+		return Serve1(s.Host, s.router(), s.Timeout)
+	}
 	return Serve(s.Host, s.router(), s.Timeout)
 }
 
