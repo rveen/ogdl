@@ -60,14 +60,17 @@ func TestPath(t *testing.T) {
 }
 
 func TestFlowSyntaxInPath(t *testing.T) {
-	p := NewPath("(b, c)")
+	p := NewPath("(a, b)")
+	s := p.Show()
+	if s != "!p\n  !g\n    !e\n      !p\n        a\n    !e\n      !p\n        b" {
+		t.Error("Flow syntax in path", s)
+	}
 
-	fmt.Println(p.Show())
-
-	p = NewPath("(b c)")
-
-	fmt.Println(p.Show())
-
+	p = NewPath("(a b)")
+	s = p.Show()
+	if s != "!p\n  !g\n    !e\n      !p\n        a\n      !e\n        !p\n          b" {
+		t.Error("Flow syntax in path", s)
+	}
 }
 
 // binary.go
