@@ -59,6 +59,17 @@ func TestPath(t *testing.T) {
 	// Todo: a() check that it can tolerate zero arguments
 }
 
+func TestFlowSyntaxInPath(t *testing.T) {
+	p := NewPath("(b, c)")
+
+	fmt.Println(p.Show())
+
+	p = NewPath("(b c)")
+
+	fmt.Println(p.Show())
+
+}
+
 // binary.go
 
 func TestBinParser1(t *testing.T) {
@@ -522,14 +533,15 @@ func TestBehavior_Get(t *testing.T) {
 		t.Error("ogdl.Get (root node)")
 	}
 
-	g = FromString("a (b, c)")
+	g = FromString("a\n b\n c")
+
 	n = g.Get("a")
 	s = n.Text()
 	if s != "b\nc" {
 		t.Error("ogdl.Get (root node)")
 	}
 
-	g = FromString("a (b, c)")
+	g = FromString("a\n b\n c")
 	n = g.Get("a[0]")
 	s = n.Text()
 	if s != "b" {
@@ -542,21 +554,21 @@ func TestBehavior_Get(t *testing.T) {
 	if s != "b" {
 		t.Error("ogdl.Get")
 	}
+	/*
+		g = FromString("a (b c, d)")
+		n = g.Get("a").Get("b")
+		s = n.Text()
+		if s != "c" {
+			t.Error("ogdl.Get")
+		}
 
-	g = FromString("a (b c, d)")
-	n = g.Get("a").Get("b")
-	s = n.Text()
-	if s != "c" {
-		t.Error("ogdl.Get")
-	}
-
-	g = FromString("a (b (c, e), d)")
-	n = g.Get("a").Get("b")
-	s = n.Text()
-	if s != "c\ne" {
-		t.Error("ogdl.Get")
-	}
-
+		g = FromString("a (b (c, e), d)")
+		n = g.Get("a").Get("b")
+		s = n.Text()
+		if s != "c\ne" {
+			t.Error("ogdl.Get")
+		}
+	*/
 	// Index
 	g = FromString("a, b")
 	n = g.Get("[0]")
@@ -597,7 +609,7 @@ func Test_GetEquivalence(t *testing.T) {
 	}
 
 	// Index
-	g = FromString("a (c, b)")
+	g = FromString("a\n c\n b")
 	n = g.Get("a").Get("[0]")
 	m = g.Get("a[0]")
 
@@ -1001,7 +1013,7 @@ func TestEvalPath(t *testing.T) {
 
 func TestEvalPath_Index2(t *testing.T) {
 
-	g := FromString("a b (c, d)")
+	g := FromString("a\n b\n  c\n  d")
 
 	p := NewPath("a")
 	i := g.evalPath(p)
@@ -1018,7 +1030,7 @@ func TestEvalPath_Index2(t *testing.T) {
 }
 
 func TestEvalPath_Index(t *testing.T) {
-	g := FromString("a (b 1, b 2)")
+	g := FromString("a\n b 1\n b 2")
 
 	p := NewPath("a.b[0]")
 
@@ -1532,7 +1544,7 @@ func TestTemplateFor(ts *testing.T) {
 	}
 
 	// The variable
-	g = FromString("result (item id 0, item id 1)")
+	g = FromString("result\n  item id 0\n  item id 1")
 
 	t = NewTemplate("$for(a,result) $a.item.id $end")
 
@@ -1709,7 +1721,7 @@ func ExampleGraph_Set_a() {
 }
 
 func ExampleGraph_Get() {
-	g := FromString("a (b 1, c 2, b 3)")
+	g := FromString("a\n b 1\n c 2\n b 3")
 	fmt.Println(g.Get("a.b{0}").Text())
 	fmt.Println(g.Get("a.b{1}").Text())
 	fmt.Println("---")

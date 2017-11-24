@@ -96,13 +96,19 @@ func (p *parser) Line() (bool, error) {
 			p.Break()
 			break
 		} else {
-			b, ok := p.Scalar()
 
-			if ok {
-				p.ev.Add(b)
+			if p.nextByteIs('(') || p.nextByteIs(')') {
+				// TODO handle what previously was allowed (flow and block mixed)
+				// Maybe just treat ( and ) as text characters
 			} else {
-				p.Break()
-				break
+				b, ok := p.Scalar()
+
+				if ok {
+					p.ev.Add(b)
+				} else {
+					p.Break()
+					break
+				}
 			}
 		}
 
@@ -917,6 +923,9 @@ func (p *parser) ArgList() bool {
 
 	something := false
 
+	level := p.ev.Level()
+	defer p.ev.SetLevel(level)
+
 	for {
 		p.Space()
 
@@ -931,7 +940,11 @@ func (p *parser) ArgList() bool {
 		something = true
 
 		p.Space()
-		p.nextByteIs(',')
+		if !p.nextByteIs(',') {
+			p.ev.Inc()
+		} else {
+			p.ev.SetLevel(level)
+		}
 	}
 }
 
