@@ -32,6 +32,8 @@ func (rf *Client) Dial() error {
 
 func (rf *Client) Call(g *ogdl.Graph) (*ogdl.Graph, error) {
 
+	// log.Printf("Client.Call to %s, %d", rf.Host, rf.Protocol)
+
 	var err error
 	var r *ogdl.Graph
 
@@ -44,7 +46,7 @@ func (rf *Client) Call(g *ogdl.Graph) (*ogdl.Graph, error) {
 			}
 		}
 
-		if rf.Protocol == 1 {
+		if rf.Protocol != 2 {
 			r, err = rf.callV1(g)
 		} else {
 			r, err = rf.callV2(g)
@@ -77,17 +79,17 @@ func (rf *Client) callV2(g *ogdl.Graph) (*ogdl.Graph, error) {
 	rf.conn.SetDeadline(time.Now().Add(time.Second * time.Duration(rf.Timeout)))
 	i, err := rf.conn.Write(b4)
 	if i != 4 || err != nil {
-		log.Println("ogdlrf.Serve, error writing LEN header", i, err)
+		log.Println("ogdlrf.Client, error writing LEN header", i, err)
 		return nil, errors.New("error writing LEN header")
 	}
 
 	i, err = rf.conn.Write(buf)
 	if err != nil {
-		log.Println("ogdlrf.Serve, error writing body,", err)
+		log.Println("ogdlrf.Client, error writing body,", err)
 		return nil, errors.New("error writing body")
 	}
 	if i != len(buf) {
-		log.Println("ogdlrf.Serve, error writing body, LEN is", i, "should be", len(buf))
+		log.Println("ogdlrf.Client, error writing body, LEN is", i, "should be", len(buf))
 		return nil, errors.New("error writing body")
 	}
 

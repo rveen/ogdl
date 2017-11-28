@@ -148,7 +148,7 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 				}
 			}
 
-			return nil, errors.New("No method: " + fname)
+			return nil, errors.New("No method or field: " + fname)
 		}
 
 		// Pre-evaluate
