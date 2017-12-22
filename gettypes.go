@@ -54,7 +54,7 @@ func (g *Graph) Int64(def ...int64) int64 {
 }
 
 // Float64 returns the node as a float64. If the node is not a number, it
-// return NaN, or the default value if given.
+// returns NaN, or the default value if given.
 func (g *Graph) Float64(def ...float64) float64 {
 	n, ok := _float64f(g.String())
 	if !ok {

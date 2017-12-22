@@ -1,4 +1,4 @@
-// Copyright 2012-2014, Rolf Veen and contributors.
+// Copyright 2012-2017, Rolf Veen and contributors.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -55,7 +55,7 @@ func (g *Graph) evalBool(e *Graph) bool {
 	return b
 }
 
-// EvalPath traverses g following a path p. The path needs to be previously converted
+// evalPath traverses g following a path p. The path needs to be previously converted
 // to a Graph with NewPath().
 //
 // This function is similar to ogdl.Get, but for complexer paths. Code could
@@ -95,6 +95,7 @@ func (g *Graph) evalPath(p *Graph) interface{} {
 				return "[] does not evaluate to a valid integer"
 			}
 
+			iknow = true
 			nodePrev = node
 			node = node.GetAt(int(ix))
 
@@ -151,10 +152,13 @@ func (g *Graph) evalPath(p *Graph) interface{} {
 			return node.Len()
 
 		case "_this":
-			return node //.ThisString()
+			return node
 
 		case "_thisString":
 			return node.ThisString()
+
+		case "_string":
+			return node.String()
 
 		case TypeGroup:
 			// We have hit an argument list of a function
@@ -168,8 +172,6 @@ func (g *Graph) evalPath(p *Graph) interface{} {
 			return nil
 
 		case TypeExpression:
-			// An expression is to be used as path element
-			// The following format is supported: ( expression )
 			// The expression is evaluated and used as path element
 			itf := g.evalExpression(n.Out[0])
 			str := _string(itf)
@@ -205,8 +207,6 @@ func (g *Graph) evalPath(p *Graph) interface{} {
 		return nil
 	}
 
-	// log.Printf("EvalPath before simplification (%v)\n%s\n", iknow, node.Show())
-
 	// iknow is true if the path includes the token that is now at the root.
 	// We don't want to return what we already know.
 
@@ -218,18 +218,6 @@ func (g *Graph) evalPath(p *Graph) interface{} {
 		node2 := New()
 		node2.Add(node)
 		node = node2
-	}
-
-	// log.Printf("EvalPath after simplification 1\n%s\n", node.Show())
-
-	// this should not happen! (a result with no root)
-	/*
-		if node.Len() == 0 {
-			return node.This
-		}
-	*/
-	if node.Len() == 1 && node.Out[0].Len() == 0 {
-		return node.Out[0].This
 	}
 
 	return node
@@ -367,7 +355,7 @@ func (g *Graph) evalBinary(p *Graph) interface{} {
 // int* | float* | string
 // first element determines type
 func compare(v1, v2 interface{}, op int) bool {
-	//	fmt.Printf("compare [%v] [%v]\n", v1, v2)
+
 	i1, ok := _int64(v1)
 
 	if ok {
@@ -478,7 +466,7 @@ func (g *Graph) assign(p *Graph, v interface{}, op int) interface{} {
 
 // calc: int64 | float64 | string
 func calc(v1, v2 interface{}, op int) interface{} {
-	//fmt.Printf("calc: %v %v %s %s\n",v1,v2, _typeOf(v1),_typeOf(v2) )
+
 	i1, ok := _int64(v1)
 	i2, ok2 := _int64(v2)
 

@@ -715,18 +715,10 @@ func TestNilGraph(t *testing.T) {
 		t.Error("nil node size not 0")
 	}
 
-	if !g.IsNil() {
-		t.Error("IsNil() incorrect")
-	}
-
 	g = New(nil)
 
 	if g.Len() != 0 {
 		t.Error("nil node size not 0")
-	}
-
-	if !g.IsNil() {
-		t.Error("IsNil() incorrect")
 	}
 
 }
@@ -737,10 +729,6 @@ func TestNewGraph(t *testing.T) {
 
 	if g.Len() != 0 {
 		t.Error("new node size not 0")
-	}
-
-	if g.IsNil() {
-		t.Error("false IsNil()")
 	}
 }
 
@@ -977,7 +965,7 @@ func TestCompare(t *testing.T) {
 	}
 }
 
-func TestEvalPath(t *testing.T) {
+func TestEvalPath1(t *testing.T) {
 
 	// Create a path and check it
 	path := NewPath("a")
@@ -991,8 +979,8 @@ func TestEvalPath(t *testing.T) {
 
 	i := g.evalPath(path)
 
-	if _string(i) != "b" {
-		t.Error("EvalPath", _show(i))
+	if _show(i) != "_\n  b" {
+		t.Errorf("EvalPath\n[%s]\n", _show(i))
 	}
 
 	g = New()
@@ -1471,6 +1459,27 @@ func TestI2string(t *testing.T) {
 }
 
 // Templates
+
+func TestTemplateIndex(ts *testing.T) {
+	// Context
+	g := FromString("space\n  design\n    doc1\n    doc2")
+
+	t := NewTemplate("$space")
+
+	s := t.Process(g)
+
+	t = NewTemplate("$space[0]")
+
+	s2 := t.Process(g)
+
+	if string(s) != "design\n  doc1\n  doc2" {
+		ts.Errorf("\n[%s]\n", string(s))
+	}
+
+	if string(s2) != "doc1\ndoc2" {
+		ts.Errorf("\n[%s]\n", string(s2))
+	}
+}
 
 func TestTemplate1(ts *testing.T) {
 	// Context

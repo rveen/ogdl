@@ -1,4 +1,4 @@
-// Copyright 2012-2014, Rolf Veen and contributors.
+// Copyright 2012-2017, Rolf Veen and contributors.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -35,7 +35,7 @@ func (g *Graph) IsNil() bool {
 // Len returns the number of subnodes (outgoing edges, out degree) of this node.
 func (g *Graph) Len() int {
 	if g == nil {
-		return -1
+		return 0
 	}
 	return len(g.Out)
 }
@@ -51,7 +51,8 @@ func (g *Graph) ThisType() string {
 // TODO: Cycles are inferred if level>100, but nodes traversed are not
 // remembered (they should if cycles need to be detected).
 func (g *Graph) Depth() int {
-	if g.Len() == 0 {
+
+	if g == nil || g.Len() == 0 {
 		return 0
 	}
 
@@ -88,8 +89,8 @@ func (g *Graph) Equals(c *Graph) bool {
 }
 
 // Add adds a subnode to the current node.
-//
-// An eventual nil root will not be bypassed.
+// If the node to be added is a Graph, it is added as is, else it is wrapped
+// in a newly created Graph object.
 func (g *Graph) Add(n interface{}) *Graph {
 
 	if g == nil {
@@ -97,11 +98,7 @@ func (g *Graph) Add(n interface{}) *Graph {
 	}
 
 	if node, ok := n.(*Graph); ok && node != nil {
-		if node.IsNil() {
-			g.Out = append(g.Out, node.Out...)
-		} else {
-			g.Out = append(g.Out, node)
-		}
+		g.Out = append(g.Out, node)
 		return node
 	}
 

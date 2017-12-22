@@ -63,11 +63,11 @@ func NewTemplateFromBytes(b []byte) *Graph {
 
 // Process processes the parsed template, returning the resulting text in a byte array.
 // The variable parts are resolved out of the Graph given.
-func (g *Graph) Process(c *Graph) []byte {
+func (tpl *Graph) Process(ctx *Graph) []byte {
 
 	buffer := &bytes.Buffer{}
 
-	g.process(c, buffer)
+	tpl.process(ctx, buffer)
 
 	return buffer.Bytes()
 }
@@ -124,14 +124,14 @@ func (g *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
 			// XXX if not Graph
 
 			varname := n.GetAt(0).GetAt(0).GetAt(0).String()
-			it := c.Node(varname)
-			if it == nil {
-				it = c.Add(varname)
-			}
+			c.Delete(varname)
+			it := c.Add(varname)
 
 			for _, ee := range gi.Out {
+
 				it.Out = nil
 				it.Add(ee)
+
 				brk := n.GetAt(1).process(c, buffer)
 				if brk {
 					break
@@ -147,7 +147,7 @@ func (g *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
 	return false
 }
 
-// simplify converts !p TYPE in !TYPE for keywords if, end, else for and break.
+// simplify converts !p TYPE in !TYPE for keywords if, end, else, for and break.
 func (g *Graph) simplify() {
 
 	if g == nil {
