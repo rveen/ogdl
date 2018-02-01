@@ -1,4 +1,4 @@
-// Copyright 2012-2014, Rolf Veen and contributors.
+// Copyright 2012-2018, Rolf Veen and contributors.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -64,19 +64,19 @@ func newBinParser(r io.Reader) *binParser {
 // FromBinary converts an OGDL binary stream of bytes into a Graph.
 func FromBinary(b []byte) *Graph {
 	p := newBytesBinParser(b)
-	return p.Parse()
+	return p.parse()
 }
 
 // FromBinaryReader converts an OGDL binary stream of bytes into a Graph.
 func FromBinaryReader(r io.Reader) *Graph {
 	p := newBinParser(r)
-	return p.Parse()
+	return p.parse()
 }
 
 // FromBinaryFile converts an OGDL binary stream of bytes into a Graph.
 func FromBinaryFile(file string) *Graph {
 	p := newFileBinParser(file)
-	return p.Parse()
+	return p.parse()
 }
 
 // Binary converts a Graph to a binary OGDL byte stream.
@@ -122,13 +122,13 @@ func (g *Graph) bin(level int, buf []byte) []byte {
 }
 
 // Parse parses a binary OGDL stream and returns a Graph.
-func (p *binParser) Parse() *Graph {
+func (p *binParser) parse() *Graph {
 
 	if p == nil || !p.header() {
 		return nil
 	}
 
-	ev := newEventHandler()
+	ev := &SimpleEventHandler{}
 
 	for {
 		lev, bin, b := p.line(true)
@@ -137,12 +137,12 @@ func (p *binParser) Parse() *Graph {
 		}
 		// Store the content in the same format as it was sent (string or []byte)
 		if bin {
-			ev.AddBytesAt(b, lev)
+			ev.AddBytesAt(b, lev-1)
 		} else {
-			ev.AddAt(string(b), lev)
+			ev.AddAt(string(b), lev-1)
 		}
 	}
-	return ev.Graph()
+	return ev.Tree()
 }
 
 // newVarInt produces a variable integer from an int.

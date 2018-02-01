@@ -1,4 +1,4 @@
-// Copyright 2012-2015, Rolf Veen and contributors.
+// Copyright 2012-2018, Rolf Veen and contributors.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -42,7 +42,7 @@ import (
 // Functions calls are limited to whole paths.
 //
 // TODO: Catch panic() att Call(). Return named variables so that defer/recover
-// return something usefull
+// returns something usefull
 
 func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 
@@ -83,7 +83,8 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 			if len(path.Out) > 2 {
 				for _, arg := range path.Out[2].Out {
 					// log.Printf("arg:\n%s\n", arg.Show())
-					nn.Add(g.evalExpression(arg))
+					itf, _ := g.evalExpression(arg)
+					nn.Add(itf)
 				}
 			}
 
@@ -92,7 +93,8 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 		} else {
 			// Local function
 			for _, arg := range path.Out[1].Out {
-				args = append(args, g.evalExpression(arg))
+				itf, _ := g.evalExpression(arg)
+				args = append(args, itf)
 				// log.Printf("%v\n", args[len(args)-1])
 			}
 		}
@@ -139,6 +141,8 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 		// Check if it is a method
 		me := v.MethodByName(fname)
 
+		// log.Println("function.Ptr(2)", fname)
+
 		if !me.IsValid() {
 			// Try field
 			if v.Kind() == reflect.Struct {
@@ -155,7 +159,8 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 		var args []interface{}
 		if len(path.Out) > 2 {
 			for _, arg := range path.Out[2].Out {
-				args = append(args, g.evalExpression(arg))
+				itf, _ := g.evalExpression(arg)
+				args = append(args, itf)
 			}
 		}
 

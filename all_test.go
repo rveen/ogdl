@@ -45,14 +45,16 @@ func TestPath(t *testing.T) {
 	p = NewPath("a(b)")
 
 	s = p.Show()
-	if s != "!p\n  a\n  !g\n    !e\n      !p\n        b" {
+	if s != "!p\n  a\n  !a\n    !e\n      !p\n        b" {
 		t.Error("Path, index", s)
 	}
+}
 
-	p = NewPath("a.(b)")
+func TestExpressionInPath(t *testing.T) {
+	p := NewPath("a.(b)")
 
-	s = p.Show()
-	if s != "!p\n  a\n  !e\n    !e\n      !p\n        b" {
+	s := p.Show()
+	if s != "!p\n  a\n  !g\n    !e\n      !p\n        b" {
 		t.Error("Path, index", s)
 	}
 
@@ -68,6 +70,7 @@ func TestFlowSyntaxInPath(t *testing.T) {
 
 	p = NewPath("(a b)")
 	s = p.Show()
+	fmt.Printf("%s\n", s)
 	if s != "!p\n  !g\n    !e\n      !p\n        a\n      !e\n        !p\n          b" {
 		t.Error("Flow syntax in path", s)
 	}
@@ -230,7 +233,7 @@ func TestBinParser4(t *testing.T) {
 
 // parser.go
 
-func TestBehavior_Parser(t *testing.T) {
+func TestParser00(t *testing.T) {
 	p := FromString("a")
 
 	if p.This != nil {
@@ -238,7 +241,7 @@ func TestBehavior_Parser(t *testing.T) {
 	}
 
 	if p.Text() != "a" {
-		t.Error("", p.Text())
+		t.Error("e1", p.Text())
 	}
 
 	p = FromString("a,b")
@@ -248,15 +251,15 @@ func TestBehavior_Parser(t *testing.T) {
 	}
 
 	if p.Text() != "a\nb" {
-		t.Error("")
+		t.Error("e2", p.Show())
 	}
 }
 
 func TestParser0(t *testing.T) {
 
-	p := newParser(strings.NewReader("a b"))
+	p := NewParser(strings.NewReader("a b"))
 	p.Ogdl()
-	s := p.graph().Text()
+	s := p.Graph().Text()
 	if s != "a\n  b" {
 		t.Error("Parser0")
 	}
@@ -328,23 +331,23 @@ func TestParser2(t *testing.T) {
 
 	g := FromString(" a")
 	if g.Text() != "a" {
-		t.Error()
+		t.Error("e1", g.Text())
 	}
 
 	g = FromString("a b c d")
 	if g.Text() == "a\n  b\n    c\n    d" {
-		t.Error()
+		t.Error("e2")
 	}
 }
 
 // Blocks
 
 func TestParseBlock1(t *testing.T) {
-	p := newBytesParser([]byte("a \\\n  b\n  c"))
+	p := NewBytesParser([]byte("a \\\n  b\n  c"))
 	p.String()
 	p.Space()
 	p.ev.Inc()
-	s, ok := p.Block()
+	s, ok := p.Block(0)
 	if !ok || s != "b\nc" {
 		t.Error("block")
 	}
@@ -370,12 +373,12 @@ func TestBlockPrint(t *testing.T) {
 
 func TestComment(t *testing.T) {
 
-	g := FromString("#comment")
+	g := FromString("# comment")
 	if g.Text() != "" {
 		t.Error("comment 1:", g.Text())
 	}
 
-	g = FromString("#comment\nnot#acomment")
+	g = FromString("# comment\nnot#acomment")
 	if g.Text() != "not#acomment" {
 		t.Error("comment 2:", g.Text())
 	}
@@ -385,37 +388,37 @@ func TestComment(t *testing.T) {
 
 func TestUnread(t *testing.T) {
 
-	p := newStringParser("ab")
+	p := NewBytesParser([]byte("ab"))
 
-	c := p.Read()
+	c, _ := p.Byte()
 	if c != 'a' {
 		t.Fatal("read failed: a")
 	}
-	p.Unread()
-	c = p.Read()
+	p.UnreadByte()
+	c, _ = p.Byte()
 	if c != 'a' {
 		t.Fatal("Unread failed: a")
 	}
-	c = p.Read()
+	c, _ = p.Byte()
 	if c != 'b' {
 		t.Fatal("read failed: b")
 	}
-	c = p.Read()
+	c, _ = p.Byte()
 	if c != 0 {
 		t.Fatal("read failed: EOS")
 	}
 
-	p.Unread()
-	p.Unread()
-	c = p.Read()
+	p.UnreadByte()
+	p.UnreadByte()
+	c, _ = p.Byte()
 	if c != 'b' {
 		t.Fatal("Unread failed: b")
 	}
-	c = p.Read()
+	c, _ = p.Byte()
 	if c != 0 {
 		t.Fatal("read failed: EOS")
 	}
-	c = p.Read()
+	c, _ = p.Byte()
 	if c != 0 {
 		t.Fatal("read failed: EOS")
 	}
@@ -445,7 +448,7 @@ func TestChars(t *testing.T) {
 		t.Error("Error in character class")
 	}
 
-	if isTextChar('(') {
+	if !isTextChar('(') {
 		t.Error("Error in character class")
 	}
 
@@ -485,10 +488,6 @@ func TestChars(t *testing.T) {
 		t.Error("Error in character class")
 	}
 
-	if isOperatorChar(-1) {
-		t.Error("Error in character class")
-	}
-
 	if !isOperatorChar('>') {
 		t.Error("Error in character class")
 	}
@@ -508,7 +507,7 @@ func TestChars(t *testing.T) {
 
 // graph.go
 
-func TestBehavior_Get(t *testing.T) {
+func TestGet2(t *testing.T) {
 
 	g := FromString("a b")
 	n := g.Get("a")
@@ -557,21 +556,7 @@ func TestBehavior_Get(t *testing.T) {
 	if s != "b" {
 		t.Error("ogdl.Get")
 	}
-	/*
-		g = FromString("a (b c, d)")
-		n = g.Get("a").Get("b")
-		s = n.Text()
-		if s != "c" {
-			t.Error("ogdl.Get")
-		}
 
-		g = FromString("a (b (c, e), d)")
-		n = g.Get("a").Get("b")
-		s = n.Text()
-		if s != "c\ne" {
-			t.Error("ogdl.Get")
-		}
-	*/
 	// Index
 	g = FromString("a, b")
 	n = g.Get("[0]")
@@ -583,7 +568,7 @@ func TestBehavior_Get(t *testing.T) {
 }
 
 // Check correct get chaining
-func Test_GetEquivalence(t *testing.T) {
+func TestGet3(t *testing.T) {
 
 	// Simple case
 	g := FromString("a b c")
@@ -720,7 +705,6 @@ func TestNilGraph(t *testing.T) {
 	if g.Len() != 0 {
 		t.Error("nil node size not 0")
 	}
-
 }
 
 func TestNewGraph(t *testing.T) {
@@ -729,38 +713,6 @@ func TestNewGraph(t *testing.T) {
 
 	if g.Len() != 0 {
 		t.Error("new node size not 0")
-	}
-}
-
-func TestDepth(t *testing.T) {
-	g := New("a")
-
-	if g.Depth() != 0 {
-		t.Error("g.Depth() != 0")
-	}
-
-	g.Add("b")
-
-	if g.Depth() != 1 {
-		t.Error("g.Depth() != 1")
-	}
-
-	n := g.Add("c")
-
-	if g.Depth() != 1 {
-		t.Error("g.Depth() != 1")
-	}
-
-	nn := n.Add("d")
-
-	if g.Depth() != 2 {
-		t.Error("g.Depth() != 2")
-	}
-
-	nn.Add("e")
-
-	if g.Depth() != 3 {
-		t.Error("g.Depth() != 3")
 	}
 }
 
@@ -977,16 +929,16 @@ func TestEvalPath1(t *testing.T) {
 	g := New()
 	g.Add("a").Add("b")
 
-	i := g.evalPath(path)
+	i, _ := g.evalPath(path)
 
-	if _show(i) != "_\n  b" {
-		t.Errorf("EvalPath\n[%s]\n", _show(i))
+	if _string(i) != "b" {
+		t.Error("EvalPath", _show(i))
 	}
 
 	g = New()
 	g.Add("a").Add(1)
 
-	i = g.evalPath(path)
+	i, _ = g.evalPath(path)
 	s = _typeOf(i)
 	if i != 1 || s != "int" {
 		t.Error("EvalPath 1", _show(i), _typeOf(i))
@@ -994,7 +946,7 @@ func TestEvalPath1(t *testing.T) {
 
 	g = New()
 	g.Add("a").Add("id").Add("100")
-	i = g.evalPath(path)
+	i, _ = g.evalPath(path)
 
 	if _text(i) != "id\n  100" || _typeOf(i) != "*ogdl.Graph" {
 		println(_show(i), _typeOf(i))
@@ -1002,57 +954,57 @@ func TestEvalPath1(t *testing.T) {
 	}
 }
 
-func TestEvalPath_Index2(t *testing.T) {
+func TestEvalPath2(t *testing.T) {
 
 	g := FromString("a\n b\n  c\n  d")
 
 	p := NewPath("a")
-	i := g.evalPath(p)
+	i, _ := g.evalPath(p)
 	if _show(i) != "_\n  b\n    c\n    d" {
-		t.Error(_show(i))
+		t.Error("e1", _show(i))
 	}
 
 	p = NewPath("a[0]")
-	i = g.evalPath(p)
+	i, _ = g.evalPath(p)
 	if _show(i) != "_\n  b\n    c\n    d" {
-		t.Error(_show(i))
+		t.Error("e2", _show(i))
 	}
 
 }
 
-func TestEvalPath_Index(t *testing.T) {
+func TestEvalPath3(t *testing.T) {
 	g := FromString("a\n b 1\n b 2")
 
 	p := NewPath("a.b[0]")
 
-	i := g.evalPath(p)
+	i, _ := g.evalPath(p)
 
 	if _string(i) != "1" {
-		t.Error("EvalPath_Index", _string(i))
+		t.Error("e1", _show(i))
 	}
 
 	p = NewPath("a.b")
 
-	i = g.evalPath(p)
+	i, _ = g.evalPath(p)
 
 	if _string(i) != "1" {
-		t.Error("EvalPath_Index", _string(i))
+		t.Error("e2", _show(i))
 	}
 
 	p = NewPath("a.b{1}")
 
-	i = g.evalPath(p)
+	i, _ = g.evalPath(p)
 
 	if _string(i) != "2" {
-		t.Error("EvalPath_Selector", _text(i))
+		t.Error("e3", _text(i))
 	}
 
 	p = NewPath("a.b{}")
 
-	i = g.evalPath(p)
+	i, _ = g.evalPath(p)
 
 	if _text(i) != "1\n2" {
-		t.Error("EvalPath_Selector", _text(i))
+		t.Error("e4", _text(i))
 	}
 }
 
@@ -1062,42 +1014,42 @@ func TestEvalScalar(t *testing.T) {
 	p := New("1")
 
 	// constants
-	i := g.Eval(p)
+	i, _ := g.Eval(p)
 	s := reflect.TypeOf(i).String()
 	if i != int64(1) || s != "int64" {
 		t.Error("Eval constant")
 	}
 
 	p = New("1.1")
-	i = g.Eval(p)
+	i, _ = g.Eval(p)
 	s = reflect.TypeOf(i).String()
 	if i != float64(1.1) || s != "float64" {
 		t.Error("Eval constant int")
 	}
 
 	p = New(1.1)
-	i = g.Eval(p)
+	i, _ = g.Eval(p)
 	s = reflect.TypeOf(i).String()
 	if i != float64(1.1) || s != "float64" {
 		t.Error("Eval constant float")
 	}
 
 	p = New('c')
-	i = g.Eval(p)
+	i, _ = g.Eval(p)
 	s = reflect.TypeOf(i).String()
 	if i != int64('c') || s != "int64" {
 		t.Error("Eval constant char")
 	}
 
 	p = New("true")
-	i = g.Eval(p)
+	i, _ = g.Eval(p)
 	s = reflect.TypeOf(i).String()
 	if i != true || s != "bool" {
 		t.Error("Eval constant bool")
 	}
 
 	p = New(true)
-	i = g.Eval(p)
+	i, _ = g.Eval(p)
 	s = reflect.TypeOf(i).String()
 	if i != true || s != "bool" {
 		t.Error("Eval constant bool 2")
@@ -1117,7 +1069,8 @@ func TestEvalArgOfGraph(t *testing.T) {
 	g.Add("b").Add("c")
 
 	p := NewPath("a.(b)")
-	r := g.Eval(p)
+	fmt.Printf("%s\n", p.Show())
+	r, _ := g.Eval(p)
 
 	ty := _typeOf(r)
 
@@ -1133,40 +1086,40 @@ func TestEvalExpression(t *testing.T) {
 
 	// 'a' is a string constant
 	p := NewExpression("a=='b'")
-	r := g.Eval(p)
+	r, _ := g.Eval(p)
 
 	if _typeOf(r) != "bool" || r != true {
 		t.Error("a=='b'")
 	}
 
 	p = NewExpression("'a'!='b'")
-	r = g.Eval(p)
+	r, _ = g.Eval(p)
 	if _typeOf(r) != "bool" || r != true {
 		t.Error("'a'!='b'")
 	}
 
 	p = NewExpression("2>1")
-	r = g.Eval(p)
+	r, _ = g.Eval(p)
 	if _typeOf(r) != "bool" || r != true {
 		t.Error("'a'!='b'")
 	}
 	p = NewExpression("2>=2")
-	r = g.Eval(p)
+	r, _ = g.Eval(p)
 	if _typeOf(r) != "bool" || r != true {
 		t.Error("'a'!='b'")
 	}
 	p = NewExpression("1<2")
-	r = g.Eval(p)
+	r, _ = g.Eval(p)
 	if _typeOf(r) != "bool" || r != true {
 		t.Error("'a'!='b'")
 	}
 	p = NewExpression("1<=2")
-	r = g.Eval(p)
+	r, _ = g.Eval(p)
 	if _typeOf(r) != "bool" || r != true {
 		t.Error("'a'!='b'")
 	}
 	p = NewExpression("1<0")
-	r = g.Eval(p)
+	r, _ = g.Eval(p)
 	if _typeOf(r) != "bool" || r != false {
 		t.Error("'a'!='b'")
 	}
@@ -1174,13 +1127,13 @@ func TestEvalExpression(t *testing.T) {
 	// logic
 	e := "'false' || 'true'"
 	p = NewExpression(e)
-	r = g.Eval(p)
+	r, _ = g.Eval(p)
 	if _typeOf(r) != "bool" || r != true {
 		t.Error(e)
 	}
 	e = "'true' && 'true'"
 	p = NewExpression(e)
-	r = g.Eval(p)
+	r, _ = g.Eval(p)
 	if _typeOf(r) != "bool" || r != true {
 		t.Error(e)
 	}
@@ -1273,7 +1226,7 @@ func TestEvalExpression(t *testing.T) {
 
 	e = "1+2"
 	p = NewExpression(e)
-	r = g.Eval(p)
+	r, _ = g.Eval(p)
 
 	if r != int64(3) {
 		t.Error(e, _typeOf(r), _text(r))
@@ -1281,7 +1234,7 @@ func TestEvalExpression(t *testing.T) {
 
 	e = "1+2.0"
 	p = NewExpression(e)
-	r = g.Eval(p)
+	r, _ = g.Eval(p)
 
 	if r != float64(3) {
 		t.Error(e, _typeOf(r), _text(r))
@@ -1289,7 +1242,7 @@ func TestEvalExpression(t *testing.T) {
 
 	e = "1.0+2.0"
 	p = NewExpression(e)
-	r = g.Eval(p)
+	r, _ = g.Eval(p)
 
 	if r != float64(3) {
 		t.Error(e, _typeOf(r), _text(r))
@@ -1297,7 +1250,7 @@ func TestEvalExpression(t *testing.T) {
 
 	e = "2-4"
 	p = NewExpression(e)
-	r = g.Eval(p)
+	r, _ = g.Eval(p)
 
 	if r != int64(-2) {
 		t.Error(e, _typeOf(r), _text(r))
@@ -1305,7 +1258,7 @@ func TestEvalExpression(t *testing.T) {
 
 	e = "10*3"
 	p = NewExpression(e)
-	r = g.Eval(p)
+	r, _ = g.Eval(p)
 
 	if r != int64(30) {
 		t.Error(e, _typeOf(r), _text(r))
@@ -1313,7 +1266,7 @@ func TestEvalExpression(t *testing.T) {
 
 	e = "10.0*3"
 	p = NewExpression(e)
-	r = g.Eval(p)
+	r, _ = g.Eval(p)
 
 	if r != float64(30) {
 		t.Error(e, _typeOf(r), _text(r))
@@ -1321,7 +1274,7 @@ func TestEvalExpression(t *testing.T) {
 
 	e = "10*3.0"
 	p = NewExpression(e)
-	r = g.Eval(p)
+	r, _ = g.Eval(p)
 
 	if r != float64(30) {
 		t.Error(e, _typeOf(r), _text(r))
@@ -1329,7 +1282,7 @@ func TestEvalExpression(t *testing.T) {
 
 	e = "10/3"
 	p = NewExpression(e)
-	r = g.Eval(p)
+	r, _ = g.Eval(p)
 
 	if r != int64(3) {
 		t.Error(e, _typeOf(r), _text(r))
@@ -1337,7 +1290,7 @@ func TestEvalExpression(t *testing.T) {
 
 	e = "10%3"
 	p = NewExpression(e)
-	r = g.Eval(p)
+	r, _ = g.Eval(p)
 
 	if r != int64(1) {
 		t.Error(e, _typeOf(r), _text(r))
@@ -1460,27 +1413,6 @@ func TestI2string(t *testing.T) {
 
 // Templates
 
-func TestTemplateIndex(ts *testing.T) {
-	// Context
-	g := FromString("space\n  design\n    doc1\n    doc2")
-
-	t := NewTemplate("$space")
-
-	s := t.Process(g)
-
-	t = NewTemplate("$space[0]")
-
-	s2 := t.Process(g)
-
-	if string(s) != "design\n  doc1\n  doc2" {
-		ts.Errorf("\n[%s]\n", string(s))
-	}
-
-	if string(s2) != "doc1\ndoc2" {
-		ts.Errorf("\n[%s]\n", string(s2))
-	}
-}
-
 func TestTemplate1(ts *testing.T) {
 	// Context
 	g := New()
@@ -1523,22 +1455,30 @@ func TestTemplateIfEmptyString(ts *testing.T) {
 	}
 }
 
+func TestTemplateIf0(ts *testing.T) {
+	t := NewTemplate("a $if('true') x $end")
+
+	fmt.Printf("%s\n", t.Show())
+}
+
 func TestTemplateIf(ts *testing.T) {
 	// Context
 	g := New()
 
 	t := NewTemplate("$if('false') a $else b $end")
 
+	fmt.Printf("%s\n", t.Show())
+
 	s := t.Process(g)
 	if string(s) != " b " {
 		ts.Error("template")
 	}
-
-	t = NewTemplate("$if('true') a $else b $end")
-	s = t.Process(g)
-	if string(s) != " a " {
-		ts.Error("template")
-	}
+	/*
+		t = NewTemplate("$if('true') a $else b $end")
+		s = t.Process(g)
+		if string(s) != " a " {
+			ts.Error("template")
+		} */
 }
 
 func TestTemplateFor(ts *testing.T) {
@@ -1615,7 +1555,9 @@ func TestFunction2b(t *testing.T) {
 
 	path := NewPath("math.Sin(1.0)")
 
-	i := g.Eval(path)
+	fmt.Printf("%s\n", path.Show())
+
+	i, _ := g.Eval(path)
 	s := _typeOf(i)
 	v := _string(i)[:10]
 
@@ -1632,7 +1574,7 @@ func TestFunction2c(t *testing.T) {
 
 	path := NewPath("Sin(1.0)")
 
-	i := g.Eval(path)
+	i, _ := g.Eval(path)
 	s := _typeOf(i)
 	v := _string(i)[:10]
 
@@ -1765,7 +1707,7 @@ func ExampleNewTemplate() {
 func ExampleNewExpression() {
 	e := NewExpression("1-2+3")
 	g := New()
-	i := g.Eval(e)
+	i, _ := g.Eval(e)
 
 	fmt.Println(i)
 	// Output:
@@ -1792,6 +1734,6 @@ func ExampleGraph_Eval() {
 	fmt.Println(g.Eval(e))
 	fmt.Println(g.Eval(e2))
 	// Output:
-	// 7
-	// 43
+	// 7 <nil>
+	// 43 <nil>
 }

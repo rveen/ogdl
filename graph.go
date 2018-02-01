@@ -1,4 +1,4 @@
-// Copyright 2012-2017, Rolf Veen and contributors.
+// Copyright 2012-2018, Rolf Veen and contributors.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -7,7 +7,6 @@ package ogdl
 import (
 	"bytes"
 	"reflect"
-	"strconv"
 	"strings"
 )
 
@@ -27,15 +26,10 @@ func New(n ...interface{}) *Graph {
 	return &Graph{n[0], nil}
 }
 
-// IsNil returns true is this node has no content.
-func (g *Graph) IsNil() bool {
-	return g.This == nil
-}
-
 // Len returns the number of subnodes (outgoing edges, out degree) of this node.
 func (g *Graph) Len() int {
 	if g == nil {
-		return 0
+		return -1
 	}
 	return len(g.Out)
 }
@@ -43,31 +37,6 @@ func (g *Graph) Len() int {
 // ThisType returns the name of the native type contained in the current node.
 func (g *Graph) ThisType() string {
 	return reflect.TypeOf(g.This).String()
-}
-
-// Depth returns the depth of the graph if it is a tree, or -1 if it has
-// cycles.
-//
-// TODO: Cycles are inferred if level>100, but nodes traversed are not
-// remembered (they should if cycles need to be detected).
-func (g *Graph) Depth() int {
-
-	if g == nil || g.Len() == 0 {
-		return 0
-	}
-
-	i := 0
-	for _, n := range g.Out {
-		j := n.Depth()
-		if j > i {
-			i = j
-		}
-	}
-
-	if i > 100 {
-		return -1
-	}
-	return i + 1
 }
 
 // Equals returns true if the given graph and the receiver graph are equal.
@@ -89,8 +58,6 @@ func (g *Graph) Equals(c *Graph) bool {
 }
 
 // Add adds a subnode to the current node.
-// If the node to be added is a Graph, it is added as is, else it is wrapped
-// in a newly created Graph object.
 func (g *Graph) Add(n interface{}) *Graph {
 
 	if g == nil {
@@ -99,6 +66,23 @@ func (g *Graph) Add(n interface{}) *Graph {
 
 	if node, ok := n.(*Graph); ok && node != nil {
 		g.Out = append(g.Out, node)
+		return node
+	}
+
+	gg := Graph{n, nil}
+	g.Out = append(g.Out, &gg)
+	return &gg
+}
+
+// Add adds a subnode to the current node.
+func (g *Graph) addNodes(n interface{}) *Graph {
+
+	if g == nil {
+		return nil
+	}
+
+	if node, ok := n.(*Graph); ok && node != nil {
+		g.Out = append(g.Out, node.Out...)
 		return node
 	}
 
@@ -124,7 +108,6 @@ func (g *Graph) AddNodes(g2 *Graph) *Graph {
 // if their content equals the given key. Optionally recurse into subnodes
 // of the receiver graph.
 func (g *Graph) addEqualNodes(g2 *Graph, key string, recurse bool) *Graph {
-
 	if g2 != nil {
 		for _, n := range g2.Out {
 			if key == _string(n.This) {
@@ -179,7 +162,6 @@ func (g *Graph) Clone() *Graph {
 // Node returns the first subnode whose string value is equal to the given string.
 // It returns nil if not found.
 func (g *Graph) Node(s string) *Graph {
-
 	if g == nil || g.Out == nil {
 		return nil
 	}
@@ -225,131 +207,14 @@ func (g *Graph) GetAt(i int) *Graph {
 // selector := {N}
 // tokens can be quoted
 //
+
 func (g *Graph) Get(s string) *Graph {
 	if g == nil {
-		return (*Graph)(nil)
+		return nil
 	}
-	// Parse the input string into a Path graph.
 	path := NewPath(s)
-
-	g = g.get(path)
-	if g == nil {
-		return (*Graph)(nil)
-	}
+	g, _ = g.getPath(path)
 	return g
-}
-
-func (g *Graph) get(path *Graph) *Graph {
-	if g == nil || path == nil {
-		return nil
-	}
-
-	iknow := true
-
-	node := g
-
-	// nodePrev = Upper level of current node, used in {}
-	var nodePrev *Graph
-	// elemPrev = previous path element, used in {}
-	var elemPrev string
-
-	for _, elem := range path.Out {
-
-		p := elem.ThisString()
-
-		iknow = false
-
-		switch p {
-
-		case TypeIndex:
-
-			if elem.Len() == 0 {
-				return nil
-			}
-
-			i, err := strconv.Atoi(elem.Out[0].ThisString())
-			if err != nil {
-				return nil
-			}
-			nodePrev = node
-			node = node.GetAt(i)
-			if node == nil {
-				return nil
-			}
-			elemPrev = node.ThisString()
-
-		case TypeSelector:
-
-			if nodePrev == nil || nodePrev.Len() == 0 || len(elemPrev) == 0 {
-				return nil
-			}
-
-			r := New()
-
-			if elem.Len() == 0 {
-				// This case is {}, meaning that we must return
-				// all ocurrences of the token just before (elemPrev).
-
-				r.addEqualNodes(nodePrev, elemPrev, false)
-
-				if r.Len() == 0 {
-					return nil
-				}
-				node = r
-			} else {
-				i, err := strconv.Atoi(elem.Out[0].ThisString())
-				if err != nil || i < 0 {
-					return nil
-				}
-
-				// {0} must still be handled: add it to r
-
-				i++
-				// of all the nodes with name elemPrev, select the ith.
-				for _, nn := range nodePrev.Out {
-					if nn.ThisString() == elemPrev {
-						i--
-						if i == 0 {
-							r.AddNodes(nn)
-							node = r
-							break
-						}
-					}
-				}
-				if i > 0 {
-					return nil
-				}
-			}
-
-		case "_len":
-
-			nn := New()
-			nn.Add(node.Len())
-			return nn
-
-		default:
-
-			iknow = true
-			nodePrev = node
-			elemPrev = p
-			node = node.Node(p)
-		}
-
-		if node == nil {
-			break
-		}
-	}
-
-	if node == nil {
-		return nil
-	}
-
-	if node.This != nil && !iknow {
-		node2 := New()
-		node2.Add(node)
-		node = node2
-	}
-	return node
 }
 
 // Delete removes all subnodes with the given content
@@ -394,6 +259,7 @@ func (g *Graph) DeleteAt(i int) {
 // Set sets the first occurrence of the given path to the value given.
 //
 // TODO: Support indexes
+
 func (g *Graph) Set(s string, val interface{}) *Graph {
 	if g == nil {
 		return nil
@@ -465,7 +331,7 @@ func (g *Graph) set(path *Graph, val interface{}) *Graph {
 
 	node.Out = nil
 
-	return node.Add(val)
+	return node.addNodes(val)
 }
 
 // Text is the OGDL text emitter. It converts a Graph into OGDL text.

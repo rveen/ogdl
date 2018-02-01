@@ -1,5 +1,7 @@
 # OGDL for Go
 
+> This library is being refactored. If you depend on the stable version, import gopkg.in/rveen/ogdl.v1 instead.
+
 Package ogdl is used to process [OGDL](http://ogdl.org), the Ordered Graph Data Language.
 
 OGDL is a textual format to write trees or graphs of text, where indentation and spaces define the structure. Here is an example:
@@ -22,9 +24,11 @@ The [documentation](http://godoc.org/github.com/rveen/ogdl) of the package is ki
 
     go get github.com/rveen/ogdl
 
+    go get gopkg.in/rveen/ogdl.v1  (for the previous -stable- version)
+
 ## Discussion
 
-Use the [ogdl-go](https://groups.google.com/forum/?fromgroups&hl=en#!forum/ogdl-go) list, if necessary. 
+There is a list: [ogdl-go](https://groups.google.com/forum/?fromgroups&hl=en#!forum/ogdl-go).
 
 ## Example: a configuration file
 
@@ -51,4 +55,4 @@ will print
     ip: 192.168.1.1, timeout: 20
 
 If the timeout parameter were not present, then the default value (60) will be
-assigned to 'to'. 
+assigned to 'to'.

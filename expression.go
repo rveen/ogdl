@@ -1,4 +1,4 @@
-// Copyright 2012-2014, Rolf Veen and contributors.
+// Copyright 2012-2018, Rolf Veen and contributors.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -11,9 +11,10 @@ package ogdl
 //     expr1 := path | constant | op1 path | op1 constant | '(' expr ')' | op1 '(' expr ')'
 //     constant ::= quoted | number
 func NewExpression(s string) *Graph {
-	p := newStringParser(s)
+	p := NewBytesParser([]byte(s))
 	p.Expression()
-	g := p.graphTop(TypeExpression)
+	g := p.Graph()
+	g.This = TypeExpression
 	g._ast()
 
 	return g

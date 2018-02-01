@@ -1,4 +1,4 @@
-// Copyright 2012-2015, Rolf Veen and contributors.
+// Copyright 2012-2018, Rolf Veen and contributors.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -11,11 +11,6 @@ import (
 	"reflect"
 	"regexp"
 	"strconv"
-)
-
-const (
-	trueStr  = "true"
-	falseStr = "false"
 )
 
 // Find returns a Graph with all subnodes that match the regular
@@ -54,7 +49,7 @@ func (g *Graph) Int64(def ...int64) int64 {
 }
 
 // Float64 returns the node as a float64. If the node is not a number, it
-// returns NaN, or the default value if given.
+// return NaN, or the default value if given.
 func (g *Graph) Float64(def ...float64) float64 {
 	n, ok := _float64f(g.String())
 	if !ok {
@@ -305,7 +300,7 @@ func (g *Graph) GetInt64(path string) (int64, error) {
 	}
 	j, ok := _int64f(i.Out[0].This)
 	if !ok {
-		return 0, errors.New("not an integer")
+		return 0, errors.New("incompatible type")
 	}
 	return j, nil
 }
@@ -457,6 +452,10 @@ func _int64(i interface{}) (int64, bool) {
 func _boolf(i interface{}) (bool, bool) {
 
 	if i2, ok := i.(*Graph); ok {
+		// i2 can still be nil (of type *Graph!)
+		if i2 == nil {
+			return false, false
+		}
 		i = i2.This
 	}
 
@@ -564,8 +563,8 @@ func isNumber(s string) bool {
 	if len(s) == 0 {
 		return false
 	}
-	if !isDigit(int(s[0])) {
-		if len(s) < 2 || s[0] != '-' || !isDigit(int(s[1])) {
+	if !isDigit(rune(s[0])) {
+		if len(s) < 2 || s[0] != '-' || !isDigit(rune(s[1])) {
 			return false
 		}
 	}
@@ -586,7 +585,7 @@ func isInteger(s string) bool {
 	i := 0
 
 	for ; i < l; i++ {
-		if !isSpaceChar(int(s[i])) {
+		if !isSpaceChar(s[i]) {
 			break
 		}
 	}
@@ -597,7 +596,7 @@ func isInteger(s string) bool {
 
 	n := 0
 	for ; i < l; i++ {
-		if !isDigit(int(s[i])) {
+		if !isDigit(rune(s[i])) {
 			break
 		}
 		n++
@@ -608,7 +607,7 @@ func isInteger(s string) bool {
 	}
 
 	for ; i < l; i++ {
-		if !isSpaceChar(int(s[i])) {
+		if !isSpaceChar(s[i]) {
 			return false
 		}
 	}

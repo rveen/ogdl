@@ -1,4 +1,4 @@
-// Copyright 2012-2017, Rolf Veen and contributors.
+// Copyright 2012-2018, Rolf Veen and contributors.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -36,10 +36,12 @@ import (
 //    $end
 //
 func NewTemplate(s string) *Graph {
-	p := newStringParser(s)
+	p := NewParser(bytes.NewBuffer([]byte(s)))
 	p.Template()
 
-	t := p.graphTop(TypeTemplate)
+	t := p.Graph()
+	t.This = TypeTemplate
+
 	t.ast()
 	t.simplify()
 	t.flow()
@@ -50,10 +52,11 @@ func NewTemplate(s string) *Graph {
 // NewTemplateBytes has the same function as NewTemplate except that the input stream
 // is a byte array.
 func NewTemplateFromBytes(b []byte) *Graph {
-	p := newBytesParser(b)
+	p := NewParser(bytes.NewBuffer(b))
 	p.Template()
 
-	t := p.graphTop(TypeTemplate)
+	t := p.Graph()
+	t.This = TypeTemplate
 	t.ast()
 	t.simplify()
 	t.flow()
@@ -85,7 +88,7 @@ func (g *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
 
 		switch s {
 		case TypePath:
-			i := c.Eval(n)
+			i, _ := c.Eval(n)
 			buffer.WriteString(_text(i))
 
 		case TypeExpression:
@@ -110,7 +113,7 @@ func (g *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
 		case TypeFor:
 			// The first subnode (of !g) is a path
 			// The second is an expression evaluating to a list of elements
-			i := c.Eval(n.GetAt(0).GetAt(1))
+			i, _ := c.Eval(n.GetAt(0).GetAt(1))
 
 			// Check that i is iterable
 			gi, ok := i.(*Graph)
@@ -222,5 +225,75 @@ func (g *Graph) flow() {
 			i--
 		}
 	}
+
+}
+
+// Template ::= (Text | Variable)*
+func (p *Parser) Template() {
+	for {
+		if !p.Text() && !p.Variable() {
+			break
+		}
+	}
+}
+
+func (p *Parser) Text() bool {
+
+	s, b := p.TemplateText()
+
+	if b {
+		p.ev.Add(s)
+		return true
+	}
+	return false
+}
+
+// Variable parses variables in a template. They begin with $.
+func (p *Parser) Variable() bool {
+
+	c, _ := p.Byte()
+
+	if c != '$' {
+		p.UnreadByte()
+		return false
+	}
+
+	c, _ = p.Byte()
+	if c == '\\' {
+		p.ev.Add("$")
+		return true
+	}
+
+	p.UnreadByte()
+
+	i := p.ev.Level()
+
+	c, _ = p.Byte()
+	if c == '(' {
+		p.ev.Add(TypeExpression)
+		p.ev.Inc()
+		p.Expression()
+		p.Space()
+		p.Byte() // Should be ')'
+	} else {
+		p.ev.Add(TypePath)
+		p.ev.Inc()
+		if c != '{' {
+			p.UnreadByte()
+		} else {
+			p.Space()
+		}
+		p.Path()
+
+		if c == '{' {
+			p.Space()
+			p.Byte() // Should be '}'
+		}
+	}
+
+	// Reset the level
+	p.ev.SetLevel(i)
+
+	return true
 
 }

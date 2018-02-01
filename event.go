@@ -1,142 +1,103 @@
-// Copyright 2012-2014, Rolf Veen and contributors.
+// Copyright 2012-2018, Rolf Veen and contributors.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
 package ogdl
 
-// EventHandler receives events and produces a Graph.
-type eventHandler struct {
-	level int
-	gl    []*Graph
+// SimpleEventHandler receives events and produces a tree.
+type SimpleEventHandler struct {
+	current int           // Current level
+	max     int           // Max level
+	levels  []int         // Level of each item
+	items   []interface{} // Items
 }
 
-// NewEventHandler creates an event handler that produces a Graph object
-// from the events received.
-func newEventHandler() *eventHandler {
-	return &eventHandler{}
+// AddBytes creates a byte array node at the current level
+func (e *SimpleEventHandler) AddBytes(b []byte) {
+	e.items = append(e.items, b)
+	e.levels = append(e.levels, e.current)
 }
 
-// AddBytes creates a node at the current level, with the given byte array as content.
-func (e *eventHandler) AddBytes(b []byte) bool {
-
-	if len(e.gl) == 0 {
-		e.gl = append(e.gl, New())
-	}
-
-	for len(e.gl) < e.level+2 {
-		e.gl = append(e.gl, nil)
-	}
-
-	if e.gl[e.level] == nil {
-		return false
-	}
-
-	e.gl[e.level+1] = e.gl[e.level].Add(b)
-	return true
+// Add creates a string node at the current level.
+func (e *SimpleEventHandler) Add(s string) {
+	e.items = append(e.items, s)
+	e.levels = append(e.levels, e.current)
 }
 
-// Add creates a node at the current level.
-//
-// Only one error is possible: an empty graph where we should be writing the
-// event. It that case, false is returned.
-func (e *eventHandler) Add(s string) bool {
-
-	// Create a transparent node to start with,
-	// or else events at level 0 will overwrite
-	// each other.
-	if len(e.gl) == 0 {
-		e.gl = append(e.gl, New())
+// AddBytesAt creates a byte array node at the specified level
+func (e *SimpleEventHandler) AddBytesAt(b []byte, lv int) {
+	e.items = append(e.items, b)
+	e.levels = append(e.levels, lv)
+	if e.max < lv {
+		e.max = lv
 	}
-
-	for len(e.gl) < e.level+2 {
-		e.gl = append(e.gl, nil)
-	}
-
-	// Protection against holes can also be
-	// done at other places in this package.
-	if e.gl[e.level] == nil {
-		return false
-	}
-
-	e.gl[e.level+1] = e.gl[e.level].Add(s)
-	return true
 }
 
-// Delete removes the last event added
-func (e *eventHandler) Delete() {
-	g := e.gl[e.level]
-	n := g.Len()
-	g.DeleteAt(n - 1)
-
-	e.gl[e.level+1] = g.Out[n-2]
+// AddAt creates a string node at the specified level.
+func (e *SimpleEventHandler) AddAt(s string, lv int) {
+	e.items = append(e.items, s)
+	e.levels = append(e.levels, lv)
+	if e.max < lv {
+		e.max = lv
+	}
 }
 
-// AddAt creates a node at the specified level
-func (e *eventHandler) AddAt(s string, l int) {
-	e.level = l - 1
-	e.Add(s)
-}
-
-// AddBytesAt creates a node at the specified level, with the byte slice
-// as content.
-func (e *eventHandler) AddBytesAt(b []byte, l int) {
-	e.level = l - 1
-	e.AddBytes(b)
+// Delete removes the last node added
+func (e *SimpleEventHandler) Delete() {
+	e.items = e.items[0 : len(e.items)-1]
+	e.levels = e.levels[0 : len(e.levels)-1]
 }
 
 // Level returns the current level
-func (e *eventHandler) Level() int {
-	return e.level
+func (e *SimpleEventHandler) Level() int {
+	return e.current
 }
 
 // SetLevel sets the current level
-func (e *eventHandler) SetLevel(l int) {
-	e.level = l
+func (e *SimpleEventHandler) SetLevel(l int) {
+	e.current = l
+	if e.max < l {
+		e.max = l
+	}
 }
 
 // Inc increments the current level by 1.
-func (e *eventHandler) Inc() {
-	e.level++
+func (e *SimpleEventHandler) Inc() {
+	e.current++
+	if e.max < e.current {
+		e.max = e.current
+	}
 }
 
 // Dec decrements the current level by 1.
-func (e *eventHandler) Dec() {
-	if e.level > 0 {
-		e.level--
+func (e *SimpleEventHandler) Dec() {
+	if e.current > 0 {
+		e.current--
 	}
 }
 
-// Graph returns the Graph object built from
+// Tree returns the Graph object built from
 // the events sent to this event handler.
 //
-func (e *eventHandler) Graph() *Graph {
+func (e *SimpleEventHandler) Tree() *Graph {
 
-	// It could happen that Graph() is requested
-	// while no event has been sent, and thus
-	// e.gl hasn't been initialized yet.
-	if len(e.gl) == 0 {
-		return nil
+	g := make([]*Graph, e.max+2)
+	g[0] = New()
+	/*
+		println("ev.Tree", len(e.items), len(e.levels), e.max)
+
+		for i := 0; i < len(e.items); i++ {
+			fmt.Printf(" - %d %v\n", e.levels[i], e.items[i])
+		}
+	*/
+	for i := 0; i < len(e.items); i++ {
+		lv := e.levels[i] + 1
+		item := e.items[i]
+
+		n := New(item)
+		g[lv] = n
+		g[lv-1].Add(n)
 	}
 
-	return e.gl[0]
-}
-
-// GraphTop returns the Graph object built from
-// the events sent to this event handler, and sets
-// the root node to the string given.
-func (e *eventHandler) GraphTop(s string) *Graph {
-
-	if len(e.gl) == 0 {
-		return nil
-	}
-
-	g := e.gl[0]
-	if g == nil {
-		return nil
-	}
-	if g.IsNil() && len(s) > 0 {
-		g.This = s
-		return g
-	}
-	return g
+	return g[0]
 }

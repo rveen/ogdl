@@ -1,4 +1,4 @@
-// Copyright 2012-2014, Rolf Veen and contributors.
+// Copyright 2012-2018, Rolf Veen and contributors.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -84,7 +84,7 @@ func (log *Log) Get(i int64) (*Graph, int64, error) {
 	}
 
 	p := newBinParser(log.f)
-	g := p.Parse()
+	g := p.parse()
 
 	if p.n == 0 {
 		return g, -1, nil

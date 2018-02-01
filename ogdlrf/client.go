@@ -14,6 +14,13 @@ import (
 	"github.com/rveen/ogdl"
 )
 
+var (
+	errEmptyResponse = errors.New("Empty response")
+	errWritingHeader = errors.New("error writing LEN header")
+	errWritingBody   = errors.New("error writing body")
+	errWriting       = errors.New("could not write all bytes")
+)
+
 // Client represents a the client side of a remote function (also known as a remote
 // procedure call).
 type Client struct {
@@ -32,7 +39,7 @@ func (rf *Client) Dial() error {
 
 func (rf *Client) Call(g *ogdl.Graph) (*ogdl.Graph, error) {
 
-	// log.Printf("Client.Call to %s, %d", rf.Host, rf.Protocol)
+	log.Printf("Client.Call to %s, %d", rf.Host, rf.Protocol)
 
 	var err error
 	var r *ogdl.Graph
@@ -80,17 +87,17 @@ func (rf *Client) callV2(g *ogdl.Graph) (*ogdl.Graph, error) {
 	i, err := rf.conn.Write(b4)
 	if i != 4 || err != nil {
 		log.Println("ogdlrf.Client, error writing LEN header", i, err)
-		return nil, errors.New("error writing LEN header")
+		return nil, errWritingHeader
 	}
 
 	i, err = rf.conn.Write(buf)
 	if err != nil {
 		log.Println("ogdlrf.Client, error writing body,", err)
-		return nil, errors.New("error writing body")
+		return nil, errWritingBody
 	}
 	if i != len(buf) {
 		log.Println("ogdlrf.Client, error writing body, LEN is", i, "should be", len(buf))
-		return nil, errors.New("error writing body")
+		return nil, errWritingBody
 	}
 
 	// Read header response
@@ -126,12 +133,18 @@ func (rf *Client) callV2(g *ogdl.Graph) (*ogdl.Graph, error) {
 	log.Println("read ...", len(buf3))
 	g = ogdl.FromBinary(buf3)
 
+	if g == nil || g.Len() == 0 {
+		return nil, errEmptyResponse
+	}
+
 	// log.Println(" - end of Call")
 
 	return g, err
 }
 
 func (rf *Client) callV1(g *ogdl.Graph) (*ogdl.Graph, error) {
+
+	// log.Printf(" - callV1\n%s\n", g.Show())
 
 	rf.conn.SetDeadline(time.Now().Add(time.Second * 10))
 
@@ -143,14 +156,18 @@ func (rf *Client) callV1(g *ogdl.Graph) (*ogdl.Graph, error) {
 		log.Println("callv1", err)
 		return nil, err
 	}
-	if n < len(b) {
+	if n != len(b) {
 		rf.conn = nil
 		log.Println("callv1", err)
-		return nil, errors.New("could not write all bytes")
+		return nil, errWriting
 	}
 
 	// Read the incoming object
 	g = ogdl.FromBinaryReader(rf.conn)
+
+	if g == nil || g.Len() == 0 {
+		return nil, errEmptyResponse
+	}
 
 	return g, nil
 }
