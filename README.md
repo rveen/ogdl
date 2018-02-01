@@ -8,7 +8,7 @@ OGDL is a textual format to write trees or graphs of text, where indentation and
       ip 192.168.1.100
       gw 192.168.1.9
 
-The languange is simple, either in its textual representation or its number of productions (the specification rules), allowing for compact implementations.
+The language is simple, either in its textual representation or its number of productions (the specification rules), allowing for compact implementations.
 
 OGDL character streams are normally formed by Unicode characters, and encoded as UTF-8 strings, but any encoding that is ASCII transparent is compatible with the specification and the implementations.
 
@@ -51,4 +51,4 @@ will print
     ip: 192.168.1.1, timeout: 20
 
 If the timeout parameter were not present, then the default value (60) will be
-assigned to 'to'. The default value is optional, and can thus be omitted.
+assigned to 'to'. 
