@@ -1644,7 +1644,7 @@ func ExampleGraph_Set() {
 	//     d
 }
 
-func ExampleGraph_Set_Index() {
+func ExampleGraph_Set_index() {
 
 	g := FromString("a b c")
 	g.Set("a[1]", "d")

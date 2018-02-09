@@ -208,7 +208,7 @@ func (p *Parser) UnaryExpression() bool {
 	}
 
 	if p.PeekByte() == '(' {
-
+		p.Byte() // Consume the '('
 		p.ev.Add(TypeGroup)
 		p.ev.Inc()
 		p.Space()
@@ -216,7 +216,11 @@ func (p *Parser) UnaryExpression() bool {
 		p.Space()
 		p.ev.Dec()
 
-		return p.PeekByte() == ')'
+		if p.PeekByte() != ')' {
+			return false
+		}
+		p.Byte() // Consume the ')'
+		return true
 	}
 
 	return p.Path()

@@ -41,7 +41,7 @@ func toGraph(v interface{}) *Graph {
 		}
 	case map[string]interface{}:
 		for k, i := range v.(map[string]interface{}) {
-			g.Add(k).Add(toGraph(i))
+			g.Add(k).AddNodes(toGraph(i))
 		}
 	default:
 		g.Add(v)

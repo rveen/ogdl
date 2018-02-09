@@ -207,7 +207,6 @@ func (g *Graph) GetAt(i int) *Graph {
 // selector := {N}
 // tokens can be quoted
 //
-
 func (g *Graph) Get(s string) *Graph {
 	if g == nil {
 		return nil
@@ -257,9 +256,6 @@ func (g *Graph) DeleteAt(i int) {
 }
 
 // Set sets the first occurrence of the given path to the value given.
-//
-// TODO: Support indexes
-
 func (g *Graph) Set(s string, val interface{}) *Graph {
 	if g == nil {
 		return nil
@@ -338,9 +334,6 @@ func (g *Graph) set(path *Graph, val interface{}) *Graph {
 //
 // Strings are quoted if they contain spaces, newlines or special
 // characters. Null elements are not printed, and act as transparent nodes.
-//
-// BUG():Handle comments correctly.
-// BUG(): 2 times almost the same code:
 func (g *Graph) Text() string {
 	if g == nil {
 		return ""
