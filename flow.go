@@ -179,7 +179,7 @@ func (p *Parser) UnaryExpression() bool {
 
 	c := p.PeekByte()
 
-	if isLetter(rune(c)) {
+	if IsLetter(rune(c)) {
 		p.ev.Add(TypePath)
 		p.ev.Inc()
 		p.Path()

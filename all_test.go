@@ -428,63 +428,63 @@ func TestUnread(t *testing.T) {
 // Character classes. Samples.
 
 func TestChars(t *testing.T) {
-	if !isSpaceChar(' ') {
+	if !IsSpaceChar(' ') {
 		t.Error("Error in character class")
 	}
 
-	if !isBreakChar('\n') {
+	if !IsBreakChar('\n') {
 		t.Error("Error in character class")
 	}
 
-	if !isBreakChar('\r') {
+	if !IsBreakChar('\r') {
 		t.Error("Error in character class")
 	}
 
-	if !isSpaceChar('\t') {
+	if !IsSpaceChar('\t') {
 		t.Error("Error in character class")
 	}
 
-	if isSpaceChar('a') {
+	if IsSpaceChar('a') {
 		t.Error("Error in character class")
 	}
 
-	if !isTextChar('(') {
+	if !IsTextChar('(') {
 		t.Error("Error in character class")
 	}
 
-	if isTextChar('\t') {
+	if IsTextChar('\t') {
 		t.Error("Error in character class")
 	}
 
-	if !isTextChar('_') {
+	if !IsTextChar('_') {
 		t.Error("Error in character class")
 	}
 
-	if !isDigit('1') {
+	if !IsDigit('1') {
 		t.Error("Error in character class")
 	}
 
-	if isDigit('x') {
+	if IsDigit('x') {
 		t.Error("Error in character class")
 	}
 
-	if isDigit(-1) {
+	if IsDigit(-1) {
 		t.Error("Error in character class")
 	}
 
-	if isLetter('1') {
+	if IsLetter('1') {
 		t.Error("Error in character class")
 	}
 
-	if isLetter(-1) {
+	if IsLetter(-1) {
 		t.Error("Error in character class")
 	}
 
-	if !isEndChar(0) {
+	if !IsEndChar(0) {
 		t.Error("Error in character class")
 	}
 
-	if isEndChar('\t') {
+	if IsEndChar('\t') {
 		t.Error("Error in character class")
 	}
 

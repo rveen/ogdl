@@ -563,8 +563,8 @@ func isNumber(s string) bool {
 	if len(s) == 0 {
 		return false
 	}
-	if !isDigit(rune(s[0])) {
-		if len(s) < 2 || s[0] != '-' || !isDigit(rune(s[1])) {
+	if !IsDigit(rune(s[0])) {
+		if len(s) < 2 || s[0] != '-' || !IsDigit(rune(s[1])) {
 			return false
 		}
 	}
@@ -585,7 +585,7 @@ func isInteger(s string) bool {
 	i := 0
 
 	for ; i < l; i++ {
-		if !isSpaceChar(s[i]) {
+		if !IsSpaceChar(s[i]) {
 			break
 		}
 	}
@@ -596,7 +596,7 @@ func isInteger(s string) bool {
 
 	n := 0
 	for ; i < l; i++ {
-		if !isDigit(rune(s[i])) {
+		if !IsDigit(rune(s[i])) {
 			break
 		}
 		n++
@@ -607,7 +607,7 @@ func isInteger(s string) bool {
 	}
 
 	for ; i < l; i++ {
-		if !isSpaceChar(s[i]) {
+		if !IsSpaceChar(s[i]) {
 			return false
 		}
 	}

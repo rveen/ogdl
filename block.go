@@ -5,34 +5,8 @@
 package ogdl
 
 import (
-	"bytes"
 	"errors"
-	"io"
 )
-
-type Parser struct {
-	Lexer                     // Buffered byte and rune readed
-	ev    *SimpleEventHandler // The output (event) stream
-}
-
-func NewParser(rd io.Reader) *Parser {
-	p := Parser{}
-	p.rd = rd
-	p.lastByte = bufSize
-	p.buf = make([]byte, bufSize)
-	p.ev = &SimpleEventHandler{}
-	p.r = -1
-	p.fill()
-	return &p
-}
-
-func NewBytesParser(buf []byte) *Parser {
-	return NewParser(bytes.NewBuffer(buf))
-}
-
-func (p *Parser) Graph() *Graph {
-	return p.ev.Tree()
-}
 
 // Ogdl is the main function for parsing OGDL text.
 //

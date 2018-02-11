@@ -186,7 +186,24 @@ func (p *Lexer) String() (string, bool) {
 
 	for {
 		c, _ := p.Byte()
-		if !isTextChar(c) {
+		if !IsTextChar(c) {
+			break
+		}
+		buf = append(buf, c)
+	}
+
+	p.UnreadByte()
+	return string(buf), len(buf) > 0
+}
+
+// String is a concatenation of characters that are > 0x20 and not ','
+func (p *Lexer) StringNoComma() (string, bool) {
+
+	var buf []byte
+
+	for {
+		c, _ := p.Byte()
+		if !IsTextChar(c) || c == ',' {
 			break
 		}
 		buf = append(buf, c)
@@ -220,7 +237,7 @@ func (p *Lexer) End() bool {
 		return true
 	}
 
-	if isEndChar(c) {
+	if IsEndChar(c) {
 		return true
 	}
 	p.UnreadByte()
@@ -293,7 +310,7 @@ func (p *Lexer) Quoted(ind int) (string, bool, error) {
 
 	for {
 		c, _ := p.Byte()
-		if isEndChar(c) {
+		if IsEndChar(c) {
 			return "", false, ErrUnterminatedQuotedString
 		}
 
@@ -356,7 +373,7 @@ func (p *Lexer) Integer() (string, bool) {
 
 	for {
 		c, _ := p.Byte()
-		if !isDigit(rune(c)) {
+		if !IsDigit(rune(c)) {
 			break
 		}
 		buf = append(buf, c)
@@ -382,7 +399,7 @@ func (p *Lexer) Number() (string, bool) {
 
 	for {
 		c, _ := p.Byte()
-		if !isDigit(rune(c)) {
+		if !IsDigit(rune(c)) {
 			if !point && c == '.' {
 				point = true
 				buf = append(buf, c)
@@ -440,10 +457,10 @@ func (p *Lexer) Comment() bool {
 
 	if c == '#' {
 		c, _ = p.Byte()
-		if isSpaceChar(c) {
+		if IsSpaceChar(c) {
 			for {
 				c, _ = p.Byte()
-				if isEndChar(c) || isBreakChar(c) {
+				if IsEndChar(c) || IsBreakChar(c) {
 					break
 				}
 			}
@@ -492,7 +509,7 @@ func (p *Lexer) Block(nsp int) (string, bool) {
 		for {
 			c, _ = p.Byte()
 
-			if isEndChar(c) {
+			if IsEndChar(c) {
 				break
 			}
 
@@ -526,31 +543,46 @@ func (p *Lexer) Scalar(n int) (string, bool) {
 	return p.String()
 }
 
+// ScalarNoComma ::= quoted | stringNoComma
+func (p *Lexer) ScalarNoComma(n int) (string, bool) {
+	b, ok, _ := p.Quoted(n)
+	if ok {
+		return b, true
+	}
+	return p.StringNoComma()
+}
+
 // IsTextChar returns true for all integers > 32 and
 // are not OGDL separators (parenthesis and comma)
-func isTextChar(c byte) bool {
+func IsTextChar(c byte) bool {
 	return c > 32
 }
 
 // IsEndChar returns true for all integers < 32 that are not newline,
 // carriage return or tab.
-func isEndChar(c byte) bool {
+func IsEndChar(c byte) bool {
+	return c < 32 && c != '\t' && c != '\n' && c != '\r'
+}
+
+// IsEndRune returns true for all integers < 32 that are not newline,
+// carriage return or tab.
+func IsEndRune(c rune) bool {
 	return c < 32 && c != '\t' && c != '\n' && c != '\r'
 }
 
 // IsBreakChar returns true for 10 and 13 (newline and carriage return)
-func isBreakChar(c byte) bool {
+func IsBreakChar(c byte) bool {
 	return c == 10 || c == 13
 }
 
 // IsSpaceChar returns true for space and tab
-func isSpaceChar(c byte) bool {
+func IsSpaceChar(c byte) bool {
 	return c == 32 || c == 9
 }
 
 // IsTemplateTextChar returns true for all not END chars and not $
 func isTemplateTextChar(c byte) bool {
-	return !isEndChar(c) && c != '$'
+	return !IsEndChar(c) && c != '$'
 }
 
 // IsOperatorChar returns true for all operator characters used in OGDL
@@ -565,12 +597,12 @@ func isOperatorChar(c byte) bool {
 // ---- Following functions are the only ones that depend on Unicode --------
 
 // IsLetter returns true if the given character is a letter, as per Unicode.
-func isLetter(c rune) bool {
+func IsLetter(c rune) bool {
 	return unicode.IsLetter(c) || c == '_'
 }
 
 // IsDigit returns true if the given character a numeric digit, as per Unicode.
-func isDigit(c rune) bool {
+func IsDigit(c rune) bool {
 	return unicode.IsDigit(rune(c))
 }
 

@@ -10,6 +10,34 @@ import (
 	"io/ioutil"
 )
 
+type Parser struct {
+	Lexer                     // Buffered byte and rune readed
+	ev    *SimpleEventHandler // The output (event) stream
+}
+
+func NewParser(rd io.Reader) *Parser {
+	p := Parser{}
+	p.rd = rd
+	p.lastByte = bufSize
+	p.buf = make([]byte, bufSize)
+	p.ev = &SimpleEventHandler{}
+	p.r = -1
+	p.fill()
+	return &p
+}
+
+func NewBytesParser(buf []byte) *Parser {
+	return NewParser(bytes.NewBuffer(buf))
+}
+
+func (p *Parser) Graph() *Graph {
+	return p.ev.Tree()
+}
+
+func (p *Parser) Handler() *SimpleEventHandler {
+	return p.ev
+}
+
 // FromBytes parses OGDL text contained in a byte array. It returns a *Graph
 func FromBytes(b []byte) *Graph {
 	p := NewParser(bytes.NewBuffer(b))

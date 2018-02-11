@@ -373,7 +373,7 @@ func (g *Graph) evalExpression(p *Graph) (interface{}, error) {
 		return s, nil
 	}
 
-	if isLetter(rune(c)) {
+	if IsLetter(rune(c)) {
 		if s == "false" {
 			return false, nil
 		}
