@@ -154,7 +154,7 @@ func (p *Parser) line(ns int) (bool, error) {
 			break
 		}
 
-		b, ok := p.ScalarNoComma(n)
+		b, ok := p.Scalar(n)
 
 		if ok {
 			p.ev.Add(b)

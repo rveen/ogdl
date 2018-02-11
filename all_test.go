@@ -244,7 +244,7 @@ func TestParser00(t *testing.T) {
 		t.Error("e1", p.Text())
 	}
 
-	p = FromString("a,b")
+	p = FromString("a\nb")
 
 	if p.This != nil {
 		t.Error("parse should always return a nil root")
@@ -558,7 +558,7 @@ func TestGet2(t *testing.T) {
 	}
 
 	// Index
-	g = FromString("a, b")
+	g = FromString("a\nb")
 	n = g.Get("[0]")
 
 	s = n.Text()
@@ -1325,7 +1325,7 @@ func TestEvalBool(t *testing.T) {
 
 func TestGetTypes(t *testing.T) {
 
-	g := FromString("aa, ab, bb, axx, aj, vv")
+	g := FromString("aa\nab\nbb\naxx\naj\nvv")
 	r, _ := g.Find("a[a-b]")
 
 	if r.Len() != 2 || r.Text() != "aa\nab" {
@@ -1591,7 +1591,7 @@ func TestLog(t *testing.T) {
 
 	log, _ := OpenLog(file)
 
-	g := FromString("a b, c, d")
+	g := FromString("a b\nc\nd")
 	b := g.Binary()
 
 	n := log.Add(g)
@@ -1716,8 +1716,8 @@ func ExampleNewExpression() {
 
 func ExampleGraph_Check() {
 
-	schema := FromString("a !int, b !string, c !float, d !bool")
-	g := FromString("a 1, b s, c 1.0, d true")
+	schema := FromString("a !int\nb !string\nc !float\nd !bool")
+	g := FromString("a 1\nb s\nc 1.0\nd true")
 
 	b, message := schema.Check(g)
 	fmt.Println(b, message)

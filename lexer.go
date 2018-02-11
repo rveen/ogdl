@@ -196,23 +196,6 @@ func (p *Lexer) String() (string, bool) {
 	return string(buf), len(buf) > 0
 }
 
-// String is a concatenation of characters that are > 0x20 and not ','
-func (p *Lexer) StringNoComma() (string, bool) {
-
-	var buf []byte
-
-	for {
-		c, _ := p.Byte()
-		if !isTextChar(c) || c == ',' {
-			break
-		}
-		buf = append(buf, c)
-	}
-
-	p.UnreadByte()
-	return string(buf), len(buf) > 0
-}
-
 // Break (= newline) is NL, CR or CR+NL
 func (p *Lexer) Break() bool {
 	c, _ := p.Byte()
@@ -541,15 +524,6 @@ func (p *Lexer) Scalar(n int) (string, bool) {
 		return b, true
 	}
 	return p.String()
-}
-
-// Scalar ::= quoted | string
-func (p *Lexer) ScalarNoComma(n int) (string, bool) {
-	b, ok, _ := p.Quoted(n)
-	if ok {
-		return b, true
-	}
-	return p.StringNoComma()
 }
 
 // IsTextChar returns true for all integers > 32 and
