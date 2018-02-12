@@ -213,6 +213,23 @@ func (p *Lexer) StringNoComma() (string, bool) {
 	return string(buf), len(buf) > 0
 }
 
+// String is a concatenation of characters that are > 0x20 and not ','
+func (p *Lexer) StringStop(stopBytes []byte) (string, bool) {
+
+	var buf []byte
+
+	for {
+		c, _ := p.Byte()
+		if !IsTextChar(c) || bytes.IndexByte(stopBytes, c) != -1 {
+			break
+		}
+		buf = append(buf, c)
+	}
+
+	p.UnreadByte()
+	return string(buf), len(buf) > 0
+}
+
 // Break (= newline) is NL, CR or CR+NL
 func (p *Lexer) Break() bool {
 	c, _ := p.Byte()
