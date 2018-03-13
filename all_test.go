@@ -295,36 +295,6 @@ func TestParser1(t *testing.T) {
 	}
 }
 
-// line level resolution (need asserts)
-// TODO:
-/*
-func Test_Level(t *testing.T) {
-
-	p := NewStringParser("")
-
-	// First time any n will return level 0
-	p.setLevel(0, 0)
-	pr(p)
-
-	p.setLevel(1, 2)
-	pr(p)
-
-	p.setLevel(3, 4)
-	pr(p)
-}
-
-func pr(p *Parser) {
-	for i := 0; i < 10; i++ {
-		print(p.getLevel(i), " ")
-	}
-	println("")
-
-	for i := 0; i < 5; i++ {
-		print(p.ind[i], " ")
-	}
-	println("\n--")
-} */
-
 // Special cases
 
 func TestParser2(t *testing.T) {
@@ -358,6 +328,11 @@ func TestParseBlock2(t *testing.T) {
 	if g.Text() != "a\n \"b c\"" {
 		t.Error()
 	}
+}
+
+func TestParseBlock3(t *testing.T) {
+	g := FromString("a1 \\\n  b1\n  \na2\n  b2")
+	fmt.Println(g.Text())
 }
 
 func TestBlockPrint(t *testing.T) {

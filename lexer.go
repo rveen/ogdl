@@ -530,10 +530,11 @@ func (p *Lexer) Block(nsp int) (string, bool) {
 				break
 			}
 
-			buffer.WriteByte(c)
 			if c == 13 {
 				continue
 			}
+
+			buffer.WriteByte(c)
 
 			if c == 10 {
 				break
@@ -541,14 +542,22 @@ func (p *Lexer) Block(nsp int) (string, bool) {
 		}
 	}
 
-	// Remove trailing NL
-	if c == 10 {
-		if buffer.Len() > 0 {
-			buffer.Truncate(buffer.Len() - 1)
+	// Remove trailing NLs
+	s := buffer.String()
+	for {
+		if len(s) == 0 {
+			break
+		}
+
+		c := s[len(s)-1]
+		if c == 10 {
+			s = s[0 : len(s)-1]
+		} else {
+			break
 		}
 	}
 
-	return buffer.String(), true
+	return s, true
 }
 
 // Scalar ::= quoted | string

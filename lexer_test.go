@@ -154,27 +154,15 @@ func TestScalar(t *testing.T) {
 	fmt.Printf("end? %v\n", p.End())
 }
 
-func TestBlock(t *testing.T) {
-	r := strings.NewReader("hola")
+func TestBlockLex(t *testing.T) {
 
+	r := strings.NewReader("\\\n  hola\n  ")
 	p := NewParser(r)
 
 	s, b := p.Block(0)
 
-	fmt.Println("string", s, b)
-
-	r = strings.NewReader("\\\n  hola")
-
-	s, b = p.Block(0)
-
-	fmt.Println("string", s, b)
-
-	for {
-		c, err := p.Byte()
-		fmt.Printf("%c %v\n", c, err)
-		if err != nil {
-			break
-		}
+	if s != "hola" || b != true {
+		t.Error()
 	}
 }
 
