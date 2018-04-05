@@ -138,6 +138,11 @@ func (g *Graph) ThisInt64() (int64, bool) {
 	return _int64f(g.This)
 }
 
+// ThisFloat64 returns a float64
+func (g *Graph) ThisFloat64() (float64, bool) {
+	return _float64f(g.This)
+}
+
 // Scalar returns the current node content, reducing the number of types
 // following these rules:
 //

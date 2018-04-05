@@ -10,6 +10,33 @@ import (
 	"testing"
 )
 
+// json
+
+func TestJson1(t *testing.T) {
+	g := FromString("a\n 1\nb\n c")
+	b := g.JSON()
+
+	fmt.Println(string(b))
+}
+
+/*
+object:
+
+a
+  b
+    x 1
+    y 2
+  c
+    z 3
+
+*/
+func TestJson2(t *testing.T) {
+	g := FromString("a\n b\n  x 1\n  y2\n c z 3")
+	b := g.JSON()
+
+	fmt.Println(string(b))
+}
+
 // path.go
 
 func TestPath(t *testing.T) {
