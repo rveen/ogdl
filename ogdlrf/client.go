@@ -53,7 +53,7 @@ func (rf *Client) Call(g *ogdl.Graph) (*ogdl.Graph, error) {
 			}
 		}
 
-		if rf.Protocol != 2 {
+		if rf.Protocol == 1 {
 			r, err = rf.callV1(g)
 		} else {
 			r, err = rf.callV2(g)
