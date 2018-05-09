@@ -931,7 +931,7 @@ func TestEvalPath1(t *testing.T) {
 	g := New()
 	g.Add("a").Add("b")
 
-	i, _ := g.evalPath(path)
+	i, _ := g.Eval(path)
 
 	if _string(i) != "b" {
 		t.Error("EvalPath", _show(i))
@@ -940,7 +940,7 @@ func TestEvalPath1(t *testing.T) {
 	g = New()
 	g.Add("a").Add(1)
 
-	i, _ = g.evalPath(path)
+	i, _ = g.Eval(path)
 	s = _typeOf(i)
 	if i != 1 || s != "int" {
 		t.Error("EvalPath 1", _show(i), _typeOf(i))
@@ -948,7 +948,7 @@ func TestEvalPath1(t *testing.T) {
 
 	g = New()
 	g.Add("a").Add("id").Add("100")
-	i, _ = g.evalPath(path)
+	i, _ = g.Eval(path)
 
 	if _text(i) != "id\n  100" || _typeOf(i) != "*ogdl.Graph" {
 		println(_show(i), _typeOf(i))
@@ -962,13 +962,13 @@ func TestEvalPath2(t *testing.T) {
 
 	p := NewPath("a")
 	i, _ := g.evalPath(p)
-	if _show(i) != "_\n  b\n    c\n    d" {
+	if _text(i) != "b\n  c\n  d" {
 		t.Error("e1", _show(i))
 	}
 
 	p = NewPath("a[0]")
 	i, _ = g.evalPath(p)
-	if _show(i) != "_\n  b\n    c\n    d" {
+	if _text(i) != "b\n  c\n  d" {
 		t.Error("e2", _show(i))
 	}
 
@@ -981,16 +981,24 @@ func TestEvalPath3(t *testing.T) {
 
 	i, _ := g.evalPath(p)
 
-	if _string(i) != "1" {
-		t.Error("e1", _show(i))
+	if _text(i) != "1" {
+		t.Error("e1", "\n"+_show(i))
 	}
 
 	p = NewPath("a.b")
 
 	i, _ = g.evalPath(p)
 
-	if _string(i) != "1" {
+	if _text(i) != "1" {
 		t.Error("e2", _show(i))
+	}
+
+	p = NewPath("a[0]")
+
+	i, _ = g.evalPath(p)
+
+	if _text(i) != "b\n  1" {
+		t.Error("e2.1", _show(i))
 	}
 
 	p = NewPath("a.b{1}")
@@ -1483,7 +1491,7 @@ func TestTemplateIf(ts *testing.T) {
 		} */
 }
 
-func TestTemplateFor(ts *testing.T) {
+func TestTemplateFor1(ts *testing.T) {
 	// Context
 	g := New()
 	c := g.Add("b")
@@ -1507,6 +1515,24 @@ func TestTemplateFor(ts *testing.T) {
 		ts.Error("template: " + string(s))
 		println(g.Show())
 	}
+}
+
+func TestTemplateFor2(ts *testing.T) {
+
+	/*g := FromString("a\n  b\n  c\n")
+	println(g.Show())
+	p := NewPath("a[0]")
+	r, _ := g.Eval(p)
+	gr, ok := r.(*Graph)
+	if ok {
+		println(gr.Show())
+	}*/
+
+	g := FromString("spaces\n  cvm\n  req\n    stkreq\n    sysreq\n  design\n    hardware")
+	t := NewTemplate("$spaces\n----\n$for(s,spaces)$s._string\n$for(d,s[0])- $d\n$end$end")
+	s := t.Process(g)
+
+	println(string(s))
 }
 
 // function.go
@@ -1731,11 +1757,24 @@ func ExampleGraph_Eval() {
 	g := New()
 	g.Add("a").Add(4)
 	g.Add("b").Add("4")
+
+	a := NewExpression("a")
+	b := NewExpression("b")
+	i, _ := g.Eval(a)
+	fmt.Println(i, _typeOf(i))
+	i, _ = g.Eval(b)
+	fmt.Println(i, _typeOf(i))
+
 	e := NewExpression("a+3")
+	i, _ = g.Eval(e)
+	fmt.Println(i, _typeOf(i))
+
 	e2 := NewExpression("b+3")
-	fmt.Println(g.Eval(e))
-	fmt.Println(g.Eval(e2))
+	i, _ = g.Eval(e2)
+	fmt.Println(i, _typeOf(i))
 	// Output:
-	// 7 <nil>
-	// 43 <nil>
+	// 4 int
+	// 4 string
+	// 7 int64
+	// 43 string
 }

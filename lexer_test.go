@@ -65,7 +65,6 @@ func TestComment1(t *testing.T) {
 			break
 		}
 	}
-
 }
 
 func TestEnd(t *testing.T) {

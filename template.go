@@ -6,6 +6,7 @@ package ogdl
 
 import (
 	"bytes"
+	//	"fmt"
 )
 
 // NewTemplate parses a text template given as a string and converts it to a Graph.
@@ -113,13 +114,25 @@ func (g *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
 		case TypeFor:
 			// The first subnode (of !g) is a path
 			// The second is an expression evaluating to a list of elements
+
 			i, _ := c.Eval(n.GetAt(0).GetAt(1))
+
+			// fmt.Printf("-------\nfor (expr)\n-------\n%s\n\n", n.GetAt(0).GetAt(1).Show())
 
 			// Check that i is iterable
 			gi, ok := i.(*Graph)
-			if !ok || gi == nil {
+			if !ok || gi == nil || gi.Len() == 0 {
 				continue
 			}
+
+			// IMPORTANT: in paths that end with an index the following step is needed.
+			// Indexes in paths return a null root on top of the result which must
+			// be removed in order to reach the iterable level.
+			if gi.This == nil || gi.ThisString() == "_" {
+				gi = gi.Out[0]
+			}
+
+			// fmt.Printf("-------\nfor (evaluated)\n-------\n%s\n\n", gi.Show())
 
 			// The third is the subtemplate to travel
 			// println ("for type: ",reflect.TypeOf(i).String(), "ok",ok)

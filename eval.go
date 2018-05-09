@@ -17,11 +17,12 @@ func (g *Graph) Eval(e *Graph) (interface{}, error) {
 		return g.evalExpression(e)
 	}
 
+	// A complex object that is not a path or expression: return as is.
 	if e.Len() != 0 {
 		return e, nil
 	}
 
-	// Return constant in its normalizad native form
+	// A constant: return in its normalizad native form
 	// either: int64, float64, string, bool or []byte
 	return e.ThisScalar(), nil
 }
@@ -166,7 +167,7 @@ func (g *Graph) getPath(p *Graph) (*Graph, error) {
 //
 func (g *Graph) evalPath(p *Graph) (interface{}, error) {
 
-	// fmt.Printf("evalPath\n%s\n", p.Show())
+	// fmt.Printf("evalPath\n%s\n%s\n", p.Show(), g.Show())
 
 	if p.Len() == 0 || g == nil {
 		return nil, ErrInvalidArgs
@@ -305,7 +306,7 @@ func (g *Graph) evalPath(p *Graph) (interface{}, error) {
 		ctx = r
 	}
 
-	return ctx.scalar(false), nil
+	return _simplify(ctx), nil
 }
 
 // EvalExpression evaluates expressions (!e)
@@ -651,13 +652,13 @@ func (g *Graph) scalar(numeric bool) interface{} {
 	if g == nil || g.Len() == 0 {
 		return nil
 	}
-
-	if g.Len() > 1 || g.Out[0].Len() != 0 {
-		n := New()
-		n.AddNodes(g)
-		return n
-	}
-
+	/*
+		if g.Len() > 1 || g.Out[0].Len() != 0 {
+			n := New()
+			n.AddNodes(g)
+			return n
+		}
+	*/
 	itf := g.Out[0].This
 
 	if numeric {

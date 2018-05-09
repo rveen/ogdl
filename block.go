@@ -69,6 +69,9 @@ func (p *Parser) line(ns int) (bool, error) {
 	n, u := p.Space()
 
 	if n < ns {
+		for i := n; i > 0; i-- {
+			p.UnreadByte()
+		}
 		return false, nil
 	}
 

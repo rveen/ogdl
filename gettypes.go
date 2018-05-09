@@ -501,9 +501,23 @@ func _string(i interface{}) string {
 		return v
 	}
 	if v, ok := i.(*Graph); ok {
-		return v.ThisString()
+		return v.String()
 	}
 	return fmt.Sprint(i)
+}
+
+// simplify graphs in the form:
+// *
+//   something
+// to a scalar (return something)
+func _simplify(i interface{}) interface{} {
+
+	if v, ok := i.(*Graph); ok {
+		if v.Len() == 1 && v.Out[0].Len() == 0 {
+			return v.Out[0].This
+		}
+	}
+	return i
 }
 
 func _bytes(i interface{}) []byte {
