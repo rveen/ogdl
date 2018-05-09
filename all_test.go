@@ -1517,22 +1517,26 @@ func TestTemplateFor1(ts *testing.T) {
 	}
 }
 
-func TestTemplateFor2(ts *testing.T) {
-
-	/*g := FromString("a\n  b\n  c\n")
-	println(g.Show())
-	p := NewPath("a[0]")
-	r, _ := g.Eval(p)
-	gr, ok := r.(*Graph)
-	if ok {
-		println(gr.Show())
-	}*/
+func ExampleTemplate_For2() {
 
 	g := FromString("spaces\n  cvm\n  req\n    stkreq\n    sysreq\n  design\n    hardware")
-	t := NewTemplate("$spaces\n----\n$for(s,spaces)$s._string\n$for(d,s[0])- $d\n$end$end")
+	t := NewTemplate("$spaces\n$for(s,spaces)$s._string\n$for(d,s[0])- $d\n$end$end")
 	s := t.Process(g)
 
-	println(string(s))
+	fmt.Println(string(s))
+	// Output:
+	// cvm
+	// req
+	//   stkreq
+	//   sysreq
+	// design
+	//   hardware
+	// cvm
+	// req
+	// - stkreq
+	// - sysreq
+	// design
+	// - hardware
 }
 
 // function.go

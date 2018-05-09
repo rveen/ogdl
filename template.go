@@ -126,9 +126,9 @@ func (g *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
 			}
 
 			// IMPORTANT: in paths that end with an index the following step is needed.
-			// Indexes in paths return a null root on top of the result which must
+			// Indexes in paths return a '[' root on top of the result which must
 			// be removed in order to reach the iterable level.
-			if gi.This == nil || gi.ThisString() == "_" {
+			if gi.ThisString() == "[" {
 				gi = gi.Out[0]
 			}
 

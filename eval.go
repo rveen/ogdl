@@ -302,6 +302,7 @@ func (g *Graph) evalPath(p *Graph) (interface{}, error) {
 
 	if addRoot {
 		r := New()
+		r.This = "["
 		r.Add(ctx)
 		ctx = r
 	}
