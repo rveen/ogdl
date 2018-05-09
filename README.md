@@ -32,7 +32,7 @@ There is a list: [ogdl-go](https://groups.google.com/forum/?fromgroups&hl=en#!fo
 
 ## Example: a configuration file
 
-If we have a text file 'conf.g' like this:
+If we have a text file 'conf.ogdl' like this:
 
     eth0
       ip
@@ -45,7 +45,7 @@ If we have a text file 'conf.g' like this:
         20
 then,
 
-    g := ogdl.FromFile("conf.g")
+    g := ogdl.FromFile("conf.ogdl")
     ip := g.Get("eth0.ip").String()
     to := g.Get("eth0.timeout").Int64(60)
     println("ip:",ip,", timeout:",to)
