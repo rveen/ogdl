@@ -29,7 +29,7 @@
 //
 // An example
 //
-// If we have a text file 'config.g' containing:
+// If we have a text file 'config.ogdl' containing:
 //
 //    eth0
 //      ip
@@ -43,7 +43,7 @@
 //
 // then,
 //
-//    g := ogdl.FromFile("config.g")
+//    g := ogdl.FromFile("config.ogdl")
 //    ip := g.Get("eth0.ip").String()
 //    to := g.Get("eth0.timeout").Int64(60)
 //
@@ -73,7 +73,7 @@
 //
 // For example (given the previous config file):
 //
-//     g := ogdl.FromFile("config.g")
+//     g := ogdl.FromFile("config.ogdl")
 //     t := ogdl.NewTemplate("The gateway's IP is $eth0.gateway")
 //     b := t.Process(g)
 //
