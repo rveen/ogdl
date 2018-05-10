@@ -71,7 +71,7 @@ func (g *Graph) getPath(p *Graph) (*Graph, error) {
 				return nil, ErrInvalidIndex
 			}
 
-			r := New()
+			r := New("[")
 			r.Add(ctx.GetAt(ix))
 			ctxPrev = ctx
 			ctx = r
@@ -82,7 +82,7 @@ func (g *Graph) getPath(p *Graph) (*Graph, error) {
 				return nil, ErrInvalidIndex
 			}
 
-			r := New()
+			r := New("{")
 			ix := pathNode.index(g) + 1 // 0 is {}, {n} becomes ix = n+1
 
 			if ix < 0 {
@@ -208,7 +208,7 @@ func (g *Graph) evalPath(p *Graph) (interface{}, error) {
 				return nil, ErrInvalidIndex
 			}
 
-			r := New()
+			r := New("{")
 			ix := pathNode.index(g) + 1 // 0 is {}, {n} becomes ix = n+1
 
 			if ix < 0 {
@@ -301,8 +301,7 @@ func (g *Graph) evalPath(p *Graph) (interface{}, error) {
 	}
 
 	if addRoot {
-		r := New()
-		r.This = "["
+		r := New("[")
 		r.Add(ctx)
 		ctx = r
 	}

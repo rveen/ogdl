@@ -15,7 +15,7 @@ func hello() string {
 
 func TestTemplate10(t *testing.T) {
 	// Context
-	g := New()
+	g := New("_")
 	g.Add("b").Add(1)
 	g.Set("T", template)
 	g.Set("H", hello)
@@ -38,7 +38,7 @@ func TestTemplate10(t *testing.T) {
 
 func TestTemplate11(t *testing.T) {
 	// Context
-	g := New()
+	g := New(nil)
 	item := g.Add("result").Add("item")
 	item.Add("x0").Add("yo")
 	item.Add("id").Add("1")
@@ -54,7 +54,7 @@ func TestTemplate11(t *testing.T) {
 
 func TestTemplate12(t *testing.T) {
 	// Context
-	g := New()
+	g := New(nil)
 	item := g.Add("result").Add("item")
 	item.Add("x0").Add("yo")
 	item.Add("id").Add("1")

@@ -48,7 +48,7 @@ func FromJSON(buf []byte) (*Graph, error) {
 
 func toGraph(v interface{}) *Graph {
 
-	g := New()
+	g := New("_")
 
 	switch v.(type) {
 

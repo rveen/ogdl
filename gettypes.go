@@ -24,7 +24,7 @@ func (g *Graph) Find(re string) (*Graph, error) {
 		return nil, err
 	}
 
-	r := New()
+	r := New("_")
 
 	for _, node := range g.Out {
 		if exp.MatchString(node.ThisString()) {

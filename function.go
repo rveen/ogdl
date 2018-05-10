@@ -78,7 +78,7 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 
 		if v.Type() == rfType {
 			// Remote function
-			n := New()
+			n := New("_")
 			nn := n.Add(path.Out[1].This)
 			if len(path.Out) > 2 {
 				for _, arg := range path.Out[2].Out {

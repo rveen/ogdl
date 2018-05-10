@@ -82,7 +82,7 @@ func (e *SimpleEventHandler) Dec() {
 func (e *SimpleEventHandler) Tree() *Graph {
 
 	g := make([]*Graph, e.max+2)
-	g[0] = New()
+	g[0] = New("_")
 	/*
 		println("ev.Tree", len(e.items), len(e.levels), e.max)
 

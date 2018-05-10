@@ -205,7 +205,7 @@ func TestBinParser3(t *testing.T) {
 	r := []byte{1, 'G', 0, 1, 'a', 0, 2, 'b', 0, 0}
 
 	// Starting from a NilGraph
-	g := New()
+	g := New(nil)
 	b := g.Binary()
 
 	if len(b) != 4 {
@@ -213,7 +213,7 @@ func TestBinParser3(t *testing.T) {
 	}
 
 	// Starting from a NilGraph
-	g = New()
+	g = New(nil)
 	g.Add("a").Add("b")
 	b = g.Binary()
 
@@ -263,19 +263,11 @@ func TestBinParser4(t *testing.T) {
 func TestParser00(t *testing.T) {
 	p := FromString("a")
 
-	if p.This != nil {
-		t.Error("parse should always return a nil root")
-	}
-
 	if p.Text() != "a" {
 		t.Error("e1", p.Text())
 	}
 
 	p = FromString("a\nb")
-
-	if p.This != nil {
-		t.Error("parse should always return a nil root")
-	}
 
 	if p.Text() != "a\nb" {
 		t.Error("e2", p.Show())
@@ -518,7 +510,7 @@ func TestGet2(t *testing.T) {
 		t.Error("ogdl.Get")
 	}
 
-	g = New()
+	g = New(nil)
 	g.Add("a").Add("b")
 
 	n = g.Get("a")
@@ -619,7 +611,7 @@ func TestGet3(t *testing.T) {
 func TestCopyAndSubstitute(t *testing.T) {
 	g := FromString("a b, c d, aa a")
 
-	g2 := New()
+	g2 := New("_")
 	g2.Copy(g)
 
 	if !g.Equals(g2) {
@@ -696,7 +688,7 @@ func TestGet1(t *testing.T) {
 
 func TestNilGraph(t *testing.T) {
 
-	g := New()
+	g := New(nil)
 
 	if g.Len() != 0 {
 		t.Error("nil node size not 0")
@@ -732,13 +724,13 @@ func TestAddChaining(t *testing.T) {
 		t.Error("Add chaining")
 	}
 
-	g = New().Add("b")
+	g = New(nil).Add("b")
 	s = g.Show()
 	if s != "b" {
 		t.Error("Add after NewGraph")
 	}
 
-	g = New()
+	g = New(nil)
 	g.Add("a").Add("b")
 	s = g.Show()
 	if s != "_\n  a\n    b" {
@@ -747,7 +739,7 @@ func TestAddChaining(t *testing.T) {
 }
 
 func TestGraph_String(t *testing.T) {
-	g := New()
+	g := New("*")
 	s := g.String()
 	if len(s) != 0 {
 		t.Error("g.String() returns something with a nil node")
@@ -756,7 +748,7 @@ func TestGraph_String(t *testing.T) {
 
 func TestGraph_Delete(t *testing.T) {
 
-	g := New()
+	g := New(nil)
 
 	g.Add(1)
 	g.Add(2)
@@ -928,7 +920,7 @@ func TestEvalPath1(t *testing.T) {
 		t.Error("NewPath", s)
 	}
 
-	g := New()
+	g := New(nil)
 	g.Add("a").Add("b")
 
 	i, _ := g.Eval(path)
@@ -937,7 +929,7 @@ func TestEvalPath1(t *testing.T) {
 		t.Error("EvalPath", _show(i))
 	}
 
-	g = New()
+	g = New(nil)
 	g.Add("a").Add(1)
 
 	i, _ = g.Eval(path)
@@ -946,7 +938,7 @@ func TestEvalPath1(t *testing.T) {
 		t.Error("EvalPath 1", _show(i), _typeOf(i))
 	}
 
-	g = New()
+	g = New(nil)
 	g.Add("a").Add("id").Add("100")
 	i, _ = g.Eval(path)
 
@@ -1020,7 +1012,7 @@ func TestEvalPath3(t *testing.T) {
 
 func TestEvalScalar(t *testing.T) {
 
-	g := New()
+	g := New(nil)
 	p := New("1")
 
 	// constants
@@ -1074,7 +1066,7 @@ func TestEvalScalar(t *testing.T) {
 //
 func TestEvalArgOfGraph(t *testing.T) {
 
-	g := New()
+	g := New(nil)
 	g.Add("a").Add("c").Add(int64(1))
 	g.Add("b").Add("c")
 
@@ -1149,7 +1141,7 @@ func TestEvalExpression(t *testing.T) {
 	}
 
 	// Assign
-	g = New()
+	g = New(nil)
 	e = "a=1"
 	p = NewExpression(e)
 	g.Eval(p)
@@ -1309,7 +1301,7 @@ func TestEvalExpression(t *testing.T) {
 
 func TestEvalBool(t *testing.T) {
 
-	g := New()
+	g := New(nil)
 	g.Add("a").Add(1)
 
 	p := NewExpression("1=='1'")
@@ -1352,7 +1344,7 @@ func TestGetTypes(t *testing.T) {
 		t.Error("Float64")
 	}
 
-	g = New()
+	g = New(nil)
 	g.Add(float32(111.2))
 	if g.Float64() != 111.2 {
 		t.Error("Float64")
@@ -1425,7 +1417,7 @@ func TestI2string(t *testing.T) {
 
 func TestTemplate1(ts *testing.T) {
 	// Context
-	g := New()
+	g := New(nil)
 	g.Add("b").Add(1)
 
 	t := NewTemplate("a $b")
@@ -1439,7 +1431,7 @@ func TestTemplate1(ts *testing.T) {
 
 func TestTemplateOperatorConfusion(ts *testing.T) {
 	// Context
-	g := New()
+	g := New(nil)
 	g.Add("b").Add(1)
 
 	t := NewTemplate("$(a='/') $a $b")
@@ -1453,7 +1445,7 @@ func TestTemplateOperatorConfusion(ts *testing.T) {
 
 func TestTemplateIfEmptyString(ts *testing.T) {
 	// Context
-	g := New()
+	g := New(nil)
 	g.Add("b").Add("")
 
 	t := NewTemplate("$if(b=='') text $end")
@@ -1473,7 +1465,7 @@ func TestTemplateIf0(ts *testing.T) {
 
 func TestTemplateIf(ts *testing.T) {
 	// Context
-	g := New()
+	g := New(nil)
 
 	t := NewTemplate("$if('false') a $else b $end")
 
@@ -1493,7 +1485,7 @@ func TestTemplateIf(ts *testing.T) {
 
 func TestTemplateFor1(ts *testing.T) {
 	// Context
-	g := New()
+	g := New(nil)
 	c := g.Add("b")
 	c.Add(1)
 	c.Add(2)
@@ -1543,7 +1535,7 @@ func ExampleTemplate_For2() {
 
 func TestFunction3(ts *testing.T) {
 	// Context
-	g := New()
+	g := New(nil)
 
 	t := NewTemplate("$(R.y='h')$(R.x0='user')")
 	t.Process(g)
@@ -1581,7 +1573,7 @@ func Sin(x float64) float64 {
 
 func TestFunction2b(t *testing.T) {
 
-	g := New()
+	g := New(nil)
 	f := g.Add("math")
 	f.Add(&Math{})
 
@@ -1600,7 +1592,7 @@ func TestFunction2b(t *testing.T) {
 
 func TestFunction2c(t *testing.T) {
 
-	g := New()
+	g := New(nil)
 	f := g.Add("Sin")
 	f.Add(Sin)
 
@@ -1692,7 +1684,7 @@ func ExampleGraph_Set_index() {
 
 func ExampleGraph_Set_a() {
 
-	g := New()
+	g := New(nil)
 
 	g.Add("R").Add("b")
 	r := g.Node("R")
@@ -1728,7 +1720,7 @@ func ExampleGraph_Get() {
 func ExampleNewTemplate() {
 	p := NewTemplate("Hello, $user")
 
-	g := New()
+	g := New("_")
 	g.Add("user").Add("Jenny")
 
 	fmt.Println(string(p.Process(g)))
@@ -1738,7 +1730,7 @@ func ExampleNewTemplate() {
 
 func ExampleNewExpression() {
 	e := NewExpression("1-2+3")
-	g := New()
+	g := New(nil)
 	i, _ := g.Eval(e)
 
 	fmt.Println(i)
@@ -1758,7 +1750,7 @@ func ExampleGraph_Check() {
 }
 
 func ExampleGraph_Eval() {
-	g := New()
+	g := New("_")
 	g.Add("a").Add(4)
 	g.Add("b").Add("4")
 

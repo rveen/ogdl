@@ -17,13 +17,9 @@ type Graph struct {
 	Out  []*Graph
 }
 
-// New returns a pointer to Graph, which will be either empty or contain the
-// (optional) object given.
-func New(n ...interface{}) *Graph {
-	if len(n) == 0 {
-		return &Graph{}
-	}
-	return &Graph{n[0], nil}
+// New returns a pointer to Graph initialized to the object given.
+func New(n interface{}) *Graph {
+	return &Graph{n, nil}
 }
 
 // Len returns the number of subnodes (outgoing edges, out degree) of this node.
@@ -150,7 +146,7 @@ func (g *Graph) Clone() *Graph {
 		return nil
 	}
 
-	c := New()
+	c := New(nil)
 	c.This = g.This
 
 	for _, n := range g.Out {
