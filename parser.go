@@ -10,11 +10,13 @@ import (
 	"io/ioutil"
 )
 
+// Parser embeds Lexer and holds some state
 type Parser struct {
 	Lexer                     // Buffered byte and rune readed
 	ev    *SimpleEventHandler // The output (event) stream
 }
 
+// NewParser return a new Parser from a Reader
 func NewParser(rd io.Reader) *Parser {
 	p := Parser{}
 	p.rd = rd
@@ -26,14 +28,17 @@ func NewParser(rd io.Reader) *Parser {
 	return &p
 }
 
+// NewBytesParser returns a new Parser from a byte array
 func NewBytesParser(buf []byte) *Parser {
 	return NewParser(bytes.NewBuffer(buf))
 }
 
+// Graph returns the parser tree
 func (p *Parser) Graph() *Graph {
 	return p.ev.Tree()
 }
 
+// Handler returns the event handler being used
 func (p *Parser) Handler() *SimpleEventHandler {
 	return p.ev
 }

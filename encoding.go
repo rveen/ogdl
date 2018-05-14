@@ -163,12 +163,12 @@ func (g *Graph) writeString(buf *bytes.Buffer) {
 func (g *Graph) writeValue(buf *bytes.Buffer) {
 	n, ok := _int64(g.This)
 	if ok {
-		buf.WriteString(fmt.Sprintf("%ld ", n))
+		buf.WriteString(fmt.Sprintf("%d ", n))
 		return
 	}
 	f, ok := _float64(g.This)
 	if ok {
-		buf.WriteString(fmt.Sprintf("%lf ", f))
+		buf.WriteString(fmt.Sprintf("%f ", f))
 		return
 	}
 	g.writeString(buf)

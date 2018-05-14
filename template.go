@@ -6,7 +6,6 @@ package ogdl
 
 import (
 	"bytes"
-	//	"fmt"
 )
 
 // NewTemplate parses a text template given as a string and converts it to a Graph.
@@ -50,7 +49,7 @@ func NewTemplate(s string) *Graph {
 	return t
 }
 
-// NewTemplateBytes has the same function as NewTemplate except that the input stream
+// NewTemplateFromBytes has the same function as NewTemplate except that the input stream
 // is a byte array.
 func NewTemplateFromBytes(b []byte) *Graph {
 	p := NewParser(bytes.NewBuffer(b))
@@ -67,11 +66,11 @@ func NewTemplateFromBytes(b []byte) *Graph {
 
 // Process processes the parsed template, returning the resulting text in a byte array.
 // The variable parts are resolved out of the Graph given.
-func (tpl *Graph) Process(ctx *Graph) []byte {
+func (g *Graph) Process(ctx *Graph) []byte {
 
 	buffer := &bytes.Buffer{}
 
-	tpl.process(ctx, buffer)
+	g.process(ctx, buffer)
 
 	return buffer.Bytes()
 }
@@ -250,6 +249,7 @@ func (p *Parser) Template() {
 	}
 }
 
+// Text returns the next text part of the template (until it finds a variable)
 func (p *Parser) Text() bool {
 
 	s, b := p.TemplateText()

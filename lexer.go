@@ -5,6 +5,7 @@
 // license that can be found in the LICENSE file associated with
 // the Go sources.
 //
+
 // Objectives
 //
 // - reduce the number of Read's to the underlying reader.
@@ -12,6 +13,7 @@
 // - methods for reading Byte, Rune, String, Token, Space, etc, adapted to the needs
 //   of parsing OGDL text and paths
 //
+
 package ogdl
 
 import (
@@ -28,16 +30,23 @@ const (
 )
 
 var (
-	ErrInvalidUnreadByte        = errors.New("invalid use of UnreadByte")
-	ErrInvalidUnreadRune        = errors.New("invalid use of UnreadRune")
-	ErrNegativeCount            = errors.New("negative count")
-	ErrEOS                      = errors.New("EOS")
-	errNegativeRead             = errors.New("reader returned negative count from Read")
-	ErrSpaceNotUniform          = errors.New("space has both tabs and spaces")
+	// ErrInvalidUnreadByte reports an unsuccessful UnreadByte.
+	ErrInvalidUnreadByte = errors.New("invalid use of UnreadByte")
+
+	// ErrInvalidUnreadRune reports an unsuccessful UnreadRune.
+	ErrInvalidUnreadRune = errors.New("invalid use of UnreadRune")
+
+	// ErrEOS indicates the end of the stream
+	ErrEOS = errors.New("EOS")
+
+	errNegativeRead = errors.New("reader returned negative count from Read")
+
+	// ErrSpaceNotUniform indicates mixed use of spaces and tabs for indentation
+	ErrSpaceNotUniform = errors.New("space has both tabs and spaces")
+
+	// ErrUnterminatedQuotedString is obvious.
 	ErrUnterminatedQuotedString = errors.New("quoted string not terminated")
 )
-
-// Buffered input.
 
 // Lexer implements buffering for an io.Reader object, with multiple byte unread
 // operations allowed.
@@ -52,7 +61,7 @@ type Lexer struct {
 
 const maxConsecutiveEmptyReads = 100
 
-// NewParser returns a new Lexer whose buffer has the default size.
+// NewLexer returns a new Lexer whose buffer has the default size.
 func NewLexer(rd io.Reader) *Lexer {
 	p := Lexer{}
 	p.rd = rd
@@ -68,30 +77,30 @@ func NewLexer(rd io.Reader) *Lexer {
 // The first time, the buffer is filled completely. After reading the last byte from
 // the buffer, the last half is preserved and moved to the start, and the other
 // half filled with new bytes, if available.
-func (b *Lexer) fill() {
+func (p *Lexer) fill() {
 
-	if b.r >= 0 && b.r < bufSize {
+	if p.r >= 0 && p.r < bufSize {
 		return
 	}
 
 	// Read new data: try a limited number of times.
 	// The first time read the full buffer, else only half.
 	offset := 0
-	if b.r >= 0 {
-		copy(b.buf, b.buf[halfSize:])
-		b.r = halfSize
+	if p.r >= 0 {
+		copy(p.buf, p.buf[halfSize:])
+		p.r = halfSize
 		offset = halfSize
 	} else {
-		b.r = 0
+		p.r = 0
 	}
 
 	for i := maxConsecutiveEmptyReads; i > 0; i-- {
-		n, err := b.rd.Read(b.buf[offset:])
+		n, err := p.rd.Read(p.buf[offset:])
 		if n < 0 {
 			panic(errNegativeRead)
 		}
 		if err != nil {
-			b.err = err
+			p.err = err
 			break
 		}
 
@@ -99,24 +108,30 @@ func (b *Lexer) fill() {
 		if offset >= halfSize {
 			break
 		}
-		// println("n", n, "offset", offset)
 	}
 
-	b.lastByte = offset
+	p.lastByte = offset
 }
 
-func (b *Lexer) Error() error {
-	err := b.err
-	b.err = nil
+func (p *Lexer) Error() error {
+	err := p.err
+	p.err = nil
 	return err
 }
 
-func (b *Lexer) PeekByte() byte {
-	c, _ := b.Byte()
-	b.UnreadByte()
+// PeekByte returns the next byte witohut consuming it
+func (p *Lexer) PeekByte() byte {
+	c, err := p.Byte()
+
+	if err != nil {
+		return 0
+	}
+
+	p.UnreadByte()
 	return c
 }
 
+// PeekRune returns the next rune witohut consuming it
 func (p *Lexer) PeekRune() (rune, error) {
 	r, err := p.Rune()
 
@@ -129,52 +144,52 @@ func (p *Lexer) PeekRune() (rune, error) {
 
 // Byte reads and returns a single byte.
 // If no byte is available, returns 0 and an error.
-func (b *Lexer) Byte() (byte, error) {
-	if b.lastByte < bufSize && b.r >= b.lastByte {
-		b.r = b.lastByte + 1
+func (p *Lexer) Byte() (byte, error) {
+	if p.lastByte < bufSize && p.r >= p.lastByte {
+		p.r = p.lastByte + 1
 		return 0, ErrEOS
 	}
 
-	c := b.buf[b.r]
-	b.r++
-	b.fill()
+	c := p.buf[p.r]
+	p.r++
+	p.fill()
 	return c, nil
 }
 
 // UnreadByte unreads the last byte. It can unread all buffered bytes.
-func (b *Lexer) UnreadByte() error {
-	if b.r <= 0 {
-		return ErrInvalidUnreadByte
+func (p *Lexer) UnreadByte() {
+	if p.r <= 0 {
+		return
 	}
 
-	b.r--
-	return nil
+	p.r--
+	return
 }
 
-// ReadRune reads a single UTF-8 encoded Unicode character and returns the
+// Rune reads a single UTF-8 encoded Unicode character and returns the
 // rune. If the encoded rune is invalid, it consumes one byte
 // and returns unicode.ReplacementChar (U+FFFD) with a size of 1.
-func (b *Lexer) Rune() (rune, error) {
+func (p *Lexer) Rune() (rune, error) {
 
-	b.fill()
+	p.fill()
 
-	r, size := rune(b.buf[b.r]), 1
+	r, size := rune(p.buf[p.r]), 1
 	if r >= utf8.RuneSelf {
-		r, size = utf8.DecodeRune(b.buf[b.r:b.lastByte])
+		r, size = utf8.DecodeRune(p.buf[p.r:p.lastByte])
 	}
-	b.r += size
-	b.lastRuneSize = append(b.lastRuneSize, size)
+	p.r += size
+	p.lastRuneSize = append(p.lastRuneSize, size)
 	return r, nil
 }
 
 // UnreadRune unreads the last rune.
-func (b *Lexer) UnreadRune() error {
-	if len(b.lastRuneSize) == 0 {
+func (p *Lexer) UnreadRune() error {
+	if len(p.lastRuneSize) == 0 {
 		return ErrInvalidUnreadRune
 	}
 
-	b.r -= b.lastRuneSize[len(b.lastRuneSize)-1]
-	b.lastRuneSize = b.lastRuneSize[:len(b.lastRuneSize)-1]
+	p.r -= p.lastRuneSize[len(p.lastRuneSize)-1]
+	p.lastRuneSize = p.lastRuneSize[:len(p.lastRuneSize)-1]
 
 	return nil
 }
@@ -196,24 +211,7 @@ func (p *Lexer) String() (string, bool) {
 	return string(buf), len(buf) > 0
 }
 
-// String is a concatenation of characters that are > 0x20 and not ','
-func (p *Lexer) StringNoComma() (string, bool) {
-
-	var buf []byte
-
-	for {
-		c, _ := p.Byte()
-		if !IsTextChar(c) || c == ',' {
-			break
-		}
-		buf = append(buf, c)
-	}
-
-	p.UnreadByte()
-	return string(buf), len(buf) > 0
-}
-
-// String is a concatenation of characters that are > 0x20 and not ','
+// StringStop is a concatenation of text bytes that are not in the parameter stopBytes
 func (p *Lexer) StringStop(stopBytes []byte) (string, bool) {
 
 	var buf []byte
@@ -303,7 +301,7 @@ func (p *Lexer) Space() (int, byte) {
 
 	p.UnreadByte()
 
-	var r byte = 0
+	var r byte
 	if m == 0 {
 		r = ' '
 	} else if n == 0 {
@@ -313,7 +311,8 @@ func (p *Lexer) Space() (int, byte) {
 	return n + m, r
 }
 
-// Quoted string. Can have newlines in it.
+// Quoted string. Can have newlines in it. It returns the string if any, a bool
+// indicating if a quoted string was found, and a possible error.
 func (p *Lexer) Quoted(ind int) (string, bool, error) {
 
 	c1, _ := p.Byte()
@@ -400,8 +399,9 @@ func (p *Lexer) Integer() (string, bool) {
 	return string(buf), len(buf) > 0
 }
 
-// Integer returns true if it finds an (unsigned) integer at the current
+// Number returns true if it finds a number at the current
 // parser position. It returns also the number found.
+// TODO recognize exp notation ?
 func (p *Lexer) Number() (string, bool) {
 
 	var buf []byte
@@ -569,15 +569,6 @@ func (p *Lexer) Scalar(n int) (string, bool) {
 	return p.String()
 }
 
-// ScalarNoComma ::= quoted | stringNoComma
-func (p *Lexer) ScalarNoComma(n int) (string, bool) {
-	b, ok, _ := p.Quoted(n)
-	if ok {
-		return b, true
-	}
-	return p.StringNoComma()
-}
-
 // IsTextChar returns true for all integers > 32 and
 // are not OGDL separators (parenthesis and comma)
 func IsTextChar(c byte) bool {
@@ -629,7 +620,7 @@ func IsLetter(c rune) bool {
 
 // IsDigit returns true if the given character a numeric digit, as per Unicode.
 func IsDigit(c rune) bool {
-	return unicode.IsDigit(rune(c))
+	return unicode.IsDigit(c)
 }
 
 // IsTokenChar returns true for letters, digits and _ (as per Unicode).

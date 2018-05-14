@@ -1509,7 +1509,7 @@ func TestTemplateFor1(ts *testing.T) {
 	}
 }
 
-func ExampleTemplate_For2() {
+func ExampleGraph_Process_for() {
 
 	g := FromString("spaces\n  cvm\n  req\n    stkreq\n    sysreq\n  design\n    hardware")
 	t := NewTemplate("$spaces\n$for(s,spaces)$s._string\n$for(d,s[0])- $d\n$end$end")

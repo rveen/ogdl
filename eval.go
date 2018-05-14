@@ -456,10 +456,13 @@ func (g *Graph) evalBinary(p *Graph) interface{} {
 // first element determines type
 func compare(v1, v2 interface{}, op int) bool {
 
-	i1, ok := _int64(v1)
+	var i1, i2 int64
+	var ok bool
+
+	i1, ok = _int64(v1)
 
 	if ok {
-		i2, ok := _int64f(v2)
+		i2, ok = _int64f(v2)
 		if !ok {
 			return false
 		}
@@ -481,9 +484,11 @@ func compare(v1, v2 interface{}, op int) bool {
 		return false
 	}
 
-	f1, ok := _float64(v1)
+	var f1, f2 float64
+
+	f1, ok = _float64(v1)
 	if ok {
-		f2, ok := _float64f(v2)
+		f2, ok = _float64f(v2)
 		if !ok {
 			return false
 		}
@@ -646,44 +651,12 @@ func calc(v1, v2 interface{}, op int) interface{} {
 	return _string(v1) + _string(v2)
 }
 
-// TODO Armonize with ThisScalar, Scalar
-func (g *Graph) scalar(numeric bool) interface{} {
-
-	if g == nil || g.Len() == 0 {
-		return nil
-	}
-	/*
-		if g.Len() > 1 || g.Out[0].Len() != 0 {
-			n := New()
-			n.AddNodes(g)
-			return n
-		}
-	*/
-	itf := g.Out[0].This
-
-	if numeric {
-		n := number(itf)
-		if n != nil {
-			return n
-		}
-	}
-
-	// If it can be parsed as a bool, return it.
-	b, ok := _boolf(itf)
-	if ok {
-		return b
-	}
-
-	// Else return as is.
-	return itf
-}
-
-func (n *Graph) index(g *Graph) int {
-	if n.Len() == 0 {
+func (g *Graph) index(c *Graph) int {
+	if g.Len() == 0 {
 		return -1
 	}
 
-	itf, err := g.evalExpression(n.Out[0])
+	itf, err := c.evalExpression(g.Out[0])
 	if err != nil {
 		return -2
 	}
