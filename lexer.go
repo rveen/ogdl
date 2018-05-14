@@ -30,22 +30,7 @@ const (
 )
 
 var (
-	// ErrInvalidUnreadByte reports an unsuccessful UnreadByte.
-	ErrInvalidUnreadByte = errors.New("invalid use of UnreadByte")
-
-	// ErrInvalidUnreadRune reports an unsuccessful UnreadRune.
-	ErrInvalidUnreadRune = errors.New("invalid use of UnreadRune")
-
-	// ErrEOS indicates the end of the stream
-	ErrEOS = errors.New("EOS")
-
 	errNegativeRead = errors.New("reader returned negative count from Read")
-
-	// ErrSpaceNotUniform indicates mixed use of spaces and tabs for indentation
-	ErrSpaceNotUniform = errors.New("space has both tabs and spaces")
-
-	// ErrUnterminatedQuotedString is obvious.
-	ErrUnterminatedQuotedString = errors.New("quoted string not terminated")
 )
 
 // Lexer implements buffering for an io.Reader object, with multiple byte unread
@@ -185,7 +170,7 @@ func (p *Lexer) Rune() (rune, error) {
 // UnreadRune unreads the last rune.
 func (p *Lexer) UnreadRune() error {
 	if len(p.lastRuneSize) == 0 {
-		return ErrInvalidUnreadRune
+		return ErrInvalidUnread
 	}
 
 	p.r -= p.lastRuneSize[len(p.lastRuneSize)-1]

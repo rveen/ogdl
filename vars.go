@@ -31,6 +31,18 @@ const (
 )
 
 var (
+	// ErrInvalidUnread reports an unsuccessful UnreadByte or UnreadRune
+	ErrInvalidUnread = errors.New("invalid use of UnreadByte or UnreadRune")
+
+	// ErrEOS indicates the end of the stream
+	ErrEOS = errors.New("EOS")
+
+	// ErrSpaceNotUniform indicates mixed use of spaces and tabs for indentation
+	ErrSpaceNotUniform = errors.New("space has both tabs and spaces")
+
+	// ErrUnterminatedQuotedString is obvious.
+	ErrUnterminatedQuotedString = errors.New("quoted string not terminated")
+
 	ErrNotANumber       = errors.New("not a number")
 	ErrNotFound         = errors.New("not found")
 	ErrIncompatibleType = errors.New("incompatible type")
