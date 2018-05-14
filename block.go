@@ -39,21 +39,16 @@ func (p *Parser) tree(ns int) {
 
 // line processes an OGDL line or a multiline scalar.
 //
-// - A Line is composed of scalars and groups.
+// - A Line is composed of one or more scalars separated by space
 // - A Scalar is a Quoted or a String.
-// - A Group is a sequence of Scalars enclosed in parenthesis
-// - Scalars can be separated by commas or by space
 // - The last element of a line can be a Comment, or a Block
 //
-// The indentation of the line and the Scalar sequences and Groups on it define
+// The indentation of the line and the Scalar sequences define
 // the tree structure characteristic of OGDL level 1.
 //
 //    Line ::= Space(n) Sequence? ((Comment? Break)|Block)?
 //
 // Anything other than one Scalar before a Block should be an syntax error.
-// Anything after a closing ')' that is not a comment is a syntax error, thus
-// only one Group per line is allowed. That is because it would be difficult to
-// define the origin of the edges pointing to what comes after a Group.
 //
 // Indentation rules:
 //
@@ -142,15 +137,7 @@ func (p *Parser) line(ns int) (bool, error) {
 		}
 
 		p.Space()
-
-		if p.PeekByte() == ',' {
-			p.Byte()
-			p.Space()
-			// After a comma, reset the level to that of the start of this Line.
-			p.ev.SetLevel(n)
-		} else {
-			p.ev.Inc()
-		}
+		p.ev.Inc()
 	}
 
 	p.ev.SetLevel(level)
