@@ -173,9 +173,9 @@ func (g *Graph) evalPath(p *Graph) (interface{}, error) {
 		return nil, ErrInvalidArgs
 	}
 
-	ctx := g            // Current context node
-	var ctxPrev *Graph  // Previous context node
-	var elemPrev string // Previous path element searched in the context node
+	ctx := g            // Current context
+	var ctxPrev *Graph  // Previous context
+	var elemPrev string // Previous path element
 	var addRoot bool
 
 	for i := 0; i < len(p.Out); i++ {
@@ -309,7 +309,7 @@ func (g *Graph) evalPath(p *Graph) (interface{}, error) {
 	return _simplify(ctx), nil
 }
 
-// EvalExpression evaluates expressions (!e)
+// evalExpression evaluates expressions (!e)
 // g can have native types (other things than strings), but
 // p only []byte or string
 //
@@ -521,6 +521,7 @@ func compare(v1, v2 interface{}, op int) bool {
 	return false
 }
 
+// logic: and / or
 func logic(i1, i2 interface{}, op int) bool {
 
 	b1, ok1 := _boolf(i1)

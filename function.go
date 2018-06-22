@@ -14,15 +14,9 @@ import (
 
 // Function enables calling Go functions from templates.
 //
-// INPUT FORMAT
-//
 // g is the Function's context. g.This contains the presumed class name.
 // The _type subnode of g, if present, contains the function type (a Go
 // interface name or 'rfunction'
-//
-// p is the input path, where i points to the current position to be processed.
-// The arguments of the function are 1 level higher than the function name.
-// p[ix] points to the class name.
 //
 // Example 1
 //
@@ -38,8 +32,6 @@ import (
 //   !g
 //    !e
 //      1.0
-//
-// Functions calls are limited to whole paths.
 //
 // TODO: Catch panic() att Call(). Return named variables so that defer/recover
 // returns something usefull

@@ -164,7 +164,7 @@ func (g *Graph) Scalar() interface{} {
 		itf = g.Out[0].This
 	}
 
-	// If it ca be parsed as a number, return it.
+	// If it can be parsed as a number, return it.
 	n := number(itf)
 	if n != nil {
 		return n
