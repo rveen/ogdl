@@ -99,7 +99,14 @@ func (g *Graph) JSON() []byte {
 	var buf *bytes.Buffer
 	buf = new(bytes.Buffer)
 
+	// Temporarily set root to something different than _
+	i := g.This
+	g.This = ""
+
 	g.json(buf)
+
+	// Restore root
+	g.This = i
 
 	return buf.Bytes()
 }
