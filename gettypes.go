@@ -63,10 +63,13 @@ func (g *Graph) Float64(def ...float64) float64 {
 
 // Bool returns the node as a boolean. If the node is not a
 // boolean, it returns false, or the default value if given.
-func (g *Graph) Bool() bool {
+func (g *Graph) Bool(def ...bool) bool {
 	n, ok := _boolf(g.String())
 	if !ok {
-		return false
+		if len(def) == 0 {
+			return false
+		}
+		return def[0]
 	}
 	return n
 }
