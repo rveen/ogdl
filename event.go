@@ -24,6 +24,12 @@ func (e *SimpleEventHandler) Add(s string) {
 	e.levels = append(e.levels, e.current)
 }
 
+// AddItf creates a string node at the current level.
+func (e *SimpleEventHandler) AddItf(i interface{}) {
+	e.items = append(e.items, i)
+	e.levels = append(e.levels, e.current)
+}
+
 // AddBytesAt creates a byte array node at the specified level
 func (e *SimpleEventHandler) AddBytesAt(b []byte, lv int) {
 	e.items = append(e.items, b)

@@ -57,6 +57,15 @@ func FromString(s string) *Graph {
 	return p.Graph()
 }
 
+// FromStringTypes parses OGDL text from the given string. It returns a *Graph.
+// Basic types found in the string are converted to their correspongind Go types
+// (either string | int64 | float64 | bool).
+func FromStringTypes(s string) *Graph {
+	p := NewParser(bytes.NewBuffer([]byte(s)))
+	p.OgdlTypes()
+	return p.Graph()
+}
+
 // FromReader parses OGDL text coming from a generic io.Reader
 func FromReader(r io.Reader) *Graph {
 	p := NewParser(r)

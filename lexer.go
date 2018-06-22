@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"strconv"
 	"unicode"
 	"unicode/utf8"
 )
@@ -552,6 +553,36 @@ func (p *Lexer) Scalar(n int) (string, bool) {
 		return b, true
 	}
 	return p.String()
+}
+
+// ScalarType ::= string | int64 | float64 | bool
+func (p *Lexer) ScalarType(n int) (interface{}, bool) {
+	b, ok, _ := p.Quoted(n)
+	if ok {
+		return b, true
+	}
+
+	s, ok := p.String()
+	if !ok {
+		return "", false
+	}
+
+	i, err := strconv.ParseInt(s, 10, 64)
+	if err == nil {
+		return i, true
+	}
+	f, err := strconv.ParseFloat(s, 64)
+	if err == nil {
+		return f, true
+	}
+	switch s {
+	case "true":
+		return true, true
+	case "false":
+		return false, true
+	default:
+		return s, true
+	}
 }
 
 // IsTextChar returns true for all integers > 32 and

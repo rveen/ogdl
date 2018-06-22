@@ -23,13 +23,28 @@ func (p *Parser) Ogdl() {
 	for i := n; i > 0; i-- {
 		p.UnreadByte()
 	}
-	p.tree(n)
+	p.tree(n, false)
+}
+
+// OgdlTypes is the main function for parsing OGDL text.
+//
+// This version tries to convert unquoted strings that can be parsed as ints, floats
+// or bools to their corresponding type in Go (string | int64 | float64 | bool).
+func (p *Parser) OgdlTypes() {
+	n, u := p.Space()
+	if u == 0 {
+		return // Error
+	}
+	for i := n; i > 0; i-- {
+		p.UnreadByte()
+	}
+	p.tree(n, true)
 }
 
 // tree reads all lines with indentation >= ns
-func (p *Parser) tree(ns int) {
+func (p *Parser) tree(ns int, types bool) {
 	for {
-		b, err := p.line(ns)
+		b, err := p.line(ns, types)
 		if !b || err != nil {
 			break
 		}
@@ -59,7 +74,7 @@ func (p *Parser) tree(ns int) {
 //      e        -> level 2
 //    f          -> level 1
 //
-func (p *Parser) line(ns int) (bool, error) {
+func (p *Parser) line(ns int, types bool) (bool, error) {
 
 	n, u := p.Space()
 
@@ -75,7 +90,7 @@ func (p *Parser) line(ns int) (bool, error) {
 			p.UnreadByte()
 		}
 		p.ev.Inc()
-		p.tree(n)
+		p.tree(n, types)
 		p.ev.Dec()
 		return true, nil
 	}
@@ -126,10 +141,18 @@ func (p *Parser) line(ns int) (bool, error) {
 			break
 		}
 
-		b, ok := p.Scalar(n)
+		if !types {
+			b, ok := p.Scalar(n)
 
-		if ok {
-			p.ev.Add(b)
+			if ok {
+				p.ev.Add(b)
+			}
+		} else {
+			b, ok := p.ScalarType(n)
+
+			if ok {
+				p.ev.AddItf(b)
+			}
 		}
 
 		if p.Break() {
