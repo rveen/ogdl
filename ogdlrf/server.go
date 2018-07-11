@@ -44,19 +44,18 @@ func (srv *Server) router() Function {
 		h := srv.rtable[s]
 		if h != nil {
 			return h(c, g)
-		} else {
-			return notFound
 		}
+		return notFound
 	}
 }
 
 // Serve starts a remote function server. Handler functions should be set up with
 // AddRoute.
-func (s *Server) Serve() error {
-	if s.Protocol == 1 {
-		return Serve1(s.Host, s.router(), s.Timeout)
+func (srv *Server) Serve() error {
+	if srv.Protocol == 1 {
+		return Serve1(srv.Host, srv.router(), srv.Timeout)
 	}
-	return Serve(s.Host, s.router(), s.Timeout)
+	return Serve(srv.Host, srv.router(), srv.Timeout)
 }
 
 // Serve starts a remote function server. Incomming requests should be handled

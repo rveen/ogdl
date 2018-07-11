@@ -63,7 +63,7 @@ func toGraph(v interface{}) *Graph {
 			n.Add(k).AddNodes(toGraph(i))
 		}
 	case json.Number:
-		// try firts to decode the number as an integer.
+		// try first to decode the number as an integer.
 		i, err := v.(json.Number).Int64()
 		if err != nil {
 			f, err := v.(json.Number).Float64()

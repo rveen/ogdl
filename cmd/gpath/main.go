@@ -26,7 +26,7 @@ func main() {
 
 	// A second argument is a file name
 	source := os.Stdin
-	var err error = nil
+	var err error
 	if len(os.Args) > 2 {
 		source, err = os.Open(os.Args[2])
 		if err != nil {

@@ -34,7 +34,7 @@ import (
 //      1.0
 //
 // TODO: Catch panic() att Call(). Return named variables so that defer/recover
-// returns something usefull
+// returns something useful
 
 func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 

@@ -30,6 +30,7 @@ type Client struct {
 	Protocol int
 }
 
+// Dial opens the TCP connection
 func (rf *Client) Dial() error {
 	rf.Close()
 	conn, err := net.Dial("tcp", rf.Host)
@@ -37,6 +38,8 @@ func (rf *Client) Dial() error {
 	return err
 }
 
+// Call makes a request and returns the response. It dials the host if not
+// connected.
 func (rf *Client) Call(g *ogdl.Graph) (*ogdl.Graph, error) {
 
 	log.Printf("Client.Call to %s, %d", rf.Host, rf.Protocol)
