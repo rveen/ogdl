@@ -149,7 +149,6 @@ func (p *Lexer) UnreadByte() {
 	}
 
 	p.r--
-	return
 }
 
 // Rune reads a single UTF-8 encoded Unicode character and returns the
