@@ -25,11 +25,11 @@ var notFound = ogdl.FromString("error notFound")
 
 // AddRoute associates a handler function with the given path. A path in this
 // context is the first child of the incomming request.
-func (s *Server) AddRoute(path string, f Function) {
-	if s.rtable == nil {
-		s.rtable = make(map[string]Function)
+func (srv *Server) AddRoute(path string, f Function) {
+	if srv.rtable == nil {
+		srv.rtable = make(map[string]Function)
 	}
-	s.rtable[path] = f
+	srv.rtable[path] = f
 }
 
 func (srv *Server) router() Function {
