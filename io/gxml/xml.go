@@ -1,11 +1,8 @@
-package main
+package gxml
 
 import (
 	"bytes"
 	"encoding/xml"
-	"flag"
-	"fmt"
-	"io/ioutil"
 	"strings"
 	"unicode"
 
@@ -15,40 +12,7 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
-func main() {
-
-	var optId bool
-
-	flag.BoolVar(&optId, "id", false, "simplify @id's")
-
-	flag.Parse()
-
-	if flag.NArg() < 2 {
-		println("usage\n  xml2ogdl <path> <file>")
-		return
-	}
-
-	path := flag.Arg(0)
-
-	b, err := ioutil.ReadFile(flag.Arg(1))
-	if err != nil {
-		return
-	}
-
-	g := xml2graph(b)
-
-	if path != "." {
-		g = g.Get(path)
-	}
-
-	if optId {
-		simplify(g)
-	}
-
-	fmt.Printf("%s\n", g.Text())
-}
-
-func simplify(g *ogdl.Graph) {
+func Simplify(g *ogdl.Graph) {
 	if g.Out == nil {
 		return
 	}
@@ -65,11 +29,11 @@ func simplify(g *ogdl.Graph) {
 			n.Out[0] = n.Out[len(n.Out)-1]
 			n.Out = n.Out[:1]
 		}
-		simplify(n)
+		Simplify(n)
 	}
 }
 
-func xml2graph(b []byte) *ogdl.Graph {
+func FromXML(b []byte) *ogdl.Graph {
 
 	decoder := xml.NewDecoder(bytes.NewReader(b))
 
