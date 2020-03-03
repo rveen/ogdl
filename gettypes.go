@@ -102,6 +102,28 @@ func (g *Graph) String(def ...string) string {
 	return _string(g.Interface())
 }
 
+// StringCSV returns a comma separated value representation of all direct subnodes.
+// StringCSV accepts one default value, which will be returned instead of an
+// empty string.
+func (g *Graph) StringCSV(def ...string) string {
+
+	// If g is nil, return default or nothing
+	if g == nil {
+		if len(def) == 0 {
+			return ""
+		}
+		return def[0]
+	}
+
+	s := ""
+
+	for _, n := range g.Out {
+		s += ", " + _string(n.This)
+	}
+
+	return s[2:]
+}
+
 // ThisString returns the current node content as a string
 func (g *Graph) ThisString(def ...string) string {
 
