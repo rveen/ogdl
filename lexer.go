@@ -301,7 +301,7 @@ func (p *Lexer) Space() (int, byte) {
 func (p *Lexer) Quoted(ind int) (string, bool, error) {
 
 	c1, _ := p.Byte()
-	if c1 != '"' && c1 != '\'' {
+	if c1 != '"' && c1 != '\'' && c1 != '`' {
 		p.UnreadByte()
 		return "", false, nil
 	}
@@ -315,18 +315,25 @@ func (p *Lexer) Quoted(ind int) (string, bool, error) {
 			return "", false, ErrUnterminatedQuotedString
 		}
 
+		if c == c1 && c1 == '`' {
+			break
+		}
+
 		if c == c1 && c2 != '\\' {
 			break
 		}
-		if c == '\\' {
-			c2 = c
-			continue
-		}
 
-		// \" -> "
-		// \' -> '
-		if c2 == '\\' && !(c != '\'' || c == '"') {
-			buf = append(buf, '\\')
+		if c1 != '`' {
+			if c == '\\' {
+				c2 = c
+				continue
+			}
+
+			// \" -> "
+			// \' -> '
+			if c2 == '\\' && !(c != '\'' || c == '"') {
+				buf = append(buf, '\\')
+			}
 		}
 
 		buf = append(buf, c)
