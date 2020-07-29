@@ -10,6 +10,7 @@ import (
 	"log"
 	"reflect"
 	"runtime"
+	"strconv"
 )
 
 // Function enables calling Go functions from templates.
@@ -133,7 +134,7 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 		// Check if it is a method
 		me := v.MethodByName(fname)
 
-		// log.Println("function.Ptr(2)", fname)
+		log.Println("function.Ptr(2)", fname)
 
 		if !me.IsValid() {
 			// Try field
@@ -156,27 +157,37 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 			}
 		}
 
-		for i, arg := range args {
-			if arg == nil {
+		for i := 0; i < me.Type().NumIn(); i++ {
+			mtype := me.Type()
+			if i >= len(args) || args[i] == nil {
 				// No untyped nil support :-(
-				vargs = append(vargs, reflect.Zero(me.Type().In(i)))
-			} else {
-				vargs = append(vargs, reflect.ValueOf(arg))
+				vargs = append(vargs, reflect.Zero(mtype.In(i)))
+				continue
 			}
+
+			// Type adapter. A bit slow (cache could help)
+			dtype := mtype.In(i).String()
+			stype := reflect.TypeOf(args[i]).String()
+
+			if dtype == stype {
+				vargs = append(vargs, reflect.ValueOf(args[i]))
+				continue
+			}
+
+			if stype == "string" && dtype == "float64" {
+				v, _ := strconv.ParseFloat(args[i].(string), 64)
+				vargs = append(vargs, reflect.ValueOf(v))
+			} else if stype == "string" && dtype == "bool" {
+				v, _ := strconv.ParseBool(args[i].(string))
+				vargs = append(vargs, reflect.ValueOf(v))
+			} else if stype == "string" && dtype == "int64" {
+				v, _ := strconv.ParseInt(args[i].(string), 10, 64)
+				vargs = append(vargs, reflect.ValueOf(v))
+			} else if stype == "int64" && dtype == "float64" {
+				vargs = append(vargs, reflect.ValueOf(float64(args[i].(int64))))
+			}
+
 		}
-
-		// TODO: variadic
-		/*
-			if me.Type().NumIn() != len(args) {
-				return nil, errors.New("Invalid number of arguments in method " + fname)
-			}
-
-			for i, arg := range args {
-				v := reflect.TypeOf(arg)
-				if v == nil || me.Type().In(i).String() != v.String() {
-					return nil, errors.New("Invalid argument for method " + fname)
-				}
-			}*/
 
 		// TODO: return 0..2 values
 		vv := me.Call(vargs)
