@@ -28,6 +28,9 @@ func Simplify(g *ogdl.Graph) {
 			}
 			n.Out[0] = n.Out[len(n.Out)-1]
 			n.Out = n.Out[:1]
+		} else if n.Len() > 0 && n.Out[0].Len() == 1 && n.ThisString() == "field" && n.String() == "@name" {
+			n.This = strings.ReplaceAll(n.Out[0].Out[0].ThisString(), " ", "_")
+			n.Out = n.Out[1:]
 		}
 		Simplify(n)
 	}
