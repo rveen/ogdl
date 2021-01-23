@@ -33,6 +33,11 @@ func NewBytesParser(buf []byte) *Parser {
 	return NewParser(bytes.NewBuffer(buf))
 }
 
+// NewStringParser returns a new Parser from a string
+func NewStringParser(s string) *Parser {
+	return NewParser(bytes.NewBuffer([]byte(s)))
+}
+
 // Graph returns the parser tree
 func (p *Parser) Graph() *Graph {
 	return p.ev.Tree()
@@ -84,4 +89,21 @@ func FromFile(s string) *Graph {
 	p := NewParser(buf)
 	p.Ogdl()
 	return p.Graph()
+}
+
+// Some usefull functions to extended the Parser and use it in other places
+
+// Emit outputs a string event at the current level. This will show up in the graph
+func (p *Parser) Emit(s string) {
+	p.ev.Add(s)
+}
+
+// Inc increases the event handler level by one
+func (p *Parser) Inc() {
+	p.ev.Inc()
+}
+
+// Dec decreses the event handler level by one
+func (p *Parser) Dec() {
+	p.ev.Dec()
 }
