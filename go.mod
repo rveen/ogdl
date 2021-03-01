@@ -1,4 +1,4 @@
-module github.com/rveen/ogdl
+module github.com/rveen/ogdl/v2
 
 go 1.14
 
