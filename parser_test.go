@@ -29,8 +29,8 @@ func TestParser(t *testing.T) {
 
 		// Blocks
 
-		{"a \\\n  b\n  c", "a\n \"b\n  c\""},
-		{"a \\\n  b c", "a\n \"b c\""},
+		{"a \\\n  b\n  c", "a\n  \"b\n  c\""},
+		{"a \\\n  b c", "a\n  \"b c\""},
 	}
 
 	for _, tc := range cases {
