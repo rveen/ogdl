@@ -110,8 +110,6 @@ func process(c net.Conn, handler Function, timeout int) {
 
 	b4 := make([]byte, 4)
 
-	log.Println("starting Server.process: connection accepted")
-
 	for {
 
 		// Each message has a 4 byte header, an integer indicating the length:
@@ -186,9 +184,7 @@ func process(c net.Conn, handler Function, timeout int) {
 			log.Println("ogdlrf.Serve, error writing body, LEN is", i, "should be", len(buf))
 			break
 		}
-		log.Println("ogdlrf.Serve, body LEN", len(buf))
 	}
-	log.Println("ending Server.process and closing connection")
 }
 
 // Old format, without the initial length indicator

@@ -89,13 +89,7 @@ func (e *SimpleEventHandler) Tree() *Graph {
 
 	g := make([]*Graph, e.max+2)
 	g[0] = New("_")
-	/*
-		println("ev.Tree", len(e.items), len(e.levels), e.max)
 
-		for i := 0; i < len(e.items); i++ {
-			fmt.Printf(" - %d %v\n", e.levels[i], e.items[i])
-		}
-	*/
 	for i := 0; i < len(e.items); i++ {
 		lv := e.levels[i] + 1
 		item := e.items[i]

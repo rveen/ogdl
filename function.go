@@ -7,7 +7,6 @@ package ogdl
 import (
 	"errors"
 	"fmt"
-	"log"
 	"reflect"
 	"runtime"
 	"strconv"
@@ -81,7 +80,6 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 				}
 			}
 
-			log.Println(n.Show())
 			args = append(args, n)
 		} else {
 			// Local function
@@ -133,8 +131,6 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 
 		// Check if it is a method
 		me := v.MethodByName(fname)
-
-		log.Println("function.Ptr(2)", fname)
 
 		if !me.IsValid() {
 			// Try field

@@ -7,6 +7,7 @@ package ogdlrf
 import (
 	"encoding/binary"
 	"errors"
+
 	"log"
 	"net"
 	"time"
@@ -42,8 +43,6 @@ func (rf *Client) Dial() error {
 // connected.
 func (rf *Client) Call(g *ogdl.Graph) (*ogdl.Graph, error) {
 
-	log.Printf("Client.Call to %s, %d", rf.Host, rf.Protocol)
-
 	var err error
 	var r *ogdl.Graph
 
@@ -69,7 +68,6 @@ func (rf *Client) Call(g *ogdl.Graph) (*ogdl.Graph, error) {
 			break
 		}
 		rf.conn = nil
-		log.Println("Call.retry", n)
 	}
 
 	return r, err
@@ -115,11 +113,9 @@ func (rf *Client) callV2(g *ogdl.Graph) (*ogdl.Graph, error) {
 	buf3 := make([]byte, 0, l)
 	tmp := make([]byte, 10000)
 	l2 := uint32(0)
-	log.Println("starting to read, should be", l)
+
 	for {
-		log.Println("reading ...")
 		i, err = rf.conn.Read(tmp)
-		log.Println("reading ...", i)
 		l2 += uint32(i)
 		if err != nil || i == 0 {
 			log.Println("Error reading body", l2, l, err)
@@ -133,21 +129,16 @@ func (rf *Client) callV2(g *ogdl.Graph) (*ogdl.Graph, error) {
 		}
 	}
 
-	log.Println("read ...", len(buf3))
 	g = ogdl.FromBinary(buf3)
 
 	if g == nil || g.Len() == 0 {
 		return nil, errEmptyResponse
 	}
 
-	// log.Println(" - end of Call")
-
 	return g, err
 }
 
 func (rf *Client) callV1(g *ogdl.Graph) (*ogdl.Graph, error) {
-
-	// log.Printf(" - callV1\n%s\n", g.Show())
 
 	rf.conn.SetDeadline(time.Now().Add(time.Second * 10))
 
