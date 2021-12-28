@@ -40,7 +40,7 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Println(err)
+			fmt.Printf("Ogdl.function %s\n%s", err, path.Text())
 			return
 		}
 	}()

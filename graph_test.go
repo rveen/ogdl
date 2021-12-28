@@ -8,6 +8,11 @@ import (
 	"testing"
 )
 
+// Test resistance agains nil
+func TestAdd1(t *testing.T) {
+
+}
+
 // json
 
 func TestJson1(t *testing.T) {
