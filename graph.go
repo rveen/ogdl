@@ -170,6 +170,21 @@ func (g *Graph) Node(s string) *Graph {
 	return nil
 }
 
+// NodeOrNew returns the first subnode whose string value is equal to the given string.
+// It creates the node if not found.
+func (g *Graph) NodeOrNew(s string) *Graph {
+	if g == nil || g.Out == nil {
+		return nil
+	}
+	for _, node := range g.Out {
+		if s == _string(node.This) {
+			return node
+		}
+	}
+
+	return g.Add(s)
+}
+
 // Create returns the first subnode whose string value is equal to the given string,
 // with its subnodes deleted. If not found, the node is created and returned.
 func (g *Graph) Create(s string) *Graph {
