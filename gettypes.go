@@ -137,6 +137,10 @@ func (g *Graph) StringTxt(def ...string) string {
 		return def[0]
 	}
 
+	if g.Len() == 0 {
+		return ""
+	}
+
 	s := ""
 
 	for _, n := range g.Out {
