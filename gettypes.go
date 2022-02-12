@@ -124,6 +124,25 @@ func (g *Graph) StringCSV(def ...string) string {
 	return s[2:]
 }
 
+// StringCSV returns a comma separated value representation of all direct subnodes.
+// StringCSV accepts one default value, which will be returned instead of an
+// empty string.
+func (g *Graph) Strings() []string {
+
+	// If g is nil, return default or nothing
+	if g == nil {
+		return nil
+	}
+
+	var ss []string
+
+	for _, n := range g.Out {
+		ss = append(ss, _string(n.This))
+	}
+
+	return ss
+}
+
 // StringTxt returns a space separated value representation of all direct subnodes.
 // StringTxt accepts one default value, which will be returned instead of an
 // empty string.

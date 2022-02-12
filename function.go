@@ -7,6 +7,8 @@ package ogdl
 import (
 	"errors"
 	"fmt"
+
+	"log"
 	"reflect"
 	"runtime"
 	"strconv"
@@ -75,7 +77,7 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 			if len(path.Out) > 2 {
 				for _, arg := range path.Out[2].Out {
 					// log.Printf("arg:\n%s\n", arg.Show())
-					itf, _ := g.evalExpression(arg)
+					itf, _ := g.evalExpression(arg, true)
 					nn.Add(itf)
 				}
 			}
@@ -84,7 +86,7 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 		} else {
 			// Local function
 			for _, arg := range path.Out[1].Out {
-				itf, _ := g.evalExpression(arg)
+				itf, _ := g.evalExpression(arg, true)
 				args = append(args, itf)
 				// log.Printf("%v\n", args[len(args)-1])
 			}
@@ -121,7 +123,7 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 
 	case reflect.Ptr:
 
-		// log.Println("function.Ptr")
+		//log.Println("function.Ptr")
 
 		fn := path.GetAt(1)
 		if fn == nil {
@@ -131,6 +133,8 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 
 		// Check if it is a method
 		me := v.MethodByName(fname)
+
+		// log.Println(" - fname:", fname, me.IsValid(), me.Type().NumIn())
 
 		if !me.IsValid() {
 			// Try field
@@ -148,13 +152,15 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 		var args []interface{}
 		if len(path.Out) > 2 {
 			for _, arg := range path.Out[2].Out {
-				itf, _ := g.evalExpression(arg)
+				log.Println(" - arg", arg.Text())
+				itf, _ := g.evalExpression(arg, false)
 				args = append(args, itf)
 			}
 		}
 
 		for i := 0; i < me.Type().NumIn(); i++ {
 			mtype := me.Type()
+
 			if i >= len(args) || args[i] == nil {
 				// No untyped nil support :-(
 				vargs = append(vargs, reflect.Zero(mtype.In(i)))
@@ -163,26 +169,7 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 
 			// Type adapter. A bit slow (cache could help)
 			dtype := mtype.In(i).String()
-			stype := reflect.TypeOf(args[i]).String()
-
-			if dtype == stype {
-				vargs = append(vargs, reflect.ValueOf(args[i]))
-				continue
-			}
-
-			if stype == "string" && dtype == "float64" {
-				v, _ := strconv.ParseFloat(args[i].(string), 64)
-				vargs = append(vargs, reflect.ValueOf(v))
-			} else if stype == "string" && dtype == "bool" {
-				v, _ := strconv.ParseBool(args[i].(string))
-				vargs = append(vargs, reflect.ValueOf(v))
-			} else if stype == "string" && dtype == "int64" {
-				v, _ := strconv.ParseInt(args[i].(string), 10, 64)
-				vargs = append(vargs, reflect.ValueOf(v))
-			} else if stype == "int64" && dtype == "float64" {
-				vargs = append(vargs, reflect.ValueOf(float64(args[i].(int64))))
-			}
-
+			vargs = append(vargs, convert(args[i], dtype))
 		}
 
 		// TODO: return 0..2 values
@@ -196,4 +183,73 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 		return nil, nil
 	}
 
+}
+
+// Convert arg to dtype, if possible.
+func convert(arg interface{}, dtype string) reflect.Value {
+
+	stype := reflect.TypeOf(arg).String()
+
+	if dtype == stype {
+		return reflect.ValueOf(arg)
+	}
+
+	switch stype {
+
+	case "*ogdl.Graph":
+		n, ok := arg.(*Graph)
+		if ok {
+			switch dtype {
+			case "int64":
+				v := n.Int64()
+				return reflect.ValueOf(v)
+			case "bool":
+				v := n.Bool()
+				return reflect.ValueOf(v)
+			case "string":
+				v := n.String()
+				return reflect.ValueOf(v)
+			case "[]string":
+				v := n.Strings()
+				return reflect.ValueOf(v)
+			case "float64":
+				v := n.Float64()
+				return reflect.ValueOf(v)
+			case "int":
+				v := int(n.Int64())
+				return reflect.ValueOf(v)
+			}
+		}
+
+	case "string":
+		switch dtype {
+		case "float64":
+			v, _ := strconv.ParseFloat(arg.(string), 64)
+			return reflect.ValueOf(v)
+		case "bool":
+			v, _ := strconv.ParseBool(arg.(string))
+			return reflect.ValueOf(v)
+		case "int64":
+			v, _ := strconv.ParseInt(arg.(string), 10, 64)
+			return reflect.ValueOf(v)
+		}
+
+	case "int64":
+		switch dtype {
+		case "float64":
+			return reflect.ValueOf(float64(arg.(int64)))
+		case "int":
+			return reflect.ValueOf(int(arg.(int64)))
+		}
+
+	case "float64":
+		switch dtype {
+		case "int64":
+			return reflect.ValueOf(int64(arg.(float64)))
+		case "int":
+			return reflect.ValueOf(int(arg.(float64)))
+		}
+	}
+
+	return reflect.Zero(nil)
 }

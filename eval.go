@@ -12,9 +12,9 @@ func (g *Graph) Eval(e *Graph) (interface{}, error) {
 
 	switch e.ThisString() {
 	case TypePath:
-		return g.evalPath(e)
+		return g.evalPath(e, true)
 	case TypeExpression:
-		return g.evalExpression(e)
+		return g.evalExpression(e, true)
 	}
 
 	// A complex object that is not a path or expression: return as is.
@@ -165,7 +165,7 @@ func (g *Graph) getPath(p *Graph) (*Graph, error) {
 // evalPath traverses g following a path p. The path needs to be previously converted
 // to a Graph with NewPath().
 //
-func (g *Graph) evalPath(p *Graph) (interface{}, error) {
+func (g *Graph) evalPath(p *Graph, simpl bool) (interface{}, error) {
 
 	// fmt.Printf("evalPath\n%s\n%s\n", p.Show(), g.Show())
 
@@ -306,14 +306,18 @@ func (g *Graph) evalPath(p *Graph) (interface{}, error) {
 		ctx = r
 	}
 
-	return _simplify(ctx), nil
+	if simpl {
+		return _simplify(ctx), nil
+	} else {
+		return ctx, nil
+	}
 }
 
 // evalExpression evaluates expressions (!e)
 // g can have native types (other things than strings), but
 // p only []byte or string
 //
-func (g *Graph) evalExpression(p *Graph) (interface{}, error) {
+func (g *Graph) evalExpression(p *Graph, simpl bool) (interface{}, error) {
 
 	// Return nil and empty strings as is
 	if p.This == nil {
@@ -337,14 +341,14 @@ func (g *Graph) evalExpression(p *Graph) (interface{}, error) {
 		// Unary expression !expr
 		return !g.evalBool(p.Out[0]), nil
 	case TypeExpression:
-		return g.evalExpression(p.GetAt(0))
+		return g.evalExpression(p.GetAt(0), simpl)
 	case TypePath:
-		return g.evalPath(p)
+		return g.evalPath(p, simpl)
 	case TypeGroup:
 		// TODO expression list (could also be OGDL flow!)
 		r := New(TypeGroup)
 		for _, expr := range p.Out {
-			itf, err := g.evalExpression(expr)
+			itf, err := g.evalExpression(expr, simpl)
 			if err == nil {
 				r.Add(itf)
 			}
@@ -391,7 +395,7 @@ func (g *Graph) evalBinary(p *Graph) interface{} {
 
 	n1 := p.Out[0]
 
-	i2, err := g.evalExpression(p.Out[1])
+	i2, err := g.evalExpression(p.Out[1], true)
 	if err != nil {
 		return err // ?
 	}
@@ -411,7 +415,7 @@ func (g *Graph) evalBinary(p *Graph) interface{} {
 		return g.assign(n1, i2, '%')
 	}
 
-	i1, err := g.evalExpression(n1)
+	i1, err := g.evalExpression(n1, true)
 	if err != nil {
 		return err // ?
 	}
@@ -657,7 +661,7 @@ func (g *Graph) index(c *Graph) int {
 		return -1
 	}
 
-	itf, err := c.evalExpression(g.Out[0])
+	itf, err := c.evalExpression(g.Out[0], true)
 	if err != nil {
 		return -2
 	}
