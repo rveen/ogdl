@@ -8,36 +8,21 @@ import (
 	"errors"
 	"fmt"
 
-	"log"
+	// "log"
 	"reflect"
 	"runtime"
 	"strconv"
 )
 
-// Function enables calling Go functions from templates.
+// function enables calling Go functions from templates. It evaluates 'path'
+// in the context of g, that is, the context in which the function arguments are
+// evaluated.
 //
-// g is the Function's context. g.This contains the presumed class name.
-// The _type subnode of g, if present, contains the function type (a Go
-// interface name or 'rfunction'
-//
-// Example 1
-//
-// !p
-//   T
-//   !g
-//     'some text'
-//
-// Example 2
-// !p
-//   math
-//   Sin
-//   !g
-//    !e
-//      1.0
+// TODO Needs good explanation and clean-up.
 //
 // TODO: Catch panic() att Call(). Return named variables so that defer/recover
 // returns something useful
-
+//
 func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 
 	defer func() {
@@ -152,7 +137,7 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 		var args []interface{}
 		if len(path.Out) > 2 {
 			for _, arg := range path.Out[2].Out {
-				log.Println(" - arg", arg.Text())
+				// log.Println(" - arg", arg.Text())
 				itf, _ := g.evalExpression(arg, false)
 				args = append(args, itf)
 			}
