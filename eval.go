@@ -244,6 +244,9 @@ func (g *Graph) evalPath(p *Graph, simpl bool) (interface{}, error) {
 		case "_string":
 			return ctx.String(), nil
 
+		case "_json":
+			return ctx.JSON(), nil
+
 		case TypeArguments:
 			// We have hit an argument list of a function
 			if ctx.Len() > 0 {
