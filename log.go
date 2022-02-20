@@ -38,6 +38,11 @@ func (log *Log) Sync() {
 	log.f.Sync()
 }
 
+// Sync commits the changes to disk (the exact behavior is OS dependent).
+func (log *Log) SetSync(sync bool) {
+	log.autoSync = sync
+}
+
 // Add adds an OGDL object to the log. The starting position into the log
 // is returned.
 func (log *Log) Add(g *Graph) int64 {
