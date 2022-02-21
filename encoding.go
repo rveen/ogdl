@@ -96,6 +96,10 @@ func toGraph(v interface{}) *Graph {
 //
 func (g *Graph) JSON() []byte {
 
+	if g == nil {
+		return nil
+	}
+
 	var buf *bytes.Buffer
 	buf = new(bytes.Buffer)
 
