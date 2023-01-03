@@ -56,7 +56,7 @@ func (g *Graph) Equals(c *Graph) bool {
 // Add adds a subnode to the current node.
 func (g *Graph) Add(n interface{}) *Graph {
 
-	if g == nil {
+	if g == nil || n == nil {
 		return nil
 	}
 
@@ -73,7 +73,7 @@ func (g *Graph) Add(n interface{}) *Graph {
 // Add adds a subnode to the current node.
 func (g *Graph) addNodes(n interface{}) *Graph {
 
-	if g == nil {
+	if g == nil || n == nil {
 		return nil
 	}
 
@@ -90,7 +90,7 @@ func (g *Graph) addNodes(n interface{}) *Graph {
 // AddNodes adds subnodes of the given Graph to the current node.
 func (g *Graph) AddNodes(g2 *Graph) *Graph {
 
-	if g == nil {
+	if g == nil || g2 == nil {
 		return nil
 	}
 
@@ -125,7 +125,7 @@ func (g *Graph) addEqualNodes(g2 *Graph, key string, recurse bool) *Graph {
 // value holds a pointer, copying the interface value makes a copy of the
 // pointer, but not the data it points to.
 func (g *Graph) Copy(c *Graph) {
-	if c == nil {
+	if g == nil || c == nil {
 		return
 	}
 	for _, n := range c.Out {
