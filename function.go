@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 
-	// "log"
+	"log"
 	"reflect"
 	"runtime"
 	"strconv"
@@ -27,7 +27,7 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Printf("Ogdl.function %s\n%s", err, path.Text())
+			log.Printf("Ogdl.function %s | %s", err, path.String())
 			return
 		}
 	}()
