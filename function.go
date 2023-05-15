@@ -7,8 +7,6 @@ package ogdl
 import (
 	"errors"
 	"fmt"
-
-	"log"
 	"reflect"
 	"runtime"
 	"strconv"
@@ -25,13 +23,14 @@ import (
 //
 func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 
-	defer func() {
-		if err := recover(); err != nil {
-			log.Printf("Ogdl.function %s | %s", err, path.String())
-			return
-		}
-	}()
-
+	/*
+		defer func() {
+			if err := recover(); err != nil {
+				log.Printf("Ogdl.function %s | %s", err, path.String())
+				return
+			}
+		}()
+	*/
 	// log.Printf("\n%s\n", path.Show())
 
 	v := reflect.ValueOf(typ)
@@ -86,17 +85,16 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 			}
 		}
 
-		/* DEBUG CODE
-		for i := 0; i < v.Type().NumIn(); i++ {
-			log.Println("> ", v.Type().In(i).String())
-		}
-		for i := 0; i < len(vargs); i++ {
-			log.Println("< ", vargs[i].Type().String())
-		} /**/
-
+		// Check that the argument types match, otherwise v.Call() will panic
 		if v.Type().NumIn() != len(args) {
 			// TODO Check that we print the name of the function
 			return nil, fmt.Errorf("Invalid number of arguments in function %s (is %d, soll %d)\n%s", runtime.FuncForPC(v.Pointer()).Name(), len(args), v.Type().NumIn(), path.Show())
+		}
+
+		for i := 0; i < v.Type().NumIn(); i++ {
+			if v.Type().In(i).String() != vargs[i].Type().String() {
+				return nil, errors.New("arguments do not match")
+			}
 		}
 
 		// TODO: return 0..2 values
