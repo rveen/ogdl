@@ -106,7 +106,7 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 
 	case reflect.Ptr:
 
-		//log.Println("function.Ptr")
+		// log.Println("function.Ptr")
 
 		fn := path.GetAt(1)
 		if fn == nil {
@@ -154,6 +154,8 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 			dtype := mtype.In(i).String()
 			vargs = append(vargs, convert(args[i], dtype))
 		}
+
+		// log.Printf(" - vargs: %v", vargs)
 
 		// TODO: return 0..2 values
 		vv := me.Call(vargs)
@@ -234,5 +236,5 @@ func convert(arg interface{}, dtype string) reflect.Value {
 		}
 	}
 
-	return reflect.Zero(nil)
+	return reflect.Zero(nil) // TODO: check that this is valid!
 }
