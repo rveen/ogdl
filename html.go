@@ -110,7 +110,7 @@ func (g *Graph) _html(n int, buffer *bytes.Buffer, show bool, path string) {
 		if n > 0 {
 			buffer.WriteString("\"")
 		}
-		buffer.WriteString("\n")
+		buffer.WriteString("<br>\n")
 	} else {
 		if len(s) == 0 && !show {
 			n--
