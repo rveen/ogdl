@@ -4,7 +4,10 @@
 
 package ogdl
 
-import "os"
+import (
+	"bytes"
+	"os"
+)
 
 // Log is a log store for binary OGDL objects.
 //
@@ -13,6 +16,7 @@ import "os"
 type Log struct {
 	f        *os.File
 	autoSync bool
+	b        bytes.Buffer
 }
 
 // OpenLog opens a log file. If the file doesn't exist, it is created.
@@ -23,19 +27,23 @@ func OpenLog(file string) (*Log, error) {
 		return nil, err
 	}
 
-	log := Log{f, true}
+	log := Log{f: f, autoSync: true}
 
 	return &log, nil
 }
 
 // Close closes a log file
 func (log *Log) Close() {
-	log.f.Close()
+	if log.f != nil {
+		log.f.Close()
+	}
 }
 
 // Sync commits the changes to disk (the exact behavior is OS dependent).
 func (log *Log) Sync() {
-	log.f.Sync()
+	if log.f != nil {
+		log.f.Sync()
+	}
 }
 
 // Sync commits the changes to disk (the exact behavior is OS dependent).
@@ -53,29 +61,54 @@ func (log *Log) Add(g *Graph) int64 {
 		return 0
 	}
 
-	i, _ := log.f.Seek(0, 2)
+	if log.f != nil {
 
-	log.f.Write(b)
+		i, _ := log.f.Seek(0, 2)
 
-	if log.autoSync {
-		log.f.Sync()
+		log.f.Write(b)
+
+		if log.autoSync {
+			log.f.Sync()
+		}
+
+		return i
+	} else {
+
+		i := log.b.Len()
+		log.b.Write(b)
+
+		return int64(i)
 	}
+}
 
-	return i
+// Bytes works only if we have been writing to the byte buffer, not to a file
+func (log *Log) Bytes() []byte {
+	if log.f != nil {
+		return nil
+	}
+	return log.b.Bytes()
 }
 
 // AddBinary adds an OGDL binary object to the log. The starting position into
 // the log is returned.
 func (log *Log) AddBinary(b []byte) int64 {
 
-	i, _ := log.f.Seek(0, 2)
-	log.f.Write(b)
+	if log.f != nil {
+		i, _ := log.f.Seek(0, 2)
+		log.f.Write(b)
 
-	if log.autoSync {
-		log.f.Sync()
+		if log.autoSync {
+			log.f.Sync()
+		}
+
+		return i
+	} else {
+
+		i := log.b.Len()
+		log.b.Write(b)
+
+		return int64(i)
 	}
-
-	return i
 }
 
 // Get returns the OGDL object at the position given and the position of the
