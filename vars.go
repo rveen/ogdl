@@ -23,11 +23,12 @@ const (
 	TypeTemplate   = "!t"
 	TypeString     = "!string"
 
-	TypeIf    = "!if"
-	TypeEnd   = "!end"
-	TypeElse  = "!else"
-	TypeFor   = "!for"
-	TypeBreak = "!break"
+	TypeIf     = "!if"
+	TypeEnd    = "!end"
+	TypeElse   = "!else"
+	TypeElseIf = "!elseif"
+	TypeFor    = "!for"
+	TypeBreak  = "!break"
 )
 
 var (

@@ -131,12 +131,25 @@ func TestTemplateIf(ts *testing.T) {
 	if string(s) != " b " {
 		ts.Error("template")
 	}
-	/*
-		t = NewTemplate("$if('true') a $else b $end")
-		s = t.Process(g)
-		if string(s) != " a " {
-			ts.Error("template")
-		} */
+	t = NewTemplate("$if('true') a $else b $end")
+	s = t.Process(g)
+	if string(s) != " a " {
+		ts.Error("template")
+	}
+}
+
+func TestTemplateElseIf(ts *testing.T) {
+	// Context
+	g := New(nil)
+
+	t := NewTemplate("$if('false') a $elseif('true') b $else c $end")
+
+	fmt.Printf("%s\n", t.Show())
+
+	s := t.Process(g)
+	if string(s) != " b " {
+		ts.Error("elseif: " + string(s))
+	}
 }
 
 func TestTemplateFor1(ts *testing.T) {

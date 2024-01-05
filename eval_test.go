@@ -80,7 +80,7 @@ func TestEvalPath(t *testing.T) {
 		t.Run(fmt.Sprintf("%s in %s", tc.in, tc.want), func(t *testing.T) {
 			g := FromString(tc.in)
 			p := NewPath(tc.path)
-			r, _ := g.evalPath(p)
+			r, _ := g.evalPath(p, false)
 			got := _text(r)
 			if got != tc.want {
 				t.Errorf("got %s; want %s", got, tc.want)

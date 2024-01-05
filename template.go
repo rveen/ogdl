@@ -41,12 +41,12 @@ func NewTemplate(s string) *Graph {
 
 	t := p.Graph()
 	t.This = TypeTemplate
-
 	t.ast()
 	t.simplify()
-	t.flow()
 
-	return t
+	g := New("")
+	t.flow(g, g, 0)
+	return g
 }
 
 // NewTemplateFromBytes has the same function as NewTemplate except that the input stream
@@ -59,9 +59,10 @@ func NewTemplateFromBytes(b []byte) *Graph {
 	t.This = TypeTemplate
 	t.ast()
 	t.simplify()
-	t.flow()
 
-	return t
+	g := New("")
+	t.flow(g, g, 0)
+	return g
 }
 
 // Process processes the parsed template, returning the resulting text in a byte array.
@@ -81,7 +82,7 @@ func (g *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
 		return false
 	}
 
-	falseIf := false
+	yes := false
 
 	for _, n := range g.Out {
 		s := n.ThisString()
@@ -96,19 +97,24 @@ func (g *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
 			c.Eval(n)
 		case TypeIf:
 			// evaluate the expression
-			b := c.evalBool(n.GetAt(0).GetAt(0))
-
-			if b {
+			yes = c.evalBool(n.GetAt(0).GetAt(0))
+			// if true, evaluate the template part
+			if yes {
 				n.GetAt(1).process(c, buffer)
-				falseIf = false
-			} else {
-				falseIf = true
+			}
+		case TypeElseIf:
+			if !yes {
+				// evaluate the expression
+				yes = c.evalBool(n.GetAt(0).GetAt(0))
+				// if true, evaluate the template part
+				if yes {
+					n.GetAt(1).process(c, buffer)
+				}
 			}
 		case TypeElse:
-			// if there was a previous if evaluating to false:
-			if falseIf {
-				n.process(c, buffer)
-				falseIf = false
+			// if there was a previous if or elseif evaluating to false:
+			if !yes {
+				n.GetAt(0).process(c, buffer)
 			}
 		case TypeFor:
 			// The first subnode (of !g) is a path
@@ -162,7 +168,7 @@ func (g *Graph) process(c *Graph, buffer *bytes.Buffer) bool {
 	return false
 }
 
-// simplify converts !p TYPE in !TYPE for keywords if, end, else, for and break.
+// simplify converts !p TYPE in !TYPE for keywords if, end, else, elseif, for and break.
 func (g *Graph) simplify() {
 
 	if g == nil {
@@ -183,6 +189,9 @@ func (g *Graph) simplify() {
 			case "else":
 				node.This = TypeElse
 				node.DeleteAt(0)
+			case "elseif":
+				node.This = TypeElseIf
+				node.DeleteAt(0)
 			case "for":
 				node.This = TypeFor
 				node.DeleteAt(0)
@@ -196,7 +205,45 @@ func (g *Graph) simplify() {
 }
 
 // flow nests 'if' and 'for' loops.
-func (g *Graph) flow() {
+// new version from 1/2024
+//
+// It creates 2 nodes (!a and !t) below 'if' and 'elseif', and 1 node (!t)
+// below 'else'
+func (g *Graph) flow(h, prev *Graph, start int) int {
+
+	var i int
+
+	for i = start; i < g.Len(); i++ {
+		node := g.Out[i]
+		s := node.ThisString()
+
+		switch s {
+
+		case TypeIf, TypeFor:
+			h.Add(node)
+			hh := node.Add("!t")
+			i = g.flow(hh, h, i+1)
+
+		case TypeElse, TypeElseIf:
+			// Add 'else' and 'elseif' at the same level as 'if' (one level up)
+			prev.Add(node)
+			// Add the rest of the nodes at this level to this 'template' subnode
+			h = node.Add("!t")
+
+		case TypeEnd:
+			return i + 1
+
+		default:
+			h.Add(node)
+		}
+
+	}
+
+	return i
+}
+
+/* flow nests 'if' and 'for' loops.
+func (g *Graph) flow_() {
 	n := 0
 	var nod *Graph
 
@@ -213,9 +260,9 @@ func (g *Graph) flow() {
 			}
 		}
 
-		if s == TypeElse {
+		if s == TypeElse || s == TypeElseIf {
 			if n == 1 {
-				nod.flow()
+				nod.flow_()
 				nod = node
 				continue
 			}
@@ -224,7 +271,7 @@ func (g *Graph) flow() {
 		if s == TypeEnd {
 			n--
 			if n == 0 {
-				nod.flow()
+				nod.flow_()
 				g.DeleteAt(i)
 				i--
 				continue
@@ -239,6 +286,7 @@ func (g *Graph) flow() {
 	}
 
 }
+*/
 
 // Template ::= (Text | Variable)*
 func (p *Parser) Template() {
