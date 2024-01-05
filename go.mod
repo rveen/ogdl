@@ -4,5 +4,5 @@ go 1.14
 
 require (
 	github.com/rveen/ogdl v1.1.0
-	golang.org/x/text v0.3.3
+	golang.org/x/text v0.3.7
 )
