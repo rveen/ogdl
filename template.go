@@ -231,7 +231,7 @@ func (g *Graph) flow(h, prev *Graph, start int) int {
 			h = node.Add("!t")
 
 		case TypeEnd:
-			return i + 1
+			return i
 
 		default:
 			h.Add(node)
