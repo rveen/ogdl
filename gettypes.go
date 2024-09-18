@@ -134,6 +134,10 @@ func (g *Graph) Strings() []string {
 		return nil
 	}
 
+	if s, ok := g.This.([]string); ok {
+		return s
+	}
+
 	var ss []string
 
 	for _, n := range g.Out {
