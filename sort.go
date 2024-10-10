@@ -10,6 +10,11 @@ type stringSorter struct {
 	array  []*Graph
 }
 
+func (g *Graph) Sort(field string) {
+	s := stringSorter{field, g.Out}
+	sort.Sort(s)
+}
+
 func (g *Graph) SortAsString(field string) {
 	s := stringSorter{field, g.Out}
 	sort.Sort(s)
