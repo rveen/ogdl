@@ -296,6 +296,42 @@ func (p *Lexer) Space() (int, byte) {
 	return n + m, r
 }
 
+// Space is (0x20|0x09)+. It return the number of spaces found (whether
+// tabs or spaces), and a byte than can have the values 0, ' ' and '\t'
+// indicating mixed, all spaces or all tabs
+// This version is intender for consuming max spaces at most
+func (p *Lexer) SpaceMax(max int) (int, byte) {
+
+	spaces := 0
+	tabs := 0
+
+	for {
+		c, _ := p.Byte()
+		if c != '\t' && c != ' ' {
+			p.UnreadByte()
+			break
+		}
+
+		if c == ' ' {
+			spaces++
+		} else {
+			tabs++
+		}
+		if spaces == max || tabs == max {
+			break
+		}
+	}
+
+	var r byte
+	if tabs == 0 {
+		r = ' '
+	} else if spaces == 0 {
+		r = '\t'
+	}
+
+	return spaces + tabs, r
+}
+
 // Quoted string. Can have newlines in it. It returns the string if any, a bool
 // indicating if a quoted string was found, and a possible error.
 func (p *Lexer) Quoted(ind int) (string, bool, error) {
@@ -323,30 +359,31 @@ func (p *Lexer) Quoted(ind int) (string, bool, error) {
 			break
 		}
 
-		if c1 != '`' {
-			if c == '\\' {
-				c2 = c
-				continue
-			}
+		if c == '\\' {
+			c2 = c
+			continue
+		}
 
-			// \" -> "
-			// \' -> '
-			if c2 == '\\' && !(c != '\'' || c == '"') {
-				buf = append(buf, '\\')
-			}
+		// \" -> ", \' -> '
+		if c2 == '\\' && c != '\'' && c != '"' {
+			buf = append(buf, '\\')
 		}
 
 		buf = append(buf, c)
 
 		if c == 10 {
-			n, u := p.Space()
+			n, u := p.SpaceMax(ind)
+
 			if u == 0 {
 				return "", false, ErrSpaceNotUniform
 			}
-			// There are n spaces. Skip lnl spaces and add rest.
-			for ; n-ind > 0; n-- {
-				buf = append(buf, u)
+			if n < ind {
+				break
 			}
+			// There are n spaces. Skip lnl spaces and add rest.
+			/*for ; n-ind > 0; n-- {
+				buf = append(buf, u)
+			}*/
 		}
 		c2 = c
 	}

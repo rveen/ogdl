@@ -217,7 +217,6 @@ func (g *Graph) GetAt(i int) *Graph {
 // index := [N]
 // selector := {N}
 // tokens can be quoted
-//
 func (g *Graph) Get(s string) *Graph {
 	if g == nil {
 		return nil
@@ -509,4 +508,19 @@ func (g *Graph) Substitute(s string, v interface{}) {
 		n.Substitute(s, v)
 	}
 
+}
+
+// Merge the given graph into the current (receiver) graph
+func (g *Graph) Merge(src *Graph) {
+
+	for _, node := range src.Out {
+		n := g.Node(node.String())
+
+		if n == nil {
+			g.Add(node)
+		} else {
+			n.Out = nil
+			n.Merge(node)
+		}
+	}
 }
