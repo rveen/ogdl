@@ -73,6 +73,14 @@ func FromBinaryReader(r io.Reader) *Graph {
 	return p.parse()
 }
 
+// FromBinaryBufioReader converts an OGDL binary stream of bytes into a Graph.
+// It doesn't create a new buffered reader each time, so it can be used to read
+// OGDL log files.
+func FromBinaryBufioReader(r *bufio.Reader) *Graph {
+	p := &binParser{r, 0, 0}
+	return p.parse()
+}
+
 // FromBinaryFile converts an OGDL binary stream of bytes into a Graph.
 func FromBinaryFile(file string) *Graph {
 	p := newFileBinParser(file)
@@ -132,6 +140,7 @@ func (p *binParser) parse() *Graph {
 
 	for {
 		lev, bin, b := p.line(true)
+
 		if lev == 0 {
 			break
 		}
