@@ -1,6 +1,6 @@
 # OGDL for Go
 
-[OGDL](http://ogdl.org)) is a textual format to write trees or graphs of text, where indentation and spaces define the structure. Here is an example:
+[OGDL](http://ogdl.org) is a textual format to write trees or graphs of text, where indentation and spaces define the structure. Here is an example:
 
     network
       ip 192.168.1.100
