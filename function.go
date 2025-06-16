@@ -20,7 +20,6 @@ import (
 //
 // TODO: Catch panic() att Call(). Return named variables so that defer/recover
 // returns something useful
-//
 func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 
 	/*
@@ -236,5 +235,5 @@ func convert(arg interface{}, dtype string) reflect.Value {
 		}
 	}
 
-	return reflect.Zero(nil) // TODO: check that this is valid!
+	return reflect.ValueOf(nil) // TODO: check that this is valid!
 }
