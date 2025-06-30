@@ -164,7 +164,6 @@ func (g *Graph) getPath(p *Graph) (*Graph, error) {
 
 // evalPath traverses g following a path p. The path needs to be previously converted
 // to a Graph with NewPath().
-//
 func (g *Graph) evalPath(p *Graph, simpl bool) (interface{}, error) {
 
 	// fmt.Printf("evalPath\n%s\n%s\n", p.Show(), g.Show())
@@ -319,7 +318,6 @@ func (g *Graph) evalPath(p *Graph, simpl bool) (interface{}, error) {
 // evalExpression evaluates expressions (!e)
 // g can have native types (other things than strings), but
 // p only []byte or string
-//
 func (g *Graph) evalExpression(p *Graph, simpl bool) (interface{}, error) {
 
 	// Return nil and empty strings as is

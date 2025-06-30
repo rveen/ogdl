@@ -78,7 +78,6 @@ func (p *Parser) Selector() bool {
 //
 // arglist can be empty, then returning false (this fact is not represented
 // in the BNF definition).
-//
 func (p *Parser) ArgList() bool {
 
 	something := false
@@ -150,7 +149,6 @@ func (p *Parser) Args(dot bool) (bool, error) {
 }
 
 // Expression := expr1 (op2 expr1)*
-//
 func (p *Parser) Expression() bool {
 
 	if !p.UnaryExpression() {
@@ -174,7 +172,6 @@ func (p *Parser) Expression() bool {
 }
 
 // UnaryExpression := cpath | constant | op1 cpath | op1 constant | '(' expr ')' | op1 '(' expr ')'
-//
 func (p *Parser) UnaryExpression() bool {
 
 	c := p.PeekByte()
@@ -203,6 +200,7 @@ func (p *Parser) UnaryExpression() bool {
 	}
 
 	b, ok = p.Operator()
+
 	if ok {
 		p.ev.Add(b)
 	}
@@ -223,20 +221,21 @@ func (p *Parser) UnaryExpression() bool {
 		return true
 	}
 
-	return p.Path()
+	//return p.Path()
+	return p.UnaryExpression()
 }
 
 // Path parses an OGDL path, or an extended path as used in templates.
 //
-//     path ::= element ('.' element)*
+//	path ::= element ('.' element)*
 //
-//     element ::= token | integer | quoted | group | index | selector
+//	element ::= token | integer | quoted | group | index | selector
 //
-//     (Dot optional before Group, Index, Selector)
+//	(Dot optional before Group, Index, Selector)
 //
-//     group := '(' Expression [[,] Expression]* ')'
-//     index := '[' Expression ']'
-//     selector := '{' Expression '}'
+//	group := '(' Expression [[,] Expression]* ')'
+//	index := '[' Expression ']'
+//	selector := '{' Expression '}'
 //
 // The OGDL parser doesn't need to know about Unicode. The character
 // classification relies on values < 127, thus in the ASCII range,

@@ -7,9 +7,9 @@ package ogdl
 // NewExpression parses an expression in text format (given in the string) to a Graph,
 // in the form of a suitable syntax tree.
 //
-//     expression := expr1 (op2 expr1)*
-//     expr1 := path | constant | op1 path | op1 constant | '(' expr ')' | op1 '(' expr ')'
-//     constant ::= quoted | number
+//	expression := expr1 (op2 expr1)*
+//	expr1 := path | constant | op1 path | op1 constant | '(' expr ')' | op1 '(' expr ')'
+//	constant ::= quoted | number
 func NewExpression(s string) *Graph {
 	p := NewBytesParser([]byte(s))
 	p.Expression()
@@ -38,12 +38,22 @@ func (g *Graph) ast() {
 
 func (g *Graph) _ast() {
 
-	if g.Len() < 3 {
+	if g.Len() < 2 {
 		return
 	}
 
 	for _, node := range g.Out {
 		node.ast()
+	}
+
+	if g.Len() == 2 {
+		node := g.Out[0]
+
+		if node.ThisString() == "!" {
+			node.Add(g.Out[1])
+		}
+		g.DeleteAt(1)
+		return
 	}
 
 	var e1, e2 *Graph
