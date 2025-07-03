@@ -220,17 +220,16 @@ func (g *Graph) ThisFloat64() (float64, bool) {
 // Scalar returns the current node content, reducing the number of types
 // following these rules:
 //
-//     uint* -> int64
-//     int*  -> int64
-//     float* -> float64
-//     byte -> int64
-//     rune -> int64
-//     bool -> bool
-//     string, []byte: if it represents an int or float or bool,
-//       convert to int64, float64 or bool
+//	uint* -> int64
+//	int*  -> int64
+//	float* -> float64
+//	byte -> int64
+//	rune -> int64
+//	bool -> bool
+//	string, []byte: if it represents an int or float or bool,
+//	  convert to int64, float64 or bool
 //
 // Any other type is returned as is.
-//
 func (g *Graph) Scalar() interface{} {
 
 	itf := g.Interface()
@@ -559,6 +558,16 @@ func _boolf(i interface{}) (bool, bool) {
 		return false, false
 	case bool:
 		return v, true
+	case int:
+		if v == 0 {
+			return false, true
+		}
+		return true, true
+	case int64:
+		if v == 0 {
+			return false, true
+		}
+		return true, true
 	}
 
 	return false, false
@@ -582,7 +591,9 @@ func _string(i interface{}) string {
 
 // simplify graphs in the form:
 // *
-//   something
+//
+//	something
+//
 // to a scalar (return something)
 func _simplify(i interface{}) interface{} {
 
