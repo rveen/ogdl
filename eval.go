@@ -4,7 +4,7 @@
 
 package ogdl
 
-// import "fmt"
+// import "log"
 
 // Eval takes a parsed expression and evaluates it
 // in the context of the current graph.
@@ -576,6 +576,11 @@ func (g *Graph) assign(p *Graph, v interface{}, op int) interface{} {
 }
 
 // calc: int64 | float64 | string
+//
+// - If any is int64, the other is converted to int64 or float64
+// - If any is float64, the other is converted to float64
+// - A numeric string is always converted to float64
+// - If both are strings, only '+' is supported (contactenation)
 func calc(v1, v2 interface{}, op int) interface{} {
 
 	i1, ok := _int64(v1)
@@ -591,6 +596,9 @@ func calc(v1, v2 interface{}, op int) interface{} {
 		i4, ok4 = _float64(v2)
 	}
 
+	//log.Printf("type v1 %t, type v2 %t\n", v1, v2)
+	//log.Printf("i1 %d i2 %d i3 %f i4 %f\n", i1, i2, i3, i4)
+
 	if ok && ok2 {
 		switch op {
 		case '+':
@@ -605,56 +613,45 @@ func calc(v1, v2 interface{}, op int) interface{} {
 			return i1 % i2
 		}
 	}
-	if ok3 && ok4 {
-		switch op {
-		case '+':
-			return i3 + i4
-		case '-':
-			return i3 - i4
-		case '*':
-			return i3 * i4
-		case '/':
-			return i3 / i4
-		case '%':
-			return int(i3) % int(i4)
+
+	// Both are strings ?
+	if !(ok || ok2 || ok3 || ok4) {
+		if op != '+' {
+			return nil
 		}
+		return _string(v1) + _string(v2)
 	}
-	if ok && ok4 {
+
+	// Return operation on float64s
+
+	// v1=int | float, v2=float or string
+	if ok {
 		i3 = float64(i1)
-		switch op {
-		case '+':
-			return i3 + i4
-		case '-':
-			return i3 - i4
-		case '*':
-			return i3 * i4
-		case '/':
-			return i3 / i4
-		case '%':
-			return i1 % int64(i4)
-		}
+	} else if !ok3 {
+		i3, _ = _float64f(v1)
 	}
-	if ok3 && ok2 {
+
+	// v2=int | float, v1=float or string
+	if ok2 {
 		i4 = float64(i2)
-		switch op {
-		case '+':
-			return i3 + i4
-		case '-':
-			return i3 - i4
-		case '*':
-			return i3 * i4
-		case '/':
-			return i3 / i4
-		case '%':
-			return int64(i3) % i2
-		}
+	} else if !ok4 {
+		i4, _ = _float64f(v2)
 	}
 
-	if op != '+' {
-		return nil
+	switch op {
+	case '+':
+		return i3 + i4
+	case '-':
+		return i3 - i4
+	case '*':
+		return i3 * i4
+	case '/':
+		return i3 / i4
+	case '%':
+		return int(i3) % int(i4)
 	}
 
-	return _string(v1) + _string(v2)
+	return nil
 }
 
 func (g *Graph) index(c *Graph) int {
