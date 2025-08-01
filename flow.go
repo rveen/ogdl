@@ -221,8 +221,8 @@ func (p *Parser) UnaryExpression() bool {
 		return true
 	}
 
-	//return p.Path()
-	return p.UnaryExpression()
+	return p.Path()
+	//return p.UnaryExpression()
 }
 
 // Path parses an OGDL path, or an extended path as used in templates.

@@ -624,14 +624,15 @@ func calc(v1, v2 interface{}, op int) interface{} {
 
 	// Return operation on float64s
 
-	// v1=int | float, v2=float or string
+	// v1=int | float
+	// If v1 is string, then concatenate strings
 	if ok {
 		i3 = float64(i1)
 	} else if !ok3 {
-		i3, _ = _float64f(v1)
+		return _string(v1) + _string(v2)
 	}
 
-	// v2=int | float, v1=float or string
+	// v2=int | float
 	if ok2 {
 		i4 = float64(i2)
 	} else if !ok4 {
