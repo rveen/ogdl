@@ -186,7 +186,7 @@ func (g *Graph) NodeOrNew(s string) *Graph {
 }
 
 // NodeSet is a cheaper version of Set when s is a single node, not a path
-func (g *Graph) NodeSet(s string, v any) *Graph {
+func (g *Graph) NodeSet(s string, v interface{}) *Graph {
 	n := g.NodeOrNew(s)
 	n.Clear()
 	return n.Add(v)
