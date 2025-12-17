@@ -185,6 +185,13 @@ func (g *Graph) NodeOrNew(s string) *Graph {
 	return g.Add(s)
 }
 
+// NodeSet is a cheaper version of Set when s is a single node, not a path
+func (g *Graph) NodeSet(s string, v any) *Graph {
+	n := g.NodeOrNew(s)
+	n.Clear()
+	return n.Add(v)
+}
+
 // Create returns the first subnode whose string value is equal to the given string,
 // with its subnodes deleted. If not found, the node is created and returned.
 func (g *Graph) Create(s string) *Graph {
