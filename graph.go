@@ -1,4 +1,4 @@
-// Copyright 2012-2018, Rolf Veen and contributors.
+// Copyright 2012-2025, Rolf Veen and contributors.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -94,9 +94,7 @@ func (g *Graph) AddNodes(g2 *Graph) *Graph {
 		return nil
 	}
 
-	if g2 != nil {
-		g.Out = append(g.Out, g2.Out...)
-	}
+	g.Out = append(g.Out, g2.Out...)
 	return g
 }
 
@@ -158,7 +156,7 @@ func (g *Graph) Clone() *Graph {
 // Node returns the first subnode whose string value is equal to the given string.
 // It returns nil if not found.
 func (g *Graph) Node(s string) *Graph {
-	if g == nil || g.Out == nil {
+	if g == nil {
 		return nil
 	}
 	for _, node := range g.Out {
@@ -166,14 +164,13 @@ func (g *Graph) Node(s string) *Graph {
 			return node
 		}
 	}
-
 	return nil
 }
 
 // NodeOrNew returns the first subnode whose string value is equal to the given string.
 // It creates the node if not found.
 func (g *Graph) NodeOrNew(s string) *Graph {
-	if g == nil || g.Out == nil {
+	if g == nil {
 		return nil
 	}
 	for _, node := range g.Out {
