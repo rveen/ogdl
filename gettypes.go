@@ -38,7 +38,7 @@ func (g *Graph) Find(re string) (*Graph, error) {
 // Int64 returns the node as an int64. If the node is not a number, it
 // returns 0, or the default value if given.
 func (g *Graph) Int64(def ...int64) int64 {
-	n, ok := _int64f(g.String())
+	n, ok := _int64f(g.Interface())
 	if !ok {
 		if len(def) == 0 {
 			return 0
@@ -277,7 +277,7 @@ func (g *Graph) ThisScalar() interface{} {
 
 // Interface returns the first child of this node as an interface
 func (g *Graph) Interface() interface{} {
-	if g.Out != nil && len(g.Out) != 0 {
+	if g != nil && g.Out != nil && len(g.Out) != 0 {
 		return g.Out[0].This
 	}
 	return nil
