@@ -26,12 +26,12 @@ func TestJson1(t *testing.T) {
 object:
 
 a
-  b
-    x 1
-    y 2
-  c
-    z 3
 
+	b
+	  x 1
+	  y 2
+	c
+	  z 3
 */
 func TestJson2(t *testing.T) {
 	g := FromString("a\n b\n  x 1\n  y2\n c z 3")
@@ -306,6 +306,7 @@ func TestGetChaining(t *testing.T) {
 	i = g.Get("x").Int64(-2)
 
 	if i != -2 {
+		fmt.Printf("error: should be -2, is %d\n", i)
 		t.Error("Get('unknown').Int64(default) should return default")
 	}
 
