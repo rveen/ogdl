@@ -286,16 +286,18 @@ func (g *Graph) evalPath(p *Graph, simpl bool) (interface{}, error) {
 			if ctx == nil {
 				if ctxPrev.Len() > 0 {
 					itf, err := g.function(p, ctxPrev.GetAt(0).This)
-					if err != nil {
-						return nil, err
-					}
-					var ok bool
-					ctx, ok = itf.(*Graph)
-					if !ok {
+					return itf, err
+					/*
+						if err != nil {
+							return nil, err
+						}
+							var ok bool
+							ctx, ok = itf.(*Graph)
+							if !ok {
+								return itf, nil
+							}
 						return itf, nil
-					}
-					// fmt.Printf("evalPath function %s %d %d %d\n", pathElement, i, p.Len(), len(p.Out))
-					return itf, nil
+					*/
 				}
 			}
 
@@ -398,7 +400,7 @@ func (g *Graph) evalBinary(p *Graph) interface{} {
 
 	i2, err := g.evalExpression(p.Out[1], true)
 	if err != nil {
-		return err // ?
+		return nil
 	}
 
 	switch p.ThisString() {
@@ -418,7 +420,7 @@ func (g *Graph) evalBinary(p *Graph) interface{} {
 
 	i1, err := g.evalExpression(n1, true)
 	if err != nil {
-		return err // ?
+		return nil
 	}
 
 	switch p.ThisString() {
@@ -556,6 +558,7 @@ func (g *Graph) assign(p *Graph, v interface{}, op int) interface{} {
 	// if p doesn't exist, just set it to the value given
 	left, _ := g.getPath(p)
 	if left != nil {
+		// TODO Check bounds of left.Out
 		return g.set(p, calc(left.Out[0].This, v, op))
 	}
 
@@ -608,8 +611,14 @@ func calc(v1, v2 interface{}, op int) interface{} {
 		case '*':
 			return i1 * i2
 		case '/':
+			if i2 == 0 {
+				return nil
+			}
 			return i1 / i2
 		case '%':
+			if i2 == 0 {
+				return nil
+			}
 			return i1 % i2
 		}
 	}

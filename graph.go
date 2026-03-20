@@ -202,7 +202,7 @@ func (g *Graph) Create(s string) *Graph {
 
 // GetAt returns a subnode by index, or nil if the index is out of range.
 func (g *Graph) GetAt(i int) *Graph {
-	if i >= len(g.Out) || i < 0 {
+	if g == nil || i >= len(g.Out) || i < 0 {
 		return nil
 	}
 

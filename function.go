@@ -119,11 +119,20 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 		// log.Println(" - fname:", fname, me.IsValid(), me.Type().NumIn())
 
 		if !me.IsValid() {
-			// Try field
+			/* Try field
 			if v.Kind() == reflect.Struct {
 				v = v.FieldByName(fname)
 				if v.IsValid() {
 					return v.Interface(), nil
+				}
+			}*/
+
+			// Try field on dereferenced pointer
+			elem := v.Elem()
+			if elem.Kind() == reflect.Struct {
+				f := elem.FieldByName(fname)
+				if f.IsValid() {
+					return f.Interface(), nil
 				}
 			}
 

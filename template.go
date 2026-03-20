@@ -19,22 +19,21 @@ import (
 //
 // Template grammar
 //
-//     template ::= ( text | variable )*
+//	template ::= ( text | variable )*
 //
-//     variable ::= ('$' path) | ('$' '(' expression ')') | ('$' '{' expression '}')
-//     path ::= as defined in path.go
-//     expression ::= as defined in expression.go
+//	variable ::= ('$' path) | ('$' '(' expression ')') | ('$' '{' expression '}')
+//	path ::= as defined in path.go
+//	expression ::= as defined in expression.go
 //
 // Some variables act as directives: $if, $else, $end, $for, $break.
 //
-//    $if(expression)
-//    $else
-//    $end
+//	$if(expression)
+//	$else
+//	$end
 //
-//    $for(destPath,sourcepath)
-//      $break
-//    $end
-//
+//	$for(destPath,sourcepath)
+//	  $break
+//	$end
 func NewTemplate(s string) *Graph {
 	p := NewParser(bytes.NewBuffer([]byte(s)))
 	p.Template()
@@ -241,52 +240,6 @@ func (g *Graph) flow(h, prev *Graph, start int) int {
 
 	return i
 }
-
-/* flow nests 'if' and 'for' loops.
-func (g *Graph) flow_() {
-	n := 0
-	var nod *Graph
-
-	for i := 0; i < g.Len(); i++ {
-
-		node := g.Out[i]
-		s := node.ThisString()
-
-		if s == TypeIf || s == TypeFor {
-			n++
-			if n == 1 {
-				nod = node.Add(TypeTemplate)
-				continue
-			}
-		}
-
-		if s == TypeElse || s == TypeElseIf {
-			if n == 1 {
-				nod.flow_()
-				nod = node
-				continue
-			}
-		}
-
-		if s == TypeEnd {
-			n--
-			if n == 0 {
-				nod.flow_()
-				g.DeleteAt(i)
-				i--
-				continue
-			}
-		}
-
-		if n > 0 {
-			nod.Add(node)
-			g.DeleteAt(i)
-			i--
-		}
-	}
-
-}
-*/
 
 // Template ::= (Text | Variable)*
 func (p *Parser) Template() {

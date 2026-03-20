@@ -64,6 +64,7 @@ func (g *Graph) _ast() {
 
 			node := g.Out[i]
 			if precedence(node.ThisString()) == j {
+				// TODO check bounds
 				e1 = g.Out[i-1]
 				e2 = g.Out[i+1]
 				g.Out = append(g.Out[:i-1], g.Out[i:]...)
