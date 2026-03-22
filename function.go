@@ -12,25 +12,18 @@ import (
 	"strconv"
 )
 
+var errorType = reflect.TypeOf((*error)(nil)).Elem()
+
 // function enables calling Go functions from templates. It evaluates 'path'
 // in the context of g, that is, the context in which the function arguments are
 // evaluated.
-//
-// TODO Needs good explanation and clean-up.
-//
-// TODO: Catch panic() att Call(). Return named variables so that defer/recover
-// returns something useful
-func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
+func (g *Graph) function(path *Graph, typ interface{}) (result interface{}, err error) {
 
-	/*
-		defer func() {
-			if err := recover(); err != nil {
-				log.Printf("Ogdl.function %s | %s", err, path.String())
-				return
-			}
-		}()
-	*/
-	// log.Printf("\n%s\n", path.Show())
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic in function call: %v", r)
+		}
+	}()
 
 	v := reflect.ValueOf(typ)
 
@@ -45,11 +38,6 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 
 	case reflect.Func:
 
-		//log.Println("function.Func", path.Out[1].ThisString(), path.Out[1].Len())
-		// log.Println("Func type", v.Type())
-		//log.Println(runtime.FuncForPC(v.Pointer()).Name())
-		//log.Println(reflect.TypeOf(typ).String())
-
 		// Pre-evaluate
 		var args []interface{}
 
@@ -59,7 +47,6 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 			nn := n.Add(path.Out[1].This)
 			if len(path.Out) > 2 {
 				for _, arg := range path.Out[2].Out {
-					// log.Printf("arg:\n%s\n", arg.Show())
 					itf, _ := g.evalExpression(arg, true)
 					nn.Add(itf)
 				}
@@ -71,8 +58,12 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 			for _, arg := range path.Out[1].Out {
 				itf, _ := g.evalExpression(arg, true)
 				args = append(args, itf)
-				// log.Printf("%v\n", args[len(args)-1])
 			}
+		}
+
+		// Check that the argument types match, otherwise v.Call() will panic
+		if v.Type().NumIn() != len(args) {
+			return nil, fmt.Errorf("Invalid number of arguments in function %s (is %d, soll %d)\n%s", runtime.FuncForPC(v.Pointer()).Name(), len(args), v.Type().NumIn(), path.Show())
 		}
 
 		for i, arg := range args {
@@ -80,32 +71,34 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 				// No untyped nil support :-(
 				vargs = append(vargs, reflect.Zero(v.Type().In(i)))
 			} else {
-				vargs = append(vargs, reflect.ValueOf(arg))
+				vargs = append(vargs, convert(arg, v.Type().In(i)))
 			}
-		}
-
-		// Check that the argument types match, otherwise v.Call() will panic
-		if v.Type().NumIn() != len(args) {
-			// TODO Check that we print the name of the function
-			return nil, fmt.Errorf("Invalid number of arguments in function %s (is %d, soll %d)\n%s", runtime.FuncForPC(v.Pointer()).Name(), len(args), v.Type().NumIn(), path.Show())
 		}
 
 		for i := 0; i < v.Type().NumIn(); i++ {
-			if v.Type().In(i).String() != vargs[i].Type().String() {
-				return nil, errors.New("arguments do not match")
+			expected := v.Type().In(i)
+			actual := vargs[i].Type()
+			if actual == expected {
+				// exact match
+			} else if actual.AssignableTo(expected) {
+				// interface satisfaction or same underlying type — ok as-is
+			} else if actual.ConvertibleTo(expected) {
+				vargs[i] = vargs[i].Convert(expected)
+			} else {
+				return nil, fmt.Errorf("argument %d: cannot use %s as %s", i, actual, expected)
 			}
 		}
 
-		// TODO: return 0..2 values
 		vv := v.Call(vargs)
-		if len(vv) > 0 {
-			return vv[0].Interface(), nil
+		if len(vv) == 0 {
+			return nil, nil
 		}
-		return nil, nil
+		if len(vv) == 2 && vv[1].Type().Implements(errorType) && !vv[1].IsNil() {
+			return nil, vv[1].Interface().(error)
+		}
+		return vv[0].Interface(), nil
 
 	case reflect.Ptr:
-
-		// log.Println("function.Ptr")
 
 		fn := path.GetAt(1)
 		if fn == nil {
@@ -116,17 +109,7 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 		// Check if it is a method
 		me := v.MethodByName(fname)
 
-		// log.Println(" - fname:", fname, me.IsValid(), me.Type().NumIn())
-
 		if !me.IsValid() {
-			/* Try field
-			if v.Kind() == reflect.Struct {
-				v = v.FieldByName(fname)
-				if v.IsValid() {
-					return v.Interface(), nil
-				}
-			}*/
-
 			// Try field on dereferenced pointer
 			elem := v.Elem()
 			if elem.Kind() == reflect.Struct {
@@ -143,7 +126,6 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 		var args []interface{}
 		if len(path.Out) > 2 {
 			for _, arg := range path.Out[2].Out {
-				// log.Println(" - arg", arg.Text())
 				itf, _ := g.evalExpression(arg, false)
 				args = append(args, itf)
 			}
@@ -158,19 +140,31 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 				continue
 			}
 
-			// Type adapter. A bit slow (cache could help)
-			dtype := mtype.In(i).String()
-			vargs = append(vargs, convert(args[i], dtype))
+			vargs = append(vargs, convert(args[i], mtype.In(i)))
 		}
 
-		// log.Printf(" - vargs: %v", vargs)
+		for i := 0; i < me.Type().NumIn(); i++ {
+			expected := me.Type().In(i)
+			actual := vargs[i].Type()
+			if actual == expected {
+				// exact match
+			} else if actual.AssignableTo(expected) {
+				// interface satisfaction or same underlying type — ok as-is
+			} else if actual.ConvertibleTo(expected) {
+				vargs[i] = vargs[i].Convert(expected)
+			} else {
+				return nil, fmt.Errorf("argument %d: cannot use %s as %s", i, actual, expected)
+			}
+		}
 
-		// TODO: return 0..2 values
 		vv := me.Call(vargs)
-		if len(vv) > 0 {
-			return vv[0].Interface(), nil
+		if len(vv) == 0 {
+			return nil, nil
 		}
-		return nil, nil
+		if len(vv) == 2 && vv[1].Type().Implements(errorType) && !vv[1].IsNil() {
+			return nil, vv[1].Interface().(error)
+		}
+		return vv[0].Interface(), nil
 
 	default:
 		return nil, nil
@@ -178,9 +172,10 @@ func (g *Graph) function(path *Graph, typ interface{}) (interface{}, error) {
 
 }
 
-// Convert arg to dtype, if possible.
-func convert(arg interface{}, dtype string) reflect.Value {
+// convert converts arg to targetType, if possible.
+func convert(arg interface{}, targetType reflect.Type) reflect.Value {
 
+	dtype := targetType.String()
 	stype := reflect.TypeOf(arg).String()
 
 	if dtype == stype {
@@ -244,5 +239,5 @@ func convert(arg interface{}, dtype string) reflect.Value {
 		}
 	}
 
-	return reflect.ValueOf(nil) // TODO: check that this is valid!
+	return reflect.Zero(targetType)
 }
