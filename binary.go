@@ -14,17 +14,17 @@ import (
 // BinParser and its methods implement a parser for binary OGDL, as defined in the
 // OGDL Binary specification, v1.0, available at ogdl.org, reproduced below.
 //
-//     ogdl-binary ::= header ( level node )* 0x00
+//	ogdl-binary ::= header ( level node )* 0x00
 //
-//     header ::= 0x01 'G' 0x00
-//     level  ::= varInt
-//     node   ::= text-node | binary-node
+//	header ::= 0x01 'G' 0x00
+//	level  ::= varInt
+//	node   ::= text-node | binary-node
 //
-//     text-node ::= text 0x00
-//     binary-node ::= 0x01 ( length data )* 0x00
+//	text-node ::= text 0x00
+//	binary-node ::= 0x01 ( length data )* 0x00
 //
-//     length ::= multibyte-integer
-//     data :: byte[length]
+//	length ::= multibyte-integer
+//	data :: byte[length]
 type binParser struct {
 	r    *bufio.Reader
 	last int
@@ -55,7 +55,7 @@ func newFileBinParser(file string) *binParser {
 	return newBytesBinParser(b)
 }
 
-//NewBinParser creates a parser that can convert a binary OGDL stream into an
+// NewBinParser creates a parser that can convert a binary OGDL stream into an
 // ogdl.Graph object. To actually parse the stream, the method Parse() has to be invoked.
 func newBinParser(r io.Reader) *binParser {
 	return &binParser{bufio.NewReader(r), 0, 0}
@@ -215,11 +215,12 @@ func (p *binParser) header() bool {
 // varInt is the parser production that reads a variable length integer from the stream.
 //
 // varInt ::=
-//   0x00 - 0x7F:      0xxxxxxx
-//   0x00 - 0x3FFF:    10xxxxxx xxxxxxxx
-//   0x00 - 0x1FFFFF:  110xxxxx xxxxxxxx xxxxxxxx
-//   0x00 - 0xFFFFFFF: 1110xxxx xxxxxxxx xxxxxxxx xxxxxxxx
-//    ...
+//
+//	0x00 - 0x7F:      0xxxxxxx
+//	0x00 - 0x3FFF:    10xxxxxx xxxxxxxx
+//	0x00 - 0x1FFFFF:  110xxxxx xxxxxxxx xxxxxxxx
+//	0x00 - 0xFFFFFFF: 1110xxxx xxxxxxxx xxxxxxxx xxxxxxxx
+//	 ...
 func (p *binParser) varInt() int {
 
 	b0 := p.read()
@@ -251,9 +252,9 @@ func (p *binParser) varInt() int {
 
 // line is the parser production that reads one line out of the binary OGDL stream.
 //
-//     line  ::= level node 0x00
-//     level ::= varInt
-//     node  ::= text-node | binary-node
+//	line  ::= level node 0x00
+//	level ::= varInt
+//	node  ::= text-node | binary-node
 //
 // This function returns:
 // - the level (1..)

@@ -25,10 +25,10 @@ import (
 // TODO I'm not sure about not giving lists a root node, but we need to avoid both
 // useless nesting and also post-simplification (and its unwanted side effects).
 // But, for example [ "a", [ "b", "c" ] ] will be returned as:
-//     a
-//     b
-//     c
 //
+//	a
+//	b
+//	c
 func FromJSON(buf []byte) (*Graph, error) {
 
 	var v interface{}
@@ -93,7 +93,6 @@ func toGraph(v interface{}) *Graph {
 // By definition, since maps and lists cannot be distinguished in OGDL, any list
 // should have a '_' root node.
 // Any non-leaf node is a map (unless is contains '_', obviously).
-//
 func (g *Graph) JSON() []byte {
 
 	if g == nil {

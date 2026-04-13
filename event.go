@@ -84,7 +84,6 @@ func (e *SimpleEventHandler) Dec() {
 
 // Tree returns the Graph object built from
 // the events sent to this event handler.
-//
 func (e *SimpleEventHandler) Tree() *Graph {
 
 	g := make([]*Graph, e.max+2)

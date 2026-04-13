@@ -14,7 +14,7 @@ import (
 // of text or a quoted string can span multiple lines
 // but is still parsed by Line())
 //
-//     Graph ::= Line* End
+//	Graph ::= Line* End
 func (p *Parser) Ogdl() {
 	n, u := p.Space()
 	if u == 0 {
@@ -61,19 +61,18 @@ func (p *Parser) tree(ns int, types bool) {
 // The indentation of the line and the Scalar sequences define
 // the tree structure characteristic of OGDL level 1.
 //
-//    Line ::= Space(n) Sequence? ((Comment? Break)|Block)?
+//	Line ::= Space(n) Sequence? ((Comment? Break)|Block)?
 //
 // Anything other than one Scalar before a Block should be an syntax error.
 //
 // Indentation rules:
 //
-//   a           -> level 0
-//     b         -> level 1
-//     c         -> level 1
-//       d       -> level 2
-//      e        -> level 2
-//    f          -> level 1
-//
+//	a           -> level 0
+//	  b         -> level 1
+//	  c         -> level 1
+//	    d       -> level 2
+//	   e        -> level 2
+//	 f          -> level 1
 func (p *Parser) line(ns int, types bool) (bool, error) {
 
 	n, u := p.Space()

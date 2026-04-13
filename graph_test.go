@@ -556,17 +556,17 @@ func TestFunction3(ts *testing.T) {
 		ts.Error("Template processing of variable", string(b))
 	}
 
+	/*
 	t = NewTemplate("$T(R)")
 	b = t.Process(g)
 
-	/*
+	println(t.Show())
+	b := t.Process(g)
 
-		println(t.Show())
-		b := t.Process(g)
-
-		if string(b) != "Title: A nice title" {
-			ts.Error("function T", string(b))
-		} */
+	if string(b) != "Title: A nice title" {
+		ts.Error("function T", string(b))
+	}
+	*/
 }
 
 type Math struct {

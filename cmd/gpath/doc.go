@@ -11,16 +11,15 @@
 //
 // For example, if we have a configuration file conf.g like this:
 //
-//     eth0
-//        ip 128.0.0.10
-//        gw 128.0.0.1
+//	eth0
+//	   ip 128.0.0.10
+//	   gw 128.0.0.1
 //
 // then the command
 //
-//     # gpath eth0.ip conf.g
+//	# gpath eth0.ip conf.g
 //
 // will print
 //
-//     128.0.0.1
-//
+//	128.0.0.1
 package main

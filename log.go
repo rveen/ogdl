@@ -12,7 +12,6 @@ import (
 // Log is a log store for binary OGDL objects.
 //
 // All objects are appended to a file, and a position is returned.
-//
 type Log struct {
 	f        *os.File
 	autoSync bool

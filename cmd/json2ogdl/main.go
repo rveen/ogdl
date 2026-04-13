@@ -3,7 +3,6 @@
 // license that can be found in the LICENSE file.
 
 // json2ogdl [json_file]*
-//
 package main
 
 import (

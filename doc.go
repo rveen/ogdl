@@ -7,9 +7,9 @@
 // OGDL is a textual format to write trees or graphs of text, where
 // indentation and spaces define the structure. Here is an example:
 //
-//    network
-//      ip 192.168.1.100
-//      gw 192.168.1.9
+//	network
+//	  ip 192.168.1.100
+//	  gw 192.168.1.9
 //
 // The languange is simple, either in its textual representation or its
 // number of productions (the specification rules), allowing for compact
@@ -21,37 +21,37 @@
 //
 // See the full spec at http://ogdl.org.
 //
-// Installation
+// # Installation
 //
 // To install this package just do:
 //
-//     go get github.com/rveen/ogdl
+//	go get github.com/rveen/ogdl
 //
-// An example
+// # An example
 //
 // If we have a text file 'config.ogdl' containing:
 //
-//    eth0
-//      ip
-//        192.168.1.1
-//      gateway
-//        192.168.1.10
-//      mask
-//        255.255.255.0
-//      timeout
-//        20
+//	eth0
+//	  ip
+//	    192.168.1.1
+//	  gateway
+//	    192.168.1.10
+//	  mask
+//	    255.255.255.0
+//	  timeout
+//	    20
 //
 // then,
 //
-//    g := ogdl.FromFile("config.ogdl")
-//    ip := g.Get("eth0.ip").String()
-//    to := g.Get("eth0.timeout").Int64(60)
+//	g := ogdl.FromFile("config.ogdl")
+//	ip := g.Get("eth0.ip").String()
+//	to := g.Get("eth0.timeout").Int64(60)
 //
-//    println("ip:",ip,", timeout:",to)
+//	println("ip:",ip,", timeout:",to)
 //
 // will print
 //
-//    ip: 192.168.1.1, timeout: 20
+//	ip: 192.168.1.1, timeout: 20
 //
 // If the timeout parameter was not present, then the default value (60) will be
 // assigned to 'to'. The default value is optional, but be aware that Int64() will
@@ -59,13 +59,13 @@
 //
 // The configuration file can be written in a conciser way:
 //
-//    eth0
-//      ip      192.168.1.1
-//      gateway 192.168.1.10
-//      mask    255.255.255.0
-//      timeout 20
+//	eth0
+//	  ip      192.168.1.1
+//	  gateway 192.168.1.10
+//	  mask    255.255.255.0
+//	  timeout 20
 //
-// A template example
+// # A template example
 //
 // The package includes a template processor. It takes an arbitrary input stream
 // with some variables in it, and produces an output stream with the variables
@@ -73,25 +73,24 @@
 //
 // For example (given the previous config file):
 //
-//     g := ogdl.FromFile("config.ogdl")
-//     t := ogdl.NewTemplate("The gateway's IP is $eth0.gateway")
-//     b := t.Process(g)
+//	g := ogdl.FromFile("config.ogdl")
+//	t := ogdl.NewTemplate("The gateway's IP is $eth0.gateway")
+//	b := t.Process(g)
 //
 // string(b) is then:
 //
-//     The gateway's IP is 192.168.1.10
+//	The gateway's IP is 192.168.1.10
 //
-// Function signature conventions
+// # Function signature conventions
 //
 // Some rules are followed:
 //
-//   .<Type>()      Return the first subnode content converted to the specified type.
+//	.<Type>()      Return the first subnode content converted to the specified type.
 //
-//   .This<Type>()  Return the node content itself converted to the specified type.
+//	.This<Type>()  Return the node content itself converted to the specified type.
 //
-//   .Get()         Return the specified path as a (possible nil) *Graph object.
+//	.Get()         Return the specified path as a (possible nil) *Graph object.
 //
-//   .Get<Type>()   Return the specified path converted to the specified type.
-//                  These series of functions return value and error.
-//
+//	.Get<Type>()   Return the specified path converted to the specified type.
+//	               These series of functions return value and error.
 package ogdl
