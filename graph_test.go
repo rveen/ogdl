@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// Test resistance agains nil
+// Test resistance against nil
 func TestAdd1(t *testing.T) {
 
 }

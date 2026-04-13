@@ -91,7 +91,7 @@ func FromFile(s string) *Graph {
 	return p.Graph()
 }
 
-// Some usefull functions to extended the Parser and use it in other places
+// Some useful functions to extended the Parser and use it in other places
 
 // Emit outputs a string event at the current level. This will show up in the graph
 func (p *Parser) Emit(s string) {
