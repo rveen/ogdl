@@ -67,7 +67,7 @@ func (rf *Client) Call(g *ogdl.Graph) (*ogdl.Graph, error) {
 		if n < 0 {
 			break
 		}
-		rf.conn = nil
+		rf.Close()
 	}
 
 	return r, err
@@ -140,17 +140,19 @@ func (rf *Client) callV2(g *ogdl.Graph) (*ogdl.Graph, error) {
 
 func (rf *Client) callV1(g *ogdl.Graph) (*ogdl.Graph, error) {
 
-	rf.conn.SetDeadline(time.Now().Add(time.Second * 10))
+	rf.conn.SetDeadline(time.Now().Add(time.Second * time.Duration(rf.Timeout)))
 
 	b := g.Binary()
 	n, err := rf.conn.Write(b)
 
 	if err != nil {
+		rf.conn.Close()
 		rf.conn = nil
 		log.Println("callv1", err)
 		return nil, err
 	}
 	if n != len(b) {
+		rf.conn.Close()
 		rf.conn = nil
 		log.Println("callv1", err)
 		return nil, errWriting
