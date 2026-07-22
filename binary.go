@@ -111,7 +111,34 @@ func (g *Graph) Binary() []byte {
 	return buf
 }
 
+// maxChunk is the largest byte count newVarInt can express, and therefore the
+// largest run of data one length prefix of a binary node can cover.
+const maxChunk = 0xfffffff
+
 func (g *Graph) bin(level int, buf []byte) []byte {
+
+	// A []byte node is written as a binary node, not as a text node: its
+	// content may contain NUL bytes, which the text form terminates on.
+	if b, ok := g.This.([]byte); ok {
+		buf = append(buf, newVarInt(level)...)
+		buf = append(buf, 1)
+		for len(b) > 0 {
+			n := len(b)
+			if n > maxChunk {
+				n = maxChunk
+			}
+			buf = append(buf, newVarInt(n)...)
+			buf = append(buf, b[:n]...)
+			b = b[n:]
+		}
+		buf = append(buf, 0)
+		level++
+
+		for _, node := range g.Out {
+			buf = node.bin(level, buf)
+		}
+		return buf
+	}
 
 	// Skip empty nodes
 	b := _bytes(g.This)
@@ -186,7 +213,7 @@ func newVarInt(i int) []byte {
 	if i < 0x10000000 {
 		b := make([]byte, 4)
 		b[0] = byte(i>>24 | 0xe0)
-		b[1] = byte(i>>16 | 0xff)
+		b[1] = byte(i >> 16 & 0xff)
 		b[2] = byte(i >> 8 & 0xff)
 		b[3] = byte(i & 0xff)
 		return b
@@ -280,10 +307,14 @@ func (p *binParser) line(write bool) (int, bool, []byte) {
 
 	// Binary node if n==1
 	if n == 1 {
-		// Read length, then bytes
+		// Read length, then bytes. A zero length ends the node:
+		//
+		//   binary-node ::= 0x01 ( length data )* 0x00
+		//
+		// A negative length means end of stream (truncated node).
 		for {
 			n = p.varInt()
-			if n < 0 {
+			if n <= 0 {
 				break
 			}
 			for ; n != 0; n-- {
@@ -307,7 +338,10 @@ func (p *binParser) line(write bool) (int, bool, []byte) {
 
 	for {
 		c := p.read()
-		if c == 0 {
+		// c < 0 is end of stream: the node is truncated. Return what we
+		// have; the next call to line() reads a negative level and stops
+		// the parse. Without this the loop spins on EOF forever.
+		if c <= 0 {
 			return level, false, buf.Bytes()
 		}
 		if write {
