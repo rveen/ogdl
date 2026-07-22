@@ -545,6 +545,26 @@ func (p *Lexer) Block(nsp int) (string, bool) {
 	for {
 		ns, u := p.Space()
 
+		// A blank line (0 to any number of spaces followed by a line break)
+		// does not terminate the block: skip it, keep an empty line so the
+		// block preserves its structure, and keep looking for indented lines.
+		c, _ = p.Byte()
+		if c == 13 {
+			c, _ = p.Byte()
+			if c != 10 {
+				p.UnreadByte()
+				c = 10
+			}
+		}
+		if c == 10 {
+			buffer.WriteByte('\n')
+			continue
+		}
+		if IsEndChar(c) {
+			break
+		}
+		p.UnreadByte()
+
 		if u == 0 || ns <= nsp {
 			break
 		}
