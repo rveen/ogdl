@@ -540,6 +540,12 @@ func (p *Lexer) Block(nsp int) (string, bool) {
 
 	buffer := &bytes.Buffer{}
 
+	// Indentation of the first line of the block. It is stripped from every
+	// line so that the content of the block does not depend on the level at
+	// which the block appears. Lines indented further keep the extra space,
+	// so that relative indentation is preserved.
+	nsBlock := -1
+
 	// read lines while indentation is > nsp
 
 	for {
@@ -566,10 +572,24 @@ func (p *Lexer) Block(nsp int) (string, bool) {
 		p.UnreadByte()
 
 		if u == 0 || ns <= nsp {
+			// This line does not belong to the block. Give back its
+			// indentation so that the parser sees the correct level
+			// instead of resuming at the top level.
+			for i := ns; i > 0; i-- {
+				p.UnreadByte()
+			}
 			break
 		}
 
-		// Adjust indentation if less that initial
+		// The first line of the block sets the base indentation. Write back
+		// whatever exceeds it. A line indented less than the first one (but
+		// still more than nsp) gets no indentation at all.
+		if nsBlock < 0 {
+			nsBlock = ns
+		}
+		for i := ns - nsBlock; i > 0; i-- {
+			buffer.WriteByte(u)
+		}
 
 		// Read bytes until end of line
 		for {
