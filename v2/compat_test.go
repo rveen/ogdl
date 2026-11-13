@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestCompatBuild(t *testing.T) {
@@ -177,5 +178,21 @@ func TestCompatReaders(t *testing.T) {
 	}
 	if FromBinaryFile(bf) != nil {
 		t.Error("FromBinaryFile: a file with two streams is not one stream")
+	}
+}
+
+// Copying a tree into one of its own descendants terminates (v1 overflowed
+// the stack).
+func TestCompatCopyIntoDescendant(t *testing.T) {
+	g := FromString("a\n  b\n")
+	done := make(chan struct{})
+	go func() { g.Node("a").Copy(g); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Copy into a descendant did not finish")
+	}
+	if g.Node("a").Node("a") == nil {
+		t.Errorf("the copy is missing: %q", g.Text())
 	}
 }
