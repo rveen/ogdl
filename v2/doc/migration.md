@@ -119,6 +119,26 @@ Template text changes:
 4. A `$` not followed by a path, `(`, `{` or `$` is literal text in v2. v1
    dropped some of them (`['$', '$']` in a MathJax configuration).
 
+**Rendering as v1 did.** v2's expressions are stricter than v1's
+(`rfc/ogdl-expr-rfc.md`, section 12), and a strict template stops at the
+first failure. Templates written for v1 often rely on v1's leniency, so a
+program moving them can parse them with `ParseTemplateV1` (or set
+`Template.V1`), which renders as v1 did: a failed expression renders nothing
+and processing goes on (a failed condition is false, a failed loop source
+has no elements); calls take missing arguments and arguments that cannot be
+converted as zero values, and extra ones are dropped; a node passed to a
+function stands for its first child's value; a nil operand of `+` is an
+empty string; `%` truncates a float operand; a leaf reached by a path renders
+as its value, which is empty, not as its name; a loop variable on its own
+stands for v1's binding (a node with the element as its only child); and
+assigning a path's node gives the target its children. `Process` still
+returns the errors, joined, with the whole output. Not reproduced:
+v1's comparisons (the first operand decided the kind, a non-numeric second
+operand made a comparison false, and ordering strings was always false), and
+its other quirks listed in the Expr RFC. Checked on KF: 783 pages rendered by
+a v1 and a v2 build differ only where these are listed, or in v2's quoting of
+multi-line text when a node is printed whole.
+
 Points 1 to 3 (the unclosed `$(`) can be applied mechanically; the template
 RFC (`rfc/ogdl-template-rfc.md`, section 10) gives the exact rule. The rest
 need a decision per template.

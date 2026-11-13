@@ -51,6 +51,16 @@ type Template struct {
 	// HTML, which is written unchanged (Template RFC 4.1). Text outside
 	// substitutions is never escaped.
 	EscapeHTML bool
+
+	// V1 renders as ogdl v1 did, for templates written for it: a failed
+	// expression renders nothing and processing goes on (a failed condition
+	// is false, a failed loop source has no elements); calls take missing
+	// and unconvertible arguments as zero values; a nil operand of + is an
+	// empty string; a leaf reached by a path renders as its value, which is
+	// empty, not as its name; and a loop variable on its own stands for v1's
+	// binding, a node with the element as its only child. Process still
+	// returns the errors, joined, with the whole output.
+	V1 bool
 }
 
 // HTML is text vouched for as safe HTML. A template that escapes HTML writes
@@ -111,6 +121,17 @@ func ParseTemplate(s string) (*Template, error) {
 		return nil, &TemplateError{Pos: p.i, Err: p.stopErr}
 	}
 	return &Template{body: body, MaxDepth: DefaultMaxTemplateDepth}, nil
+}
+
+// ParseTemplateV1 parses a template to be rendered as ogdl v1 did
+// (Template.V1).
+func ParseTemplateV1(s string) (*Template, error) {
+	t, err := ParseTemplate(s)
+	if err != nil {
+		return nil, err
+	}
+	t.V1 = true
+	return t, nil
 }
 
 // ParseHTMLTemplate parses a template whose substitutions are HTML-escaped.
@@ -394,12 +415,12 @@ func (p *tmplParser) parseFor(start int) (tmpl, error) {
 // (Template RFC 6).
 func (t *Template) Process(ctx *Node) (string, error) {
 	var sb strings.Builder
-	ev := &evaluator{maxDepth: DefaultMaxEvalDepth, builtins: true}
-	st := &tmplState{ev: ev, maxDepth: t.MaxDepth, escapeHTML: t.EscapeHTML}
+	ev := &evaluator{maxDepth: DefaultMaxEvalDepth, builtins: true, v1: t.V1}
+	st := &tmplState{ev: ev, maxDepth: t.MaxDepth, escapeHTML: t.EscapeHTML, v1: t.V1}
 	if _, err := st.run(t.body, ctx, &sb); err != nil {
 		return sb.String(), err
 	}
-	return sb.String(), nil
+	return sb.String(), errors.Join(st.errs...)
 }
 
 // ProcessString parses and processes a template in one step.
@@ -426,6 +447,23 @@ type tmplState struct {
 	maxDepth   int
 	inLoop     int
 	escapeHTML bool
+
+	// v1 goes on after a failed expression, collecting the error (Template.V1).
+	v1   bool
+	errs []error
+}
+
+// failed reports whether an evaluation error must stop processing. With v1
+// set it is recorded instead, and processing goes on.
+func (st *tmplState) failed(pos int, err error) bool {
+	if err == nil {
+		return false
+	}
+	if st.v1 && !errors.Is(err, ErrEvalTooDeep) {
+		st.errs = append(st.errs, &TemplateError{Pos: pos, Err: err})
+		return false
+	}
+	return true
 }
 
 // run processes a block. It reports whether a $break was hit.
@@ -438,13 +476,15 @@ func (st *tmplState) run(body []tmpl, ctx *Node, sb *strings.Builder) (bool, err
 
 		case *tmplSubst:
 			v, err := st.ev.eval(ctx, n.e)
-			if err != nil {
+			if st.failed(n.pos, err) {
 				return false, &TemplateError{Pos: n.pos, Err: err}
 			}
-			sb.WriteString(st.render(v))
+			if err == nil {
+				sb.WriteString(st.render(v))
+			}
 
 		case *tmplSilent:
-			if _, err := st.ev.eval(ctx, n.e); err != nil {
+			if _, err := st.ev.eval(ctx, n.e); st.failed(n.pos, err) {
 				return false, &TemplateError{Pos: n.pos, Err: err}
 			}
 
@@ -479,10 +519,10 @@ func (st *tmplState) runIf(n *tmplIf, ctx *Node, sb *strings.Builder) (bool, err
 
 	for i, cond := range n.conds {
 		v, err := st.ev.eval(ctx, cond)
-		if err != nil {
+		if st.failed(n.pos, err) {
 			return false, &TemplateError{Pos: n.pos, Err: err}
 		}
-		if toBool(v) {
+		if err == nil && toBool(v) {
 			return st.run(n.blocks[i], ctx, sb)
 		}
 	}
@@ -499,13 +539,19 @@ func (st *tmplState) runFor(n *tmplFor, ctx *Node, sb *strings.Builder) (bool, e
 	defer func() { st.depth-- }()
 
 	v, err := st.loopSource(ctx, n.src)
-	if err != nil {
+	if st.failed(n.pos, err) {
 		return false, &TemplateError{Pos: n.pos, Err: err}
+	}
+	if err != nil {
+		return false, nil
 	}
 
 	items, err := iterate(v)
-	if err != nil {
+	if st.failed(n.pos, err) {
 		return false, &TemplateError{Pos: n.pos, Err: err}
+	}
+	if err != nil {
+		return false, nil
 	}
 	if len(items) == 0 {
 		return false, nil

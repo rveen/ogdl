@@ -117,6 +117,13 @@ func indexOf(v interface{}, k int) (interface{}, error) {
 // callAny calls a function or method value with the given arguments
 // (Expr RFC 8.3).
 func callAny(fn interface{}, args []interface{}) (result interface{}, err error) {
+	return callWith(fn, args, false)
+}
+
+// callWith is callAny, or with v1 set, a call as ogdl v1 made it: missing
+// arguments are zero values, extra ones are dropped, and an argument that
+// cannot be converted is passed as the zero value of its parameter.
+func callWith(fn interface{}, args []interface{}, v1 bool) (result interface{}, err error) {
 	if fn == nil {
 		return nil, ErrNotCallable
 	}
@@ -129,6 +136,19 @@ func callAny(fn interface{}, args []interface{}) (result interface{}, err error)
 	}
 
 	t := v.Type()
+
+	if v1 {
+		n := t.NumIn()
+		if t.IsVariadic() {
+			n--
+		}
+		for len(args) < n {
+			args = append(args, nil)
+		}
+		if !t.IsVariadic() && len(args) > n {
+			args = args[:n]
+		}
+	}
 
 	// Arity is checked before the call: Call panics on a mismatch, and a panic
 	// here would be reported as a host fault rather than as the caller's error.
@@ -149,8 +169,10 @@ func callAny(fn interface{}, args []interface{}) (result interface{}, err error)
 		default:
 			want = t.In(i)
 		}
-		cv, err := convertArg(a, want)
-		if err != nil {
+		var cv reflect.Value
+		if v1 {
+			cv = convertArgV1(a, want)
+		} else if cv, err = convertArg(a, want); err != nil {
 			return nil, fmt.Errorf("argument %d: %w", i+1, err)
 		}
 		vargs = append(vargs, cv)
@@ -280,4 +302,27 @@ func convertArg(a interface{}, want reflect.Type) (reflect.Value, error) {
 		return av.Convert(want), nil
 	}
 	return reflect.Value{}, fmt.Errorf("%w: cannot use %s as %s", ErrIncompatibleType, at, want)
+}
+
+// convertArgV1 converts an argument as ogdl v1 did: a node is passed when
+// the parameter wants one, and otherwise stands for the value of its first
+// child (none for a leaf); what cannot be converted is the zero value.
+func convertArgV1(a interface{}, want reflect.Type) reflect.Value {
+	if n, ok := a.(*Node); ok && n != nil {
+		if want == nodeType {
+			return reflect.ValueOf(n)
+		}
+		if len(n.Out) == 0 {
+			return reflect.Zero(want)
+		}
+		a = n.Out[0].Data
+	}
+	if a == nil {
+		return reflect.Zero(want)
+	}
+	cv, err := convertArg(a, want)
+	if err != nil {
+		return reflect.Zero(want)
+	}
+	return cv
 }

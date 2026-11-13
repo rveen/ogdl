@@ -2,6 +2,7 @@ package ogdl
 
 import (
 	"errors"
+	"math"
 	"strings"
 )
 
@@ -39,6 +40,10 @@ type evaluator struct {
 	// element of a path, before the children of the context, so it hides a
 	// node of the same name without touching the tree.
 	vars map[string]*Node
+
+	// v1 evaluates as ogdl v1 did (Template.V1): see evalV1Path, callWith,
+	// and the nil operand of + in evalBinary.
+	v1 bool
 }
 
 // variable returns the element bound to a loop variable, if one is in scope.
@@ -78,6 +83,14 @@ func (ev *evaluator) eval(ctx *Node, e Expr) (interface{}, error) {
 		return x.Val, nil
 
 	case *PathExpr:
+		if ev.v1 {
+			v, err := ev.evalV1Path(ctx, x)
+			if n, ok := v.(*Node); ok && n != nil && len(n.Out) == 0 {
+				// v1: a node's value is what lies below it; a leaf has none.
+				return "", err
+			}
+			return scalarOf(v), err
+		}
 		v, err := ev.evalPath(ctx, x.Elems)
 		if err != nil {
 			return nil, err
@@ -162,6 +175,21 @@ func (ev *evaluator) evalBinary(ctx *Node, x *Binary) (interface{}, error) {
 		return nil, err
 	}
 
+	if ev.v1 && x.Op == "%" {
+		// v1 took the remainder of integers, truncating a float operand;
+		// templates use `x % 1000000000` to cast to an integer.
+		l, r = truncV1(l), truncV1(r)
+	}
+	if ev.v1 && x.Op == "+" {
+		// v1 concatenated a path that matched nothing as an empty string.
+		if scalarOf(l) == nil {
+			l = ""
+		}
+		if scalarOf(r) == nil {
+			r = ""
+		}
+	}
+
 	switch x.Op {
 	case "+", "-", "*", "/", "%":
 		return arith(x.Op, l, r)
@@ -180,7 +208,15 @@ func (ev *evaluator) evalAssign(ctx *Node, x *Binary) (interface{}, error) {
 
 	// The right operand is evaluated first, so that a failure there leaves the
 	// tree untouched (Expr RFC 6.6).
-	v, err := ev.eval(ctx, x.R)
+	var v interface{}
+	var err error
+	if p, ok := x.R.(*PathExpr); ok && ev.v1 && x.Op == "=" {
+		// v1 assigned the node a path reached, whose children the target
+		// takes: an empty node leaves the target empty, not holding "".
+		v, err = ev.evalV1Path(ctx, p)
+	} else {
+		v, err = ev.eval(ctx, x.R)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -412,7 +448,7 @@ func (ev *evaluator) evalPath(ctx *Node, elems []pathElem) (interface{}, error) 
 				return nil, err
 			}
 			host = v
-			if host == nil {
+			if isNilValue(host) {
 				return nil, nil
 			}
 			continue
@@ -534,9 +570,14 @@ func (ev *evaluator) evalPath(ctx *Node, elems []pathElem) (interface{}, error) 
 			if err != nil {
 				return nil, err
 			}
-			v, err := callAny(scalarOf(cur[0]), args)
+			v, err := callWith(scalarOf(cur[0]), args, ev.v1)
 			if err != nil {
 				return nil, err
+			}
+			if isNilValue(v) {
+				// A function that returns a nil *Node (or other nil
+				// pointer) returned nothing, not a node.
+				return nil, nil
 			}
 			if n, ok := v.(*Node); ok {
 				next = []*Node{n}
@@ -593,7 +634,7 @@ func (ev *evaluator) hostElem(ctx *Node, host interface{}, e pathElem) (interfac
 		if err != nil {
 			return nil, err
 		}
-		return callAny(host, args)
+		return callWith(host, args, ev.v1)
 
 	case pathIndex:
 		k := e.n
@@ -620,6 +661,16 @@ func (ev *evaluator) hostElem(ctx *Node, host interface{}, e pathElem) (interfac
 func (ev *evaluator) evalArgs(ctx *Node, exprs []Expr) ([]interface{}, error) {
 	args := make([]interface{}, 0, len(exprs))
 	for _, a := range exprs {
+		if p, ok := a.(*PathExpr); ok && ev.v1 {
+			// v1 passed the node a path reached, and converted it to what
+			// the parameter wants (convertArgV1).
+			v, err := ev.evalV1Path(ctx, p)
+			if err != nil {
+				return nil, err
+			}
+			args = append(args, v)
+			continue
+		}
 		v, err := ev.eval(ctx, a)
 		if err != nil {
 			return nil, err
@@ -684,4 +735,31 @@ func (ev *evaluator) resolveMember(v interface{}, name string) (interface{}, boo
 		return builtinOf(n, name)
 	}
 	return memberOf(v, name)
+}
+
+// evalV1Path evaluates a path as ogdl v1 saw it. A loop variable on its own
+// is v1's binding: a node named after the variable whose only child is the
+// element, so that it prints and converts as the element's name.
+func (ev *evaluator) evalV1Path(ctx *Node, x *PathExpr) (interface{}, error) {
+	if len(x.Elems) == 1 && x.Elems[0].kind == pathToken {
+		if v, ok := ev.variable(x.Elems[0].name); ok {
+			return &Node{Data: x.Elems[0].name, Out: []*Node{v}}, nil
+		}
+	}
+	return ev.evalPath(ctx, x.Elems)
+}
+
+// truncV1 truncates a number that is not an integer to one, as v1's % did.
+func truncV1(v interface{}) interface{} {
+	i, f, isInt, ok := toNumber(scalarOf(v))
+	if !ok || isInt {
+		if ok {
+			return i
+		}
+		return v
+	}
+	if f != f || f > math.MaxInt64 || f < math.MinInt64 {
+		return v
+	}
+	return int64(f)
 }
