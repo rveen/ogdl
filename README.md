@@ -1,5 +1,11 @@
 # OGDL for Go
 
+> **Version 2** is in [`v2/`](v2/), module `github.com/rveen/ogdl/v2`: a
+> rewrite against written specifications, with paths, expressions,
+> templates, schemas and the binary format. This page is about version 1,
+> which stays available. Moving from one to the other:
+> [`v2/doc/migration.md`](v2/doc/migration.md).
+
 [OGDL](http://ogdl.org) is a textual format to write trees or graphs of text, where indentation and spaces define the structure. Here is an example:
 
     network
