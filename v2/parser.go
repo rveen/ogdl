@@ -34,6 +34,14 @@ type Parser struct {
 
 	// MaxDepth bounds the nesting depth (RFC 9.2, 12).
 	MaxDepth int
+
+	// Chain reads a line as ogdl v1 did: its elements form a chain, each
+	// the child of the one before (`a b c` is a → b → c), and a block after
+	// them belongs to the last. Without it, the line is a head with its
+	// arguments as children (`a b c` is a with b and c; RFC 6.5). Lines
+	// indented below attach to the head either way. The v1-named helpers
+	// (FromString, FromBytes, FromFile) set it.
+	Chain bool
 }
 
 func NewParser(r io.Reader) (*Parser, error) {
@@ -192,7 +200,7 @@ func (p *Parser) Parse() (*Node, error) {
 		// The first element is the head of the line; the others, and a block,
 		// are its children. Only the head stays open (RFC 6.5, 6.6).
 		parent := p.closeTo(depth)
-		var head *Node
+		var head, tail *Node
 		if len(l.elements) > 0 {
 			head = &Node{Data: l.elements[0].Value}
 			parent.Out = append(parent.Out, head)
@@ -201,11 +209,21 @@ func (p *Parser) Parse() (*Node, error) {
 				return nil, &SyntaxError{Line: e.Line, Col: e.Col, Err: ErrTooDeep}
 			}
 			p.stack = append(p.stack, frame{node: head, depth: depth})
+			last := head
 			for _, e := range l.elements[1:] {
 				arg := &Node{Data: e.Value}
-				head.Out = append(head.Out, arg)
+				if p.Chain {
+					if len(p.stack)+(len(l.elements)-1) > p.MaxDepth {
+						return nil, &SyntaxError{Line: e.Line, Col: e.Col, Err: ErrTooDeep}
+					}
+					last.Out = append(last.Out, arg)
+					last = arg
+				} else {
+					head.Out = append(head.Out, arg)
+				}
 				p.recordInline(arg)
 			}
+			tail = last
 		}
 
 		if l.block {
@@ -214,7 +232,10 @@ func (p *Parser) Parse() (*Node, error) {
 				return nil, err
 			}
 			b := &Node{Data: s}
-			if head != nil {
+			if head != nil && p.Chain {
+				tail.Out = append(tail.Out, b)
+				p.recordInline(b)
+			} else if head != nil {
 				head.Out = append(head.Out, b)
 				p.recordInline(b)
 			} else {

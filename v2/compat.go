@@ -25,10 +25,12 @@ func New(data interface{}) *Node {
 	return &Node{Data: data}
 }
 
-// FromString parses s, returning nil if it is not well-formed OGDL
-// (v1: ogdl.FromString). ParseString reports the error.
+// FromString parses s as v1 did, returning nil if it is not well-formed
+// OGDL (v1: ogdl.FromString). A line's elements form a chain (`a b c` is
+// a → b → c; see Parser.Chain). ParseV1 reports the error; ParseString
+// reads the RFC grammar.
 func FromString(s string) *Node {
-	n, err := ParseString(s)
+	n, err := ParseV1(strings.NewReader(s))
 	if err != nil {
 		return nil
 	}
@@ -37,26 +39,40 @@ func FromString(s string) *Node {
 
 // FromBytes is FromString for a byte slice (v1: ogdl.FromBytes).
 func FromBytes(b []byte) *Node {
-	n, err := Parse(bytes.NewReader(b))
+	n, err := ParseV1(bytes.NewReader(b))
 	if err != nil {
 		return nil
 	}
 	return n
 }
 
-// FromFile parses the file, returning nil if it cannot be read or is not
-// well-formed OGDL (v1: ogdl.FromFile).
+// FromFile parses the file as FromString does, returning nil if it cannot be
+// read or is not well-formed OGDL (v1: ogdl.FromFile).
 func FromFile(path string) *Node {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil
 	}
 	defer f.Close()
-	n, err := Parse(f)
+	n, err := ParseV1(f)
 	if err != nil {
 		return nil
 	}
 	return n
+}
+
+// ParseV1 reads an OGDL document as ogdl v1 did: the elements of a line form
+// a chain (see Parser.Chain). Everything else follows the RFC, which v1 text
+// written for v1 is: v2 rejects malformed input v1 accepted (mixed
+// indentation, invalid UTF-8, control characters), and drops comments where
+// v1 made some of them into nodes named "#".
+func ParseV1(r io.Reader) (*Node, error) {
+	p, err := NewParser(r)
+	if err != nil {
+		return nil, err
+	}
+	p.Chain = true
+	return p.Parse()
 }
 
 // FromBinary decodes one binary stream, returning nil if it is malformed

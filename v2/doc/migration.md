@@ -8,9 +8,19 @@ behaviour that was never specified.
 
 What stays the same:
 
-- **The text format.** A v1 document is a v2 document. v2 rejects malformed
-  input that v1 accepted silently (mixed indentation, invalid UTF-8, control
-  characters): see `rfc/ogdl-rfc.md`.
+- **The text format, read through the helpers.** `FromString`, `FromBytes`,
+  `FromFile` and `ParseV1` read v1 text as v1 did. v2 rejects malformed input
+  that v1 accepted silently (mixed indentation, invalid UTF-8, control
+  characters): see `rfc/ogdl-rfc.md`; and it drops comments, which v1 made
+  into nodes named `#` in places.
+
+  **Not the same: a line with more than two elements.** v1 reads `a b c` as
+  a chain, `a → b → c`; the RFC grammar (`Parse`, `ParseString`) reads it as
+  `a` with the children `b` and `c` (RFC section 6.5). The helpers and
+  `ParseV1` keep v1's chain (`Parser.Chain`), so text and data written for v1
+  keep their shape. (Correction: the guide released with v2.1.0 said "A v1
+  document is a v2 document", and the helpers used the RFC grammar; that was
+  wrong for such lines.)
 - **The binary format.** Whatever v1 writes, v2 reads to the same tree and
   writes back byte for byte (`rfc/ogdl-binary-rfc.md`, checked on 76,770
   stored objects). v2 also encodes nodes with an empty name, which v1 cannot
@@ -50,6 +60,8 @@ Checked against v1: 18,000 random operations through these helpers give the
 same results and trees in v1 and v2. Differences on purpose:
 
 - `Html` escapes names (v1 wrote them into the HTML as they were).
+- `Show` writes an empty string as `""`; v1 wrote `_`, which reads back as
+  the text `_`.
 - `Delete` never matches data that cannot be compared (a `[]byte`), where v1
   panicked.
 - `Copy` of a tree into its own descendant terminates (v1 overflowed the
