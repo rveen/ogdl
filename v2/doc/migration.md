@@ -23,20 +23,41 @@ What stays the same:
 | v1 | v2 | Notes |
 |---|---|---|
 | `*ogdl.Graph` | `*ogdl.Node` | `This` is now `Data`; `Out` is unchanged. |
-| `ogdl.New(nil)`, `ogdl.New(x)` | `&ogdl.Node{}`, `&ogdl.Node{Data: x}` | |
-| `g.Add(x)` (returns the child) | `c := &ogdl.Node{Data: x}; n.Out = append(n.Out, c)` | No method yet. |
-| `g.Node(name)` | `n.S(name)` | Both look at **direct children only**; `Node` is not a path. `Node` returns nil when nothing matches, `S` an empty node. |
-| `g.Get(path)` | `n.Get(path)` | Same node for the same path. v1 returns nil when nothing matches, v2 an empty node (never nil); `GetErr` reports a malformed path. |
-| `g.Len()` | `len(n.Out)` | v1 returns -1 for nil. |
+| `ogdl.New(x)` | `ogdl.New(x)` | Helper. |
+| `g.Add(x)` (returns the child) | `n.Add(x)` | Helper. |
+| `g.Node(name)` | `n.Node(name)` | Helper: **direct children only** (not a path), nil when nothing matches. `n.S(name)` is the same with an empty node instead of nil. |
+| `g.Get(path)` | `n.Lookup(path)`, or `n.Get(path)` | Same node for the same path. `Lookup` returns nil when nothing matches, as v1's `Get` did; v2's `Get` returns an empty node (never nil). Code that tests the result for nil uses `Lookup`. |
+| `g.Len()` | `n.Len()` | Helper: -1 for nil, as v1. |
 | `String()`, `ThisString()`, `Int64()`, `Float64()`, `Bool()` | the same | Same results. |
 | `Text()` | `Text()`, `Canonical()` | v2 ends the text with a line break and quotes canonically (`Canonical` returns the error `Text` drops). |
 | `Set(path, v)` | `Set(path, v)` | Same tree for a plain path; `rfc/ogdl-expr-rfc.md` defines assignment. |
-| `ogdl.FromString(s)`, `FromBytes(b)` | `ogdl.ParseString(s)`, `ogdl.Parse(bytes.NewReader(b))` | Return an error for malformed input. |
-| `ogdl.FromFile(f)` | `os.Open` then `ogdl.Parse(r)` | |
+| `ogdl.FromString(s)`, `FromBytes(b)`, `FromFile(f)` | the same (helpers), or `ogdl.ParseString(s)`, `ogdl.Parse(r)` | The helpers return nil for malformed input, as v1; `Parse*` report the error. |
 | `g.Eval…`, `ogdl.NewExpression` | `n.EvalString(s)`, `ogdl.ParseExpr(s)` | `rfc/ogdl-expr-rfc.md`, section 12, lists the differences. |
 
-Not in v2 (yet): `Clone`, `Copy`, `Delete`, `AddNodes`, `Create`, `GetAt`,
-`Show`, `FromJSON`, and the character-class helpers (`IsLetter` and others).
+### Helpers
+
+`compat.go` carries v1's names and behaviour, so v1 code can move without
+rewriting every call: `New`, `FromString`, `FromBytes`, `FromFile`,
+`FromBinary`, `FromBinaryReader`, `FromBinaryFile`; and on `*Node`: `Add`,
+`AddNodes`, `Node`, `NodeOrNew`, `Create`, `Lookup`, `Len`, `GetAt`, `Clear`,
+`Delete`, `DeleteAt`, `Clone`, `Copy`, `Interface`, `Bytes`, `GetString`,
+`GetBool`, `Sort`, `Show`, `Html`. Like v1 they accept a nil node, and the
+lookups return nil when nothing matches. v2's own accessors (`String`,
+`ThisString`, `Text`, `N`, `S`, `Int64`, …) are nil-safe too, so v1-style
+chains such as `g.Node("a").Node("b").String()` work.
+
+Checked against v1: 18,000 random operations through these helpers give the
+same results and trees in v1 and v2. Differences on purpose:
+
+- `Html` escapes names (v1 wrote them into the HTML as they were).
+- `Delete` never matches data that cannot be compared (a `[]byte`), where v1
+  panicked.
+- `Copy` of a tree into its own descendant terminates (v1 overflowed the
+  stack).
+
+Not provided: `FromJSON`, `Eval` with v1's expression trees (use `EvalString`),
+v1's `Check` (use `Schema`), `Value`, `Scalar`, `Number`, and the
+character-class functions (`IsLetter` and others).
 
 Paths: plain paths (`a.b.c`, `a[1]`, `a{1}`) select the same nodes as v1's
 `Get`. v2 differs deliberately in places on indexing and on `{}`: read

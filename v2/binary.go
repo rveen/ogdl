@@ -39,6 +39,10 @@ const maxBinaryInt = 0xFFFFFFF
 // beginning with 0x01.
 func (n *Node) MarshalBinary() ([]byte, error) {
 	buf := []byte{0x01, 'G', 0x00}
+	if n == nil {
+		// Like every accessor, a nil node is an empty tree.
+		return append(buf, 0x00), nil
+	}
 	var err error
 	for _, c := range n.Out {
 		if buf, err = c.appendBinary(buf, 1); err != nil {

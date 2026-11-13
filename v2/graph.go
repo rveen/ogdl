@@ -37,7 +37,7 @@ func nameString(v interface{}) string {
 }
 
 func (n *Node) N(i int) *Node {
-	if i < 0 || i >= len(n.Out) {
+	if n == nil || i < 0 || i >= len(n.Out) {
 		return &Node{}
 	}
 	return n.Out[i]
@@ -45,6 +45,9 @@ func (n *Node) N(i int) *Node {
 
 // S returns the first child whose textual form equals s, or an empty node.
 func (n *Node) S(s string) *Node {
+	if n == nil {
+		return &Node{}
+	}
 	for _, nn := range n.Out {
 		if s == nameString(nn.Data) {
 			return nn
@@ -82,6 +85,9 @@ func (n *Node) Text() string {
 // Canonical returns the canonical serialization of the receiver's children.
 // It reports an error if any name cannot be represented (RFC 8.2).
 func (n *Node) Canonical() (string, error) {
+	if n == nil {
+		return "", nil
+	}
 	var sb strings.Builder
 	var err error
 	for _, m := range n.Out {
